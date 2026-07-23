@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0a0a0a" />
+  <rect x="58" y="58" width="396" height="396" rx="72" fill="#111827" stroke="#d3202a" stroke-width="16" />
+  <text
+    x="256"
+    y="304"
+    text-anchor="middle"
+    font-family="Inter, Segoe UI, Arial, sans-serif"
+    font-size="172"
+    font-weight="700"
+    fill="#ffffff"
+  >
+    UM
+  </text>
+</svg>

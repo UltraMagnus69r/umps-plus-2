@@ -1,0 +1,75 @@
+/**
+ * Custom (3rd) mana symbol set — same keys as `manaData.js` where applicable.
+ * Assets served from `public/mana-custom/`.
+ */
+const manaMapCustom = {
+  w: '/mana-custom/white.png',
+  u: '/mana-custom/blue.png',
+  b: '/mana-custom/black.png',
+  r: '/mana-custom/red.png',
+  g: '/mana-custom/green.png',
+  c: '/mana-custom/colorless.png',
+
+  '0': '/mana-custom/generic_0.png',
+  '1': '/mana-custom/generic_1.png',
+  '2': '/mana-custom/generic_2.png',
+  '3': '/mana-custom/generic_3.png',
+  '4': '/mana-custom/generic_4.png',
+  '5': '/mana-custom/generic_5.png',
+  '6': '/mana-custom/generic_6.png',
+  '7': '/mana-custom/generic_7.png',
+  '8': '/mana-custom/generic_8.png',
+  '9': '/mana-custom/generic_9.png',
+  '10': '/mana-custom/generic_10.png',
+  '11': '/mana-custom/generic_11.png',
+  '12': '/mana-custom/generic_12.png',
+  '13': '/mana-custom/generic_13.png',
+  '14': '/mana-custom/generic_14.png',
+  '15': '/mana-custom/generic_15.png',
+  '16': '/mana-custom/generic_16.png',
+  '17': '/mana-custom/generic_17.png',
+  '18': '/mana-custom/generic_18.png',
+  '19': '/mana-custom/generic_19.png',
+  '20': '/mana-custom/generic_20.png',
+
+  x: '/mana-custom/x.png',
+  tap: '/mana-custom/tap.png',
+  q: '/mana-custom/untap.png',
+  s: '/mana-custom/snow.png',
+
+  '2w': '/mana-custom/two_w.png',
+  '2u': '/mana-custom/two_u.png',
+  '2b': '/mana-custom/two_b.png',
+  '2r': '/mana-custom/two_r.png',
+  '2g': '/mana-custom/two_g.png',
+
+  wp: '/mana-custom/phyrexian_w.png',
+  up: '/mana-custom/phyrexian_u.png',
+  bp: '/mana-custom/phyrexian_b.png',
+  rp: '/mana-custom/phyrexian_r.png',
+  gp: '/mana-custom/phyrexian_g.png',
+
+  wbu: '/mana-custom/hybrid_wu.png',
+  wb: '/mana-custom/hybrid_wb.png',
+  bub: '/mana-custom/hybrid_ub.png',
+  bur: '/mana-custom/hybrid_ur.png',
+  br: '/mana-custom/hybrid_br.png',
+  bg: '/mana-custom/hybrid_bg.png',
+  rg: '/mana-custom/hybrid_rg.png',
+  rw: '/mana-custom/hybrid_rw.png',
+  gw: '/mana-custom/hybrid_gw.png',
+  gbu: '/mana-custom/hybrid_gu.png',
+
+  prw: '/mana-custom/hybrid_phyrexian_wu.png',
+  pwb: '/mana-custom/hybrid_phyrexian_wb.png',
+  pub: '/mana-custom/hybrid_phyrexian_ub.png',
+  pur: '/mana-custom/hybrid_phyrexian_ur.png',
+  pbr: '/mana-custom/hybrid_phyrexian_br.png',
+  pbg: '/mana-custom/hybrid_phyrexian_bg.png',
+  prg: '/mana-custom/hybrid_phyrexian_rg.png',
+  pwr: '/mana-custom/hybrid_phyrexian_rw.png',
+  pgw: '/mana-custom/hybrid_phyrexian_gw.png',
+  pgbu: '/mana-custom/hybrid_phyrexian_gu.png',
+}
+
+export default manaMapCustom

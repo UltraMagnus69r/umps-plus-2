@@ -1,0 +1,150 @@
+==============================================================================
+HOW TO USE THIS FOLDER  (NEW PROJECT handoff kit)
+==============================================================================
+
+This folder is a self-contained "starter kit" for rebuilding UMPS fresh on a
+clean UMP4 codebase. Everything the new assistant needs to understand the M15
+look, your layout tweaks, and the rules is in here. Follow the steps below in
+order. You do NOT need to understand the code files yourself - they are written
+for the assistant to read.
+
+
+------------------------------------------------------------------------------
+WHAT'S IN THIS FOLDER (and who reads it)
+------------------------------------------------------------------------------
+
+  cardmap.png .................. The picture of the card with every part named
+                                 (Outer Border, Inner Border, Name Plate, etc.).
+                                 YOU and the assistant both use this.
+
+  00-START-HERE-prompt.md ...... The first message you paste into the new
+                                 project. Tells the assistant the mission and
+                                 the rules. <- THIS IS YOUR STARTING POINT.
+
+  01-handoff-state.md .......... Background: where we ended and why. (Assistant)
+
+  02-card-part-glossary.md ..... The official names for each card part.
+                                 (You + assistant)
+
+  03-m15-layout-map.json ....... The exact "recipe" that reproduces the M15
+                                 Creature Preview. (Assistant - the big one)
+
+  04-umps-layout-adjustments.md  The list of layout tweaks to re-apply.
+                                 (Assistant)
+
+  05-ump4-cleanup-guide.md ..... How to clean up UMP4 after you load it.
+                                 (Assistant)
+
+  06-asset-folder-audit-plan.md  How the assistant reviews your re-sorted asset
+                                 folders. (Assistant)
+
+  07-wiring-plan.md ............ The step-by-step plan for plugging assets in,
+                                 one card part at a time. (Assistant)
+
+  HOW-TO-USE-THIS-FOLDER.txt ... This file. (You)
+
+
+------------------------------------------------------------------------------
+BEFORE YOU START - THINGS TO HAVE READY
+------------------------------------------------------------------------------
+
+  [ ] A clean copy of UMP4 (the proxy-maker codebase you want to build on).
+  [ ] Your asset folders, re-sorted so each folder holds one card part
+      (e.g. a "Outer Border" folder, a "P-T Box" folder, etc.). This is the
+      part you said is on YOU. Use the names in cardmap.png / 02-card-part-
+      glossary.md so the folders line up cleanly.
+  [ ] An image (a screenshot or photo) that shows which asset goes where on the
+      card. This makes plugging things in much faster.
+  [ ] This entire NEW PROJECT folder, copied to the machine where you'll work.
+
+
+------------------------------------------------------------------------------
+THE STEPS (do them in order)
+------------------------------------------------------------------------------
+
+STEP 1 - Move this folder to the new machine
+  Copy the whole "NEW PROJECT" folder (including cardmap.png) to the computer
+  where you'll start the new project.
+
+STEP 2 - Start the new project and bring the assistant up to speed
+  - Open a new project/chat in Cursor (Claude) on that machine.
+  - Open the file 00-START-HERE-prompt.md, copy ALL of its text, and paste it
+    as your first message.
+  - Attach the rest of the files in this folder to that message (especially
+    cardmap.png, 02, 03, and 04). If you can't attach them all, just tell the
+    assistant "all the files are in the NEW PROJECT folder, read them."
+  - Ask the assistant to read everything and confirm back what it understands.
+    Wait for it to summarize the M15 layout, your tweaks, and the
+    "no compositor" rule before moving on.
+
+STEP 3 - Load in clean UMP4 and clean it up
+  - Add your clean UMP4 code into the project.
+  - Tell the assistant: "Run the UMP4 cleanup using 05-ump4-cleanup-guide.md."
+  - It will show you a list of what's safe to delete. Review and approve before
+    it deletes anything. (It should make a backup first.)
+
+STEP 4 - Drop in your re-sorted asset folders
+  - Add your re-sorted asset folders into the project.
+  - Give the assistant your "what goes where" image.
+  - Tell it: "Audit my asset folders using 06-asset-folder-audit-plan.md."
+  - It will produce a table mapping each folder to a card part and flag anything
+    missing or confusing. Confirm the mapping looks right.
+
+STEP 5 - Rebuild the look
+  - Tell the assistant: "Re-apply the UMPS layout adjustments from 04, then
+    reproduce the M15 Creature Preview from 03."
+  - Check the result against the verification checklist at the bottom of
+    03-m15-layout-map.json (the assistant can walk you through it).
+
+STEP 6 - Wire assets in, one card part at a time
+  - Tell the assistant: "Start wiring assets using 07-wiring-plan.md, one card
+    part at a time."
+  - Go part by part (Background Texture first, then Outer Border, etc.). After
+    each part, look at the card and confirm before moving to the next.
+  - When you hit the "Inner Border" part, the assistant will ask where that
+    control should live in the menus - that's a decision for you to make.
+
+STEP 7 - Continue from there
+  Once the M15 White creature looks right and assets are wired, you're back to
+  building normally - adding more colors, more card types, and polishing the UI.
+
+
+------------------------------------------------------------------------------
+THE 4 RULES (these are non-negotiable for the new project)
+------------------------------------------------------------------------------
+
+  1. NO COMPOSITOR. We removed it on purpose. Don't let it come back.
+  2. UMP4 is the new base. Start clean; only bring over what's in this folder.
+  3. Use the cardmap.png names for everything.
+  4. Use the exact numbers in 03 and 04 - they are the verified truth, even if
+     older notes say something different.
+
+
+------------------------------------------------------------------------------
+HANDY THINGS TO SAY TO THE ASSISTANT (copy/paste)
+------------------------------------------------------------------------------
+
+  "Read every file in the NEW PROJECT folder and confirm your understanding
+   before doing anything."
+
+  "Run the UMP4 cleanup from 05. Show me the delete list and wait for my okay."
+
+  "Audit my asset folders using 06 and show me the card-part mapping."
+
+  "Re-apply the layout from 04, then reproduce the M15 preview from 03, then
+   walk me through the verification checklist."
+
+  "Wire in the [card part name] now, following 07. Stop and show me when done."
+
+
+------------------------------------------------------------------------------
+IF SOMETHING LOOKS WRONG
+------------------------------------------------------------------------------
+
+  - Compare against cardmap.png and the verification checklist in 03.
+  - Tell the assistant exactly what looks off ("the holo seal is below the oval
+    instead of on top") - the docs have the correct behavior written down.
+  - Don't let the assistant invent a compositor or guess placement from raw
+    asset coordinates. Placement is by SLOT, per the docs.
+
+==============================================================================

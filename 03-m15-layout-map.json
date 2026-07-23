@@ -1,0 +1,113 @@
+{
+  "$schema_note": "Faithful reproduction kit for the M15 W Creature Preview. All pixel values are in STAGE space (1650x2250 full-bleed). Code-verified from the old fork's geometryAuthority.ts, kentuRenderAuthority.ts, KonvaStage.tsx, and kentuResolvedFrameStacks.json. Where docs disagreed, these values win.",
+  "version": "umps-handoff-1",
+  "sourceTargetId": "m15-W-creature",
+
+  "stage": {
+    "width": 1650,
+    "height": 2250,
+    "dpi": 600,
+    "bleedPx": 75,
+    "trim": { "x": 75, "y": 75, "width": 1500, "height": 2100 },
+    "safeZone": { "x": 150, "y": 150, "width": 1350, "height": 1950 },
+    "trimCornerRadiusPx": 72
+  },
+
+  "bevel": {
+    "outerStrokePx": 2,
+    "widthPx": 6,
+    "insetPx": 8,
+    "comment": "BEVEL_INSET = BEVEL_OUTER_STROKE + BEVEL_WIDTH = 8. Inner rects = outer rect inset by 8 per side."
+  },
+
+  "layoutMm": {
+    "comment": "Source mm constants that derive the standard slot rects via mmToPx = round(mm/25.4*600).",
+    "innerInsetX": 2, "innerInsetTop": 2, "innerW": 59, "innerH": 74,
+    "nameW": 57, "nameH": 6, "typeW": 57, "typeH": 6,
+    "artH": 40, "rulesH": 25, "nameTopOffset": 1.75, "ptWidthRatio": 0.17874
+  },
+
+  "standardSlotsPx": {
+    "comment": "Computed canonical geometry from getStandardLayoutGeometry(). barRadius=53.",
+    "inner":     { "x": 128,  "y": 122,  "width": 1394, "height": 1840 },
+    "nameBar":   { "x": 152,  "y": 163,  "width": 1346, "height": 142  },
+    "artBox":    { "x": 181,  "y": 305,  "width": 1288, "height": 945  },
+    "typeLine":  { "x": 152,  "y": 1250, "width": 1346, "height": 142  },
+    "rulesText": { "x": 181,  "y": 1392, "width": 1288, "height": 591  },
+    "ptBox":     { "x": 1257, "y": 1912, "width": 241,  "height": 142  },
+    "footer":    { "x": 131,  "y": 2062, "width": 1388, "height": 90   },
+    "holoStamp": { "x": 765,  "y": 1948, "width": 120,  "height": 70   },
+    "barRadius": 53,
+    "proxyHoloRadius": { "x": 60, "y": 35 }
+  },
+
+  "proxyFrameDisplay": {
+    "comment": "When M15 preview is ON, TextureBorderLayer draws trim+inner via getProxyFrameDisplayRects: insetX 5 per side, offsetY = PROXY_FRAME_OFFSET_Y_PX(0) + M15_INNER_OUTER_BORDER_OFFSET_Y_PX(-10) = -10.",
+    "frameInsetXPx": 5,
+    "frameOffsetYPx": 0,
+    "m15InnerOuterBorderOffsetYPx": -10,
+    "resultingTrim": { "x": 80, "y": 65, "width": 1490, "height": 2100 },
+    "resultingInner": { "x": 133, "y": 112, "width": 1384, "height": 1840 }
+  },
+
+  "m15RenderConstants": {
+    "kentuArtZThreshold": 4,
+    "skipSlots": ["art-frame", "textbox", "nameplate", "typebar"],
+    "aboveTextSlots": ["holo-stamp"],
+    "borderMaterialSlots": ["background-texture", "outer-border", "inner-border"],
+    "m15FrameOffsetYPx": 10,
+    "m15BorderMaterialOffsetYPx": -10,
+    "m15HoloScaleMultiplier": 1.35,
+    "m15HoloOffsetXPx": -10,
+    "m15HoloOffsetYPx": -7,
+    "outerBorderRuntimeTint": {
+      "enabled": true,
+      "slots": ["outer-border"],
+      "method": "offscreen canvas, globalCompositeOperation='source-in', tinted to Outer Border Color"
+    },
+    "placementRules": [
+      "Border-material slots (background-texture, outer-border, inner-border): apply Y offset -10.",
+      "pt-box: apply Y offset +10.",
+      "holo-stamp: NO frame Y offset; instead scale 1.35 about slot center, then offset x -10 / y -7.",
+      "background-texture: clip from trim top to rules bottom, then shift+resize by the -10 border offset."
+    ]
+  },
+
+  "renderOrder": [
+    { "z": 1,  "layer": "TextureBorderLayer", "draws": "bleed fill, Outer Border (trim), Inner Border, inside-border texture", "geometry": "getProxyFrameDisplayRects (M15 ON)", "type": "generated" },
+    { "z": 2,  "layer": "KentuFrameLayer(belowArt)", "draws": "Kentu PNGs with zIndex < 4: Background Texture, Outer Border", "type": "asset" },
+    { "z": 3,  "layer": "ArtLayer", "draws": "user art into Art Box", "type": "generated" },
+    { "z": 4,  "layer": "FrameLayer", "draws": "generated Name Plate / Art Box / Type Line Bar / Rules Text Box plates", "type": "generated" },
+    { "z": 5,  "layer": "RulesTextBoxTextureLayer", "draws": "rules panel base fill + optional texture, clipped to rules rect", "type": "generated" },
+    { "z": 6,  "layer": "WatermarkLayer / LandSecondaryArtLayer / LandFullArtManaCircleLayer", "draws": "conditional extras", "type": "generated" },
+    { "z": 7,  "layer": "KentuFrameLayer(aboveArt)", "draws": "Kentu PNGs with zIndex >= 4 except holo-stamp: P/T Box", "type": "asset" },
+    { "z": 8,  "layer": "TextIconsLayer / SetSymbolLayer", "draws": "text, set symbol, proxy holo oval ring", "type": "generated" },
+    { "z": 9,  "layer": "KentuFrameLayer(aboveText)", "draws": "Hologram Seal PNG (sits above proxy oval ring)", "type": "asset" },
+    { "z": 10, "layer": "PowerToughnessOverlayLayer", "draws": "P/T text; proxy capsule body suppressed in M15 ON", "type": "generated" },
+    { "z": 11, "layer": "ClonedCardLayer / DebugOverlayLayer / ReferenceLayer", "draws": "debug only", "type": "debug" }
+  ],
+
+  "assetStack": {
+    "comment": "Resolved m15-W-creature stack. 'drawn' = painted as a real PNG at runtime. 'skipped' = present in registry but replaced by generated geometry (see skipSlots). Asset paths are from the OLD messy New Assets tree and will be re-pointed to the user's re-sorted folders during wiring.",
+    "layers": [
+      { "cardPart": "Background Texture", "slot": "background-texture", "geometrySlot": "card.background", "runtime": "drawn", "oldAssetFile": "New Assets/4/png_assets/1011_White Texture.png", "intrinsic": { "w": 695, "h": 995 }, "zIndex": 0, "opacity255": 255, "fit": "fullCard fill", "placementPx": { "x": 75, "y": 65, "width": 1500, "height": 2100 }, "clipPx": { "x": 75, "y": 65, "width": 1500, "height": 1918 } },
+      { "cardPart": "Outer Border", "slot": "outer-border", "geometrySlot": "card.outerBorder", "runtime": "drawn", "oldAssetFile": "New Assets/4/png_assets/1103_Standard.png", "intrinsic": { "w": 744, "h": 1040 }, "zIndex": 2, "opacity255": 255, "fit": "fullCard fill", "placementPx": { "x": 75, "y": 65, "width": 1500, "height": 2100 }, "runtimeTint": true },
+      { "cardPart": "Art Box", "slot": "art-frame", "geometrySlot": "card.artFrame", "runtime": "skipped", "oldAssetFile": "New Assets/4/png_assets/1091_White.png", "intrinsic": { "w": 744, "h": 1039 }, "zIndex": 4, "opacity255": 255 },
+      { "cardPart": "Name Plate", "slot": "nameplate", "geometrySlot": "card.nameplate", "runtime": "skipped", "oldAssetFile": "New Assets/4/png_assets/1154_White.png", "intrinsic": { "w": 675, "h": 605 }, "zIndex": 5, "opacity255": 255, "note": "layerRole resolved as 'typebar' in old registry" },
+      { "cardPart": "Type Line Bar", "slot": "typebar", "geometrySlot": "card.typebar", "runtime": "skipped", "oldAssetFile": "New Assets/4/png_assets/1154_White.png", "intrinsic": { "w": 675, "h": 605 }, "zIndex": 7, "opacity255": 255 },
+      { "cardPart": "Rules Text Box", "slot": "textbox", "geometrySlot": "card.textbox", "runtime": "skipped", "oldAssetFile": "New Assets/4/png_assets/1017_Standard Textbox.png", "intrinsic": { "w": 634, "h": 313 }, "zIndex": 8, "opacity255": 230 },
+      { "cardPart": "P/T Box", "slot": "pt-box", "geometrySlot": "card.powerToughnessBox", "runtime": "drawn", "oldAssetFile": "New Assets/4/png_assets/1178_White.png", "intrinsic": { "w": 140, "h": 81 }, "zIndex": 10, "opacity255": 255, "fit": "slot fill", "placementPx": { "x": 1257, "y": 1922, "width": 241, "height": 142 } },
+      { "cardPart": "Hologram Seal", "slot": "holo-stamp", "geometrySlot": "card.holoStamp", "runtime": "drawn", "oldAssetFile": "New Assets/4/png_assets/1165_Real Holofoil Stamp.png", "intrinsic": { "w": 101, "h": 37 }, "zIndex": 11, "opacity255": 255, "fit": "contain", "slotPlacementPx": { "x": 734, "y": 1929, "width": 162, "height": 95 }, "containDrawPx": { "x": 734, "y": 1947, "width": 162, "height": 59 } }
+    ]
+  },
+
+  "verificationChecklist": [
+    "Stage is 1650x2250; trim 75,75,1500,2100.",
+    "M15 ON: visible trim border = 80,65,1490,2100; inner = 133,112,1384,1840.",
+    "Background Texture and Outer Border render below art; Outer Border is tinted to Outer Border Color.",
+    "Name Plate / Art Box / Type Line Bar / Rules Text Box are generated geometry, NOT the PNGs.",
+    "P/T Box PNG fills 1257,1922,241,142 and the generated proxy capsule body is suppressed.",
+    "Hologram Seal PNG is contain-fit ~734,1947,162,59 and sits ABOVE the proxy oval ring.",
+    "No compositor layer anywhere."
+  ]
+}

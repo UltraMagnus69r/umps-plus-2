@@ -1,0 +1,27 @@
+---
+description: Layout work scope — Standard/Land Pre-Modern only; do not touch Spell/Pre-Modern unless asked
+alwaysApply: true
+---
+
+# Pre-Modern layout scope
+
+## Active work target
+
+Unless the user explicitly says otherwise, layout and renderer changes apply **only** to:
+
+- **Standard** family, **pre-modern** variant (`{ family: 'standard', variant: 'pre-modern' }`)
+- **Land** family, **pre-modern** variant (`{ family: 'land', variant: 'pre-modern' }`)
+
+## Do not modify Spell / Pre-Modern
+
+**Do not change** Spell / Pre-Modern (`{ family: 'spell', variant: 'pre-modern' }`) unless the user **specifically** requests it.
+
+When fixing or tuning pre-modern behavior:
+
+1. Prefer **Standard/Land-only** branches (e.g. `family === 'standard' || family === 'land'`) over shared pre-modern paths that also affect spell.
+2. Avoid editing spell-only files or spell pre-modern contract builders unless explicitly scoped.
+3. If a shared helper would change spell and standard/land together, **split or gate** the change so spell stays unchanged.
+
+## Shared code caution
+
+Some helpers (e.g. `buildPreModernSpellStyleContract`, `supportsSpellTextBoxPanel`) may be shared across families. Before editing them, confirm the diff does not alter spell/pre-modern behavior; extract a standard/land-only path when needed.

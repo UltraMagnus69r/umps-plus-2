@@ -1,0 +1,8 @@
+node_modules/
+*.tsbuildinfo
+dist/
+.DS_Store
+*.zip
+.local-history/
+New Assets/
+backups/

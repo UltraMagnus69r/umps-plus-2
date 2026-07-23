@@ -1,0 +1,50 @@
+import { memo, useCallback } from 'react'
+import { shallow } from 'zustand/shallow'
+import {
+  isCardEffectivelyEmptyForGuidance,
+  UI_GUIDANCE_INLINE,
+} from '../../authority/guidanceAuthority'
+import { useCardStore } from '../../store/useCardStore'
+import KonvaStage from '../renderer/KonvaStage'
+
+function CardPreviewSelectionShell() {
+  const { openQuickView, showPreviewGuidance } = useCardStore(
+    (s) => {
+      const cd = s.cardData
+      return {
+        openQuickView: s.openQuickView,
+        showPreviewGuidance: isCardEffectivelyEmptyForGuidance({
+          name: String(cd.name ?? ''),
+          typeLine: String(cd.typeLine ?? ''),
+          manaCost: String(cd.manaCost ?? ''),
+          cardText: String(cd.cardText ?? ''),
+          flavorText: String(cd.flavorText ?? ''),
+          power: String(cd.power ?? ''),
+          toughness: String(cd.toughness ?? ''),
+          artImage: String(cd.artImage ?? ''),
+          clonedCardImage: String(cd.clonedCardImage ?? ''),
+        }),
+      }
+    },
+    shallow,
+  )
+
+  const onDoubleClickOpenQuickView = useCallback(() => {
+    openQuickView()
+  }, [openQuickView])
+
+  return (
+    <div className="relative h-full w-full min-h-0" onDoubleClick={onDoubleClickOpenQuickView}>
+      <KonvaStage />
+      {showPreviewGuidance ? (
+        <p
+          className={`pointer-events-none absolute bottom-ui4 left-1/2 z-[12] max-w-[min(20rem,88vw)] -translate-x-1/2 px-ui2 text-center ${UI_GUIDANCE_INLINE}`}
+        >
+          Start by entering a name or importing a card.
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
+export default memo(CardPreviewSelectionShell)
