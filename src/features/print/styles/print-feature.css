@@ -618,11 +618,28 @@
   border-color: color-mix(in srgb, var(--gg-yellow) 35%, var(--ui-border));
 }
 
-.print-feature-root .sheet-nav {
+.print-feature-root .sheet-nav,
+.print-feature-root .back-choice {
   margin-top: 10px;
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.print-feature-root .back-choice button {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-text-strong);
+  background: linear-gradient(180deg, #ffffff 0%, var(--ui-surface-soft) 100%);
+  padding: 6px 10px;
+  font-size: 0.8125rem;
+  box-shadow: var(--ui-shadow-pressable);
+}
+
+.print-feature-root .back-choice button.is-selected {
+  border-color: var(--ui-accent);
+  color: var(--ui-accent-hover);
+  box-shadow: var(--ui-focus-ring);
 }
 
 .print-feature-root .sheet-nav button:hover:not(:disabled) {

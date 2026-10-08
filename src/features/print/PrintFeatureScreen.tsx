@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { PrintPersistentFooter } from './components/PrintPersistentFooter'
 import { PrintSheetPreview } from './components/PrintSheetPreview'
 import { PrintUploadPanel } from './components/PrintUploadPanel'
-import { letterSheetLayoutFacts } from './authority/printFeatureAuthority'
+import { letterSheetLayoutFacts, printBuiltinBacks } from './authority/printFeatureAuthority'
 import { exportPrintFullSetPdf, exportPrintFullSetPng } from './export/printSheetExport'
 import { usePrintFeatureState } from './state/usePrintFeatureState'
 
@@ -12,7 +12,10 @@ export function PrintFeatureScreen() {
   const {
     frontCards,
     backAssetUrl,
-    usingDefaultBack,
+    backFillsBleedBox,
+    builtinBackId,
+    activeBackLabel,
+    usingCustomBack,
     customBackFileName,
     backAssetLoaded,
     setBackAssetLoaded,
@@ -26,6 +29,7 @@ export function PrintFeatureScreen() {
     clearFronts,
     setCustomBackFromFiles,
     clearCustomBack,
+    selectBuiltinBack,
   } = usePrintFeatureState()
 
   const [includeBleedInExport, setIncludeBleedInExport] = useState(true)
@@ -54,10 +58,11 @@ export function PrintFeatureScreen() {
     () => ({
       frontCards,
       backAssetUrl,
+      backFillsBleedBox,
       sheets: layout.sheets,
       includeBleedInExport,
     }),
-    [frontCards, backAssetUrl, layout.sheets, includeBleedInExport],
+    [frontCards, backAssetUrl, backFillsBleedBox, layout.sheets, includeBleedInExport],
   )
 
   const runExport = async (kind: 'pdf' | 'png') => {
@@ -115,7 +120,8 @@ export function PrintFeatureScreen() {
             frontCards={frontCards}
             onRemoveCard={removeFrontCard}
             onClear={clearFronts}
-            usingDefaultBack={usingDefaultBack}
+            usingCustomBack={usingCustomBack}
+            activeBackLabel={activeBackLabel}
             customBackFileName={customBackFileName}
             onClearBack={clearCustomBack}
             extraSheetCount={layout.totalSheets > 1 ? layout.totalSheets - 1 : 0}
@@ -148,8 +154,28 @@ export function PrintFeatureScreen() {
             <section className="panel">
               <h2>Card back</h2>
               <p className="panel-subtitle">
-                Backs are centered at their real size on a black 2.75×3.75 in box. They are not stretched.
-                Upload your own in the footer, or keep the default.
+                Default back stays at its real size. Magic back fills the black 2.75×3.75 in box. An upload
+                from the footer is centered until you pick a built-in back again.
+              </p>
+              <div className="back-choice" role="radiogroup" aria-label="Card back">
+                {printBuiltinBacks.map((back) => {
+                  const selected = !usingCustomBack && builtinBackId === back.id
+                  return (
+                    <button
+                      key={back.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      className={selected ? 'is-selected' : undefined}
+                      onClick={() => selectBuiltinBack(back.id)}
+                    >
+                      {back.label}
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="upload-meta">
+                <strong>{usingCustomBack ? 'Using your upload' : activeBackLabel}</strong>
               </p>
               <p className={`status-chip ${backAssetLoaded ? 'ok' : 'warn'}`}>
                 {backAssetLoaded ? 'Back image is ready' : 'Back image is still loading'}
@@ -177,6 +203,7 @@ export function PrintFeatureScreen() {
               frontCards={frontCards}
               backAssetUrl={backAssetUrl}
               backSourceSize={backSourceSize}
+              backFillsBleedBox={backFillsBleedBox}
               includeBleed={includeBleedInExport}
             />
             <PrintSheetPreview
@@ -187,6 +214,7 @@ export function PrintFeatureScreen() {
               frontCards={frontCards}
               backAssetUrl={backAssetUrl}
               backSourceSize={backSourceSize}
+              backFillsBleedBox={backFillsBleedBox}
               includeBleed={includeBleedInExport}
             />
           </div>

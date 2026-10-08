@@ -27,10 +27,29 @@ const MARK_OUTSIDE_GAP_PX = 20
 const MARK_LENGTH_PX = 40
 const MARK_REACH_PX = MARK_OUTSIDE_GAP_PX + MARK_LENGTH_PX
 
+/** Built-in sheet backs. Only the Magic back is full-bleed art and fills the slot. */
+export const printBuiltinBacks = [
+  {
+    id: 'default',
+    label: 'Default back',
+    path: '/assets/print/card-back.png',
+    fillBleedBox: false,
+  },
+  {
+    id: 'magic-bleed',
+    label: 'Magic back',
+    path: '/assets/print/magic-card-back-bleed.png',
+    fillBleedBox: true,
+  },
+] as const
+
+export type PrintBuiltinBackId = (typeof printBuiltinBacks)[number]['id']
+
 /** Namespaced print layout authority. Card pixels match the PLUS-1 600 DPI exporter. */
 export const printFeatureAuthority = {
   assets: {
-    canonicalBackAssetPath: '/assets/print/card-back.png',
+    canonicalBackAssetPath: printBuiltinBacks[0].path,
+    builtinBacks: printBuiltinBacks,
   },
   page: {
     name: 'US Letter Portrait',

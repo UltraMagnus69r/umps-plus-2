@@ -15,6 +15,8 @@ import type {
 export interface PrintExportContext {
   frontCards: PrintUploadedFrontCard[]
   backAssetUrl: string
+  /** Built-in Magic back fills the bleed box. Default and uploaded backs stay centered. */
+  backFillsBleedBox?: boolean
   sheets: PrintSheetLayout[]
   /** When false, each card is clipped to trim (no bleed margin); cut marks are omitted. Default true. */
   includeBleedInExport?: boolean
@@ -97,6 +99,7 @@ async function renderSheetCanvas(
   frontImageMap: Map<string, HTMLImageElement>,
   backImage: HTMLImageElement,
   includeBleedInExport: boolean,
+  backFillsBleedBox: boolean,
 ): Promise<HTMLCanvasElement> {
   const canvas = document.createElement('canvas')
   canvas.width = printFeatureAuthority.page.widthPx
@@ -116,7 +119,7 @@ async function renderSheetCanvas(
     if (!image) return
     const sourceW = image.naturalWidth || image.width
     const sourceH = image.naturalHeight || image.height
-    const fillBleedBox = side === 'front' && frontImageIncludesBleed(sourceW, sourceH)
+    const fillBleedBox = side === 'front' ? frontImageIncludesBleed(sourceW, sourceH) : backFillsBleedBox
     drawCardIntoSlot(ctx, placement, image, includeBleedInExport, fillBleedBox)
   })
 
@@ -146,6 +149,7 @@ function sheetBaseName(includeBleed: boolean) {
 
 export async function exportPrintFullSetPdf(context: PrintExportContext) {
   const includeBleedInExport = context.includeBleedInExport !== false
+  const backFillsBleedBox = context.backFillsBleedBox === true
   const { frontImageMap, backImage } = await buildImageMap(context.frontCards, context.backAssetUrl)
   const { sheets } = context
   const { wPt, hPt } = pageSizePt()
@@ -172,11 +176,11 @@ export async function exportPrintFullSetPdf(context: PrintExportContext) {
   }
 
   for (let index = 0; index < sheets.length; index += 1) {
-    const canvas = await renderSheetCanvas('front', sheets[index], frontImageMap, backImage, includeBleedInExport)
+    const canvas = await renderSheetCanvas('front', sheets[index], frontImageMap, backImage, includeBleedInExport, backFillsBleedBox)
     addCanvasPage(canvas)
   }
   for (let index = 0; index < sheets.length; index += 1) {
-    const canvas = await renderSheetCanvas('back', sheets[index], frontImageMap, backImage, includeBleedInExport)
+    const canvas = await renderSheetCanvas('back', sheets[index], frontImageMap, backImage, includeBleedInExport, backFillsBleedBox)
     addCanvasPage(canvas)
   }
 
@@ -196,6 +200,7 @@ function downloadBlob(blob: Blob, filename: string) {
 
 export async function exportPrintFullSetPng(context: PrintExportContext) {
   const includeBleedInExport = context.includeBleedInExport !== false
+  const backFillsBleedBox = context.backFillsBleedBox === true
   const { frontImageMap, backImage } = await buildImageMap(context.frontCards, context.backAssetUrl)
   const suffix = includeBleedInExport ? '' : '-trim'
 
@@ -203,7 +208,7 @@ export async function exportPrintFullSetPng(context: PrintExportContext) {
     const sheet = context.sheets[index]
     const sheetNo = String(sheet.sheetIndex + 1).padStart(2, '0')
     for (const side of ['front', 'back'] as const) {
-      const canvas = await renderSheetCanvas(side, sheet, frontImageMap, backImage, includeBleedInExport)
+      const canvas = await renderSheetCanvas(side, sheet, frontImageMap, backImage, includeBleedInExport, backFillsBleedBox)
       const blob = await exportCanvasPng600Dpi(canvas)
       downloadBlob(blob, `proxy-sheet-${sheetNo}-${side}${suffix}-600dpi.png`)
       await new Promise((resolve) => window.setTimeout(resolve, 300))

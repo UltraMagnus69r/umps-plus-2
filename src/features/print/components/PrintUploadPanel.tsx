@@ -4,7 +4,8 @@ interface PrintUploadPanelProps {
   frontCards: PrintUploadedFrontCard[]
   onRemoveCard: (cardId: string) => void
   onClear: () => void
-  usingDefaultBack: boolean
+  usingCustomBack: boolean
+  activeBackLabel: string
   customBackFileName: string | null
   onClearBack: () => void
   extraSheetCount: number
@@ -14,7 +15,8 @@ export function PrintUploadPanel({
   frontCards,
   onRemoveCard,
   onClear,
-  usingDefaultBack,
+  usingCustomBack,
+  activeBackLabel,
   customBackFileName,
   onClearBack,
   extraSheetCount,
@@ -58,15 +60,15 @@ export function PrintUploadPanel({
 
       <hr className="upload-divider" />
       <h2 className="upload-subheading">Back image</h2>
-      <p className="panel-subtitle">Switch back to the built-in image whenever you like.</p>
+      <p className="panel-subtitle">Pick Default back or Magic back in the card back panel, or upload your own.</p>
       <div className="upload-actions">
-        <button type="button" onClick={onClearBack} disabled={usingDefaultBack}>
-          Use default back
+        <button type="button" onClick={onClearBack} disabled={!usingCustomBack}>
+          Clear uploaded back
         </button>
       </div>
       <div className="upload-meta">
-        <strong>{usingDefaultBack ? 'Using the default back' : 'Using your upload'}</strong>
-        {!usingDefaultBack && customBackFileName ? <span>{customBackFileName}</span> : null}
+        <strong>{usingCustomBack ? 'Using your upload' : activeBackLabel}</strong>
+        {usingCustomBack && customBackFileName ? <span>{customBackFileName}</span> : null}
       </div>
     </section>
   )

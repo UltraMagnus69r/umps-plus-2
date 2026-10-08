@@ -9,6 +9,7 @@ interface PrintSheetPreviewProps {
   frontCards: PrintUploadedFrontCard[]
   backAssetUrl: string
   backSourceSize: { width: number; height: number }
+  backFillsBleedBox: boolean
   includeBleed: boolean
 }
 
@@ -26,9 +27,10 @@ function imageBox(
   placement: PrintPlacement,
   frontCards: PrintUploadedFrontCard[],
   backSourceSize: { width: number; height: number },
+  backFillsBleedBox: boolean,
 ) {
   if (side === 'back') {
-    return { widthPx: backSourceSize.width, heightPx: backSourceSize.height, fillBleedBox: false }
+    return { widthPx: backSourceSize.width, heightPx: backSourceSize.height, fillBleedBox: backFillsBleedBox }
   }
   const card = getFrontCard(placement.cardId, frontCards)
   const widthPx = card?.widthPx ?? 0
@@ -69,6 +71,7 @@ export function PrintSheetPreview({
   frontCards,
   backAssetUrl,
   backSourceSize,
+  backFillsBleedBox,
   includeBleed,
 }: PrintSheetPreviewProps) {
   return (
@@ -83,7 +86,7 @@ export function PrintSheetPreview({
           {placements.map((placement) => {
             const front = getFrontCard(placement.cardId, frontCards)
             const src = side === 'front' ? (front?.url ?? '') : backAssetUrl
-            const image = imageBox(side, placement, frontCards, backSourceSize)
+            const image = imageBox(side, placement, frontCards, backSourceSize, backFillsBleedBox)
             const rotation = placement.rotationDeg ?? 0
             const fullLeft = placement.xPx * SCALE
             const fullTop = placement.yPx * SCALE

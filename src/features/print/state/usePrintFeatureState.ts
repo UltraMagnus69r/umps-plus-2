@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { createPrintPagePlacements, printFeatureAuthority } from '../authority/printFeatureAuthority'
+import {
+  createPrintPagePlacements,
+  printBuiltinBacks,
+  type PrintBuiltinBackId,
+} from '../authority/printFeatureAuthority'
 import type { PrintPageLayoutResult, PrintUploadedFrontCard } from '../types/printFeature'
-
-const DEFAULT_BACK_ASSET_URL = printFeatureAuthority.assets.canonicalBackAssetPath
 
 function createCardId(file: File, index: number, offset: number) {
   return `${file.name}-${file.size}-${file.lastModified}-${offset + index}`
@@ -14,14 +16,18 @@ function isRenderableImageFile(file: File) {
 
 export function usePrintFeatureState() {
   const [frontCards, setFrontCards] = useState<PrintUploadedFrontCard[]>([])
+  const [builtinBackId, setBuiltinBackId] = useState<PrintBuiltinBackId>('default')
   const [customBackObjectUrl, setCustomBackObjectUrl] = useState<string | null>(null)
   const [customBackFileName, setCustomBackFileName] = useState<string | null>(null)
   const [backAssetLoaded, setBackAssetLoaded] = useState(false)
   const [backSourceSize, setBackSourceSize] = useState({ width: 0, height: 0 })
   const [activeSheetIndex, setActiveSheetIndex] = useState(0)
 
-  const backAssetUrl = customBackObjectUrl ?? DEFAULT_BACK_ASSET_URL
-  const usingDefaultBack = customBackObjectUrl === null
+  const builtinBack = printBuiltinBacks.find((back) => back.id === builtinBackId) ?? printBuiltinBacks[0]
+  const usingCustomBack = customBackObjectUrl !== null
+  const backAssetUrl = customBackObjectUrl ?? builtinBack.path
+  const backFillsBleedBox = usingCustomBack ? false : builtinBack.fillBleedBox
+  const activeBackLabel = usingCustomBack ? 'Your upload' : builtinBack.label
 
   useEffect(() => {
     return () => {
@@ -44,6 +50,12 @@ export function usePrintFeatureState() {
   }, [])
 
   const clearCustomBack = useCallback(() => {
+    setCustomBackObjectUrl(null)
+    setCustomBackFileName(null)
+  }, [])
+
+  const selectBuiltinBack = useCallback((id: PrintBuiltinBackId) => {
+    setBuiltinBackId(id)
     setCustomBackObjectUrl(null)
     setCustomBackFileName(null)
   }, [])
@@ -102,7 +114,10 @@ export function usePrintFeatureState() {
   return {
     frontCards,
     backAssetUrl,
-    usingDefaultBack,
+    backFillsBleedBox,
+    builtinBackId,
+    activeBackLabel,
+    usingCustomBack,
     customBackFileName,
     backAssetLoaded,
     setBackAssetLoaded,
@@ -116,5 +131,6 @@ export function usePrintFeatureState() {
     clearFronts,
     setCustomBackFromFiles,
     clearCustomBack,
+    selectBuiltinBack,
   }
 }
