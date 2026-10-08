@@ -60,7 +60,7 @@ export function shouldShowFlavorTextField(input: ProgressiveDisclosureSidebarInp
 export function shouldShowPowerToughnessCoreBlock(input: ProgressiveDisclosureSidebarInput): boolean {
   if (input.layoutFamily === 'land' || input.layoutFamily === 'planeswalker') return false
   return (
-    (input.layoutFamily === 'standard' || input.layoutFamily === 'special') &&
+    input.layoutFamily === 'standard' &&
     shouldShowExpandedCoreCardInputs(input.capabilities)
   )
 }
@@ -130,12 +130,6 @@ export function shouldShowPreModernTextBoxSelector(input: {
     return true
   }
   if (
-    input.layoutFamily === 'special' &&
-    (input.layout.variant === 'ascendant' || input.layout.variant === 'tarot')
-  ) {
-    return false
-  }
-  if (
     input.layoutFamily === 'land' &&
     (input.layout.variant === 'modern' || input.layout.variant === 'borderless')
   ) {
@@ -162,7 +156,7 @@ export function shouldShowPtPanelGradientField(capabilities: LayoutCapabilityFla
 }
 
 export function shouldShowLayoutCapabilityPtSummaryLine(family: LayoutFamily): boolean {
-  return family === 'standard' || family === 'special'
+  return family === 'standard'
 }
 
 /** Planeswalker structured inputs (static + loyalty rows) — Phase 2 UI; gate on capability for now. */

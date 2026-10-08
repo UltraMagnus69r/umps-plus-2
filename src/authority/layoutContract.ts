@@ -62,14 +62,6 @@ export type LayoutCapabilityFlags = {
   supportsPlaneswalkerAbilities: boolean
   /** Planeswalker / Modern V2 — bowed art frame, rounded rules recess, badge gutter outside rules box. */
   supportsPlaneswalkerModernV2Layout: boolean
-  /** Special / Ascendant: custom chrome polygons + region placement (FrameLayer plates skipped). */
-  useAscendantLayout: boolean
-  /** Special / Ascendant: floating vertical mana column (suppresses name-bar mana). */
-  useAscendantManaColumn: boolean
-  /** Special / Tarot: engraved arched chrome + Tarot regions (FrameLayer plates skipped). */
-  useTarotLayout: boolean
-  /** Special / Tarot: upper-right mana sockets (suppresses name-bar mana). */
-  useTarotManaColumn: boolean
 }
 
 export type BleedBehavior = 'trim-contained' | 'edge-to-bleed'
@@ -115,10 +107,6 @@ const DEFAULT_CAPABILITIES: LayoutCapabilityFlags = {
   supportsStartingLoyaltyBox: false,
   supportsPlaneswalkerAbilities: false,
   supportsPlaneswalkerModernV2Layout: false,
-  useAscendantLayout: false,
-  useAscendantManaColumn: false,
-  useTarotLayout: false,
-  useTarotManaColumn: false,
 }
 
 const DEFAULT_COMPLIANCE: ComplianceMetadata = {

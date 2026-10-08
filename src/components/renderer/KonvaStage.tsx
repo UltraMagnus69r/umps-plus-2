@@ -16,10 +16,6 @@ import { useCardStore } from '../../store/useCardStore'
 import ArtLayer from './layers/ArtLayer'
 import TextureBorderLayer from './layers/TextureBorderLayer'
 import FrameLayer from './layers/FrameLayer'
-import AscendantChromeLayer from './layers/AscendantChromeLayer'
-import AscendantManaColumnLayer from './layers/AscendantManaColumnLayer'
-import TarotChromeLayer from './layers/TarotChromeLayer'
-import TarotManaColumnLayer from './layers/TarotManaColumnLayer'
 import LandFullArtManaCircleLayer from './layers/LandFullArtManaCircleLayer'
 import RulesTextBoxTextureLayer from './layers/RulesTextBoxTextureLayer'
 import WatermarkLayer from './layers/WatermarkLayer'
@@ -235,16 +231,12 @@ function KonvaStage({
             <TextureBorderLayer />
             <ArtLayer />
             <FrameLayer />
-            {layoutCaps.useAscendantLayout ? <AscendantChromeLayer /> : null}
-            {layoutCaps.useTarotLayout ? <TarotChromeLayer /> : null}
             {showRulesTexture ? <RulesTextBoxTextureLayer /> : null}
             <WatermarkLayer />
             {layoutCaps.supportsLandSecondaryArtInRulesRegion ? <LandSecondaryArtLayer /> : null}
             {layoutCaps.supportsSpellTextBoxPanel ? <SpellTextBoxLayer /> : null}
             {showBundledRulesPanel ? <PreModernRulesTextBoxLayer /> : null}
             {layoutCaps.useLandFullArtManaCircle ? <LandFullArtManaCircleLayer /> : null}
-            {layoutCaps.useAscendantLayout ? <AscendantManaColumnLayer /> : null}
-            {layoutCaps.useTarotManaColumn ? <TarotManaColumnLayer /> : null}
             <TextIconsLayer />
             {layoutCaps.supportsPlaneswalkerAbilities ? <PlaneswalkerAbilitiesLayer /> : null}
             <SetSymbolLayer />

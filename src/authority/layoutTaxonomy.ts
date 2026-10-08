@@ -1,14 +1,12 @@
 import { getPlaneswalkerModernV2InnerBorderCornerRadius } from './planeswalkerModernV2LayoutAuthority'
 import { MODERN_DUMMY_INNER_BORDER_EXTRA_HEIGHT_PX } from './modernDummyLayoutAuthority'
-import { getAscendantBorderGeometry } from './ascendantLayoutAuthority'
-import { getTarotBorderGeometry } from './tarotLayoutAuthority'
 import type { CardLayoutMode } from './geometryAuthority'
 import {
   INNER_BORDER_CORNER_RADIUS_MODERN,
   SPELL_PRE_MODERN_INNER_BORDER_CORNER_RADIUS_PX,
 } from './geometryAuthority'
 
-export type LayoutFamily = 'standard' | 'land' | 'spell' | 'planeswalker' | 'special'
+export type LayoutFamily = 'standard' | 'land' | 'spell' | 'planeswalker'
 
 export type LayoutVariant =
   | 'modern'
@@ -18,8 +16,6 @@ export type LayoutVariant =
   | 'full-art'
   | 'saga'
   | 'class'
-  | 'ascendant'
-  | 'tarot'
 
 export type LayoutId = {
   family: LayoutFamily
@@ -36,7 +32,6 @@ export const layoutCompatibility: Record<LayoutFamily, readonly LayoutVariant[]>
   land: ['modern', 'pre-modern', 'borderless', 'full-art'],
   spell: ['modern', 'pre-modern', 'saga', 'class'],
   planeswalker: ['modern', 'modern-v2', 'pre-modern', 'borderless', 'full-art'],
-  special: ['ascendant', 'tarot'],
 }
 
 export const LAYOUT_FAMILY_LABELS: Record<LayoutFamily, string> = {
@@ -44,7 +39,6 @@ export const LAYOUT_FAMILY_LABELS: Record<LayoutFamily, string> = {
   land: 'Land',
   spell: 'Spell',
   planeswalker: 'Planeswalker',
-  special: 'Special',
 }
 
 export const LAYOUT_VARIANT_LABELS: Record<LayoutVariant, string> = {
@@ -55,8 +49,6 @@ export const LAYOUT_VARIANT_LABELS: Record<LayoutVariant, string> = {
   'full-art': 'Full Art',
   saga: 'Saga',
   class: 'Class',
-  ascendant: 'Ascendant',
-  tarot: 'Tarot',
 }
 
 export function getLayoutFamilyLabel(family: LayoutFamily): string {
@@ -85,8 +77,7 @@ function normalizeFamily(value: unknown): LayoutFamily {
     value === 'standard' ||
     value === 'land' ||
     value === 'spell' ||
-    value === 'planeswalker' ||
-    value === 'special'
+    value === 'planeswalker'
   )
     return value
   return DEFAULT_LAYOUT_ID.family
@@ -105,9 +96,7 @@ function normalizeVariant(value: unknown): LayoutVariant {
     value === 'borderless' ||
     value === 'full-art' ||
     value === 'saga' ||
-    value === 'class' ||
-    value === 'ascendant' ||
-    value === 'tarot'
+    value === 'class'
   )
     return value
   return DEFAULT_LAYOUT_ID.variant
@@ -125,6 +114,13 @@ export function normalizeLayout(layout: Partial<LayoutId> | null | undefined): L
     return { family: 'planeswalker', variant: 'modern' }
   }
   if (legacyFamily === 'warframe') return { family: 'standard', variant: 'modern' }
+  if (
+    legacyFamily === 'special' ||
+    legacyVariant === 'ascendant' ||
+    legacyVariant === 'tarot'
+  ) {
+    return { family: 'standard', variant: 'modern' }
+  }
   const family = normalizeFamily(layout?.family)
   const variant = normalizeVariant(layout?.variant)
   if (isVariantCompatible(family, variant)) return { family, variant }
@@ -225,18 +221,6 @@ export function isPlaneswalkerModernAbilityBoxLayout(layout: Partial<LayoutId> |
   )
 }
 
-/** Special / Ascendant layout (custom chrome + floating mana column). */
-export function isSpecialAscendantLayout(layout: Partial<LayoutId> | null | undefined): boolean {
-  const normalized = normalizeLayout(layout)
-  return normalized.family === 'special' && normalized.variant === 'ascendant'
-}
-
-/** Special / Tarot layout (engraved arched chrome + upper-right mana sockets). */
-export function isSpecialTarotLayout(layout: Partial<LayoutId> | null | undefined): boolean {
-  const normalized = normalizeLayout(layout)
-  return normalized.family === 'special' && normalized.variant === 'tarot'
-}
-
 /** Standard or Land family Modern or Borderless variant (pre-modern art column + modern plates). */
 export function isModernDummyLayout(layout: Partial<LayoutId> | null | undefined): boolean {
   const normalized = normalizeLayout(layout)
@@ -265,8 +249,6 @@ export function isSpellPreModernLayout(layout: Partial<LayoutId> | null | undefi
 export function getInnerBorderCornerRadius(
   layout: Partial<LayoutId> | null | undefined,
 ): number | readonly number[] {
-  if (isSpecialAscendantLayout(layout)) return getAscendantBorderGeometry().inner.cornerRadius
-  if (isSpecialTarotLayout(layout)) return getTarotBorderGeometry().inner.cornerRadius
   if (isPreModernLayout(layout)) return SPELL_PRE_MODERN_INNER_BORDER_CORNER_RADIUS_PX
   if (isPlaneswalkerModernV2Layout(layout)) return getPlaneswalkerModernV2InnerBorderCornerRadius()
   return INNER_BORDER_CORNER_RADIUS_MODERN
@@ -289,24 +271,6 @@ export function getInnerBorderStageRect(
   layout: Partial<LayoutId> | null | undefined,
   frame: InnerBorderFrameInput,
 ): Pick<InnerBorderFrameInput, 'innerX' | 'innerY' | 'innerW' | 'innerH'> {
-  if (isSpecialAscendantLayout(layout)) {
-    const inner = getAscendantBorderGeometry().inner
-    return {
-      innerX: inner.x,
-      innerY: inner.y,
-      innerW: inner.width,
-      innerH: inner.height,
-    }
-  }
-  if (isSpecialTarotLayout(layout)) {
-    const inner = getTarotBorderGeometry().inner
-    return {
-      innerX: inner.x,
-      innerY: inner.y,
-      innerW: inner.width,
-      innerH: inner.height,
-    }
-  }
   if (isModernDummyLayout(layout)) {
     return {
       innerX: frame.innerX,

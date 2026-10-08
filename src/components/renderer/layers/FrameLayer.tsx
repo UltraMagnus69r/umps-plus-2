@@ -188,13 +188,11 @@ function FrameLayer() {
     supportsModernDummyLayout,
     supportsPlaneswalkerModernV2Layout,
     useLandFullArtManaCircle,
-    useAscendantLayout,
-    useTarotLayout,
   } = getActiveLayoutCapabilitiesFromState({
     currentLayout,
     cardData: { layout: activeLayout },
   })
-  const borderlessLike = isBorderlessArtTreatmentLayout(activeLayout) || useAscendantLayout || useTarotLayout
+  const borderlessLike = isBorderlessArtTreatmentLayout(activeLayout)
   const preModernShiftY = isPreModernLayout(activeLayout) ? getPreModernLayoutVerticalShiftPx() : 0
   const nameYEff = nameY - preModernShiftY
   const artYEff = artY - preModernShiftY
@@ -242,16 +240,7 @@ function FrameLayer() {
   }, [supportsModernDummyLayout, contractRegions.typeLine, plateOuterFromInner])
 
   const contractArtFrame = useMemo(() => {
-    if (!supportsModernDummyLayout && !supportsPreModernFaceLayout && !useAscendantLayout && !useTarotLayout) return null
-    if (useAscendantLayout || useTarotLayout) {
-      const inner = layoutRegionToStageRect(contractRegions.art)
-      return {
-        x: inner.x,
-        y: inner.y,
-        width: inner.width,
-        height: inner.height,
-      }
-    }
+    if (!supportsModernDummyLayout && !supportsPreModernFaceLayout) return null
     const inner = isStandardModernBorderlessLayout(activeLayout)
       ? buildModernDummyStageRects().art
       : layoutRegionToStageRect(contractRegions.art)
@@ -261,7 +250,7 @@ function FrameLayer() {
       width: inner.width + 2 * BEVEL_INSET,
       height: inner.height + 2 * BEVEL_INSET,
     }
-  }, [supportsModernDummyLayout, supportsPreModernFaceLayout, useAscendantLayout, useTarotLayout, contractRegions.art, activeLayout])
+  }, [supportsModernDummyLayout, supportsPreModernFaceLayout, contractRegions.art, activeLayout])
 
   const modernV2ArtOuter = useMemo(() => {
     if (!supportsPlaneswalkerModernV2Layout) return null

@@ -21,8 +21,6 @@ import {
   TYPO_PT_BOX_REF_PX,
 } from '../../../authority/typographyAuthority'
 import { type LayoutId } from '../../../authority/layoutTaxonomy'
-import { getAscendantPtBoxGeometryStage } from '../../../authority/ascendantLayoutAuthority'
-import { getTarotPtBoxGeometryStage } from '../../../authority/tarotLayoutAuthority'
 import { landFullArtManaCircleKeyToBracketToken } from '../../../authority/landFullArtManaCircle'
 import { resolveProceduralIdentity, useCardStore } from '../../../store/useCardStore'
 import { createBoxPanelInnerFillStyle, resolveReadableInkOnBoxPanel } from '../../../authority/boxPanelFillAuthority'
@@ -168,7 +166,7 @@ function PowerToughnessOverlayLayer() {
     ],
   )
 
-  const { supportsPowerToughnessBox, supportsModernDummyLayout, supportsFloatingTextTreatment, useLandFullArtManaCircle, useAscendantLayout, useTarotLayout } =
+  const { supportsPowerToughnessBox, supportsModernDummyLayout, supportsFloatingTextTreatment, useLandFullArtManaCircle } =
     getActiveLayoutCapabilitiesFromState({
       currentLayout,
       cardData: { layout: activeLayout },
@@ -186,9 +184,6 @@ function PowerToughnessOverlayLayer() {
     cardData: { layout: activeLayout },
   })
   const lowerRightRect = activeRegions.lowerRight ? layoutRegionToStageRect(activeRegions.lowerRight.rect) : null
-  const ascendantPt = useAscendantLayout ? getAscendantPtBoxGeometryStage() : null
-  const tarotPt = useTarotLayout ? getTarotPtBoxGeometryStage() : null
-  const specialPt = tarotPt ?? ascendantPt
   const effectivePtBarShape = resolveEffectiveNameplateShape(bezierPlateEnabled, ptBarShape)
 
   /** Shift P/T left when reverse Bezier: flat top/bottom right ends at rules box right edge. */
@@ -199,18 +194,17 @@ function PowerToughnessOverlayLayer() {
   }, [lowerRightRect, effectivePtBarShape, ptX, artW, ptW, typeW, rulesX, rulesW])
 
   const ptInnerXEff =
-    specialPt?.text.x ??
     lowerRightRect?.x ??
     (effectivePtBarShape === 'reverseBezierPlate' && !lowerRightRect ? ptXEff + BEVEL_INSET : ptInnerX)
-  const ptInnerYEff = specialPt?.text.y ?? lowerRightRect?.y ?? ptInnerY
-  const ptInnerWEff = specialPt?.text.width ?? lowerRightRect?.width ?? ptInnerW
-  const ptInnerHEff = specialPt?.text.height ?? lowerRightRect?.height ?? ptInnerH
+  const ptInnerYEff = lowerRightRect?.y ?? ptInnerY
+  const ptInnerWEff = lowerRightRect?.width ?? ptInnerW
+  const ptInnerHEff = lowerRightRect?.height ?? ptInnerH
 
-  const useContractPtSlot = Boolean((supportsModernDummyLayout || useAscendantLayout || useTarotLayout) && lowerRightRect)
-  const ptFrameX = specialPt?.outer.x ?? (useContractPtSlot ? lowerRightRect!.x - BEVEL_INSET : ptXEff)
-  const ptFrameY = specialPt?.outer.y ?? (useContractPtSlot ? lowerRightRect!.y - BEVEL_INSET : ptY)
-  const ptFrameW = specialPt?.outer.width ?? (useContractPtSlot ? lowerRightRect!.width + 2 * BEVEL_INSET : ptW)
-  const ptFrameH = specialPt?.outer.height ?? (useContractPtSlot ? lowerRightRect!.height + 2 * BEVEL_INSET : ptH)
+  const useContractPtSlot = Boolean(supportsModernDummyLayout && lowerRightRect)
+  const ptFrameX = useContractPtSlot ? lowerRightRect!.x - BEVEL_INSET : ptXEff
+  const ptFrameY = useContractPtSlot ? lowerRightRect!.y - BEVEL_INSET : ptY
+  const ptFrameW = useContractPtSlot ? lowerRightRect!.width + 2 * BEVEL_INSET : ptW
+  const ptFrameH = useContractPtSlot ? lowerRightRect!.height + 2 * BEVEL_INSET : ptH
 
   /**
    * UMPS adjustment (doc 04, group B): the GENERATED proxy P/T capsule is drawn at
@@ -295,7 +289,7 @@ function PowerToughnessOverlayLayer() {
     return { reverseHorizontalSpan: { pathX, pathW } }
   }, [effectivePtBarShape, ptReversePlateSpan, ptFrameW])
 
-  const ptCornerRadius = specialPt?.cornerRadius ?? barRadius
+  const ptCornerRadius = barRadius
 
   const drawPtBody = useCallback(
     (ctx: CanvasRenderingContext2D, _shape: Konva.Shape) => {
@@ -353,11 +347,11 @@ function PowerToughnessOverlayLayer() {
   const floorToHalfPx = useCallback((v: number) => Math.floor(v * 2) / 2, [])
   const ptDisplayFontSize = useMemo(() => {
     const target = typographyPtToStagePx(ptTypography.sizePt, TYPO_PT_BOX_REF_PX)
-    const heightCap = useAscendantLayout || useTarotLayout ? ptInnerHEff * 0.72 : ptInnerHEff * 0.92
-    return floorToHalfPx(Math.min(target, Math.max(useAscendantLayout || useTarotLayout ? 22 : 28, heightCap)))
-  }, [ptTypography.sizePt, ptInnerHEff, floorToHalfPx, useAscendantLayout, useTarotLayout])
-  const ptTextPadX = useAscendantLayout || useTarotLayout ? 0 : 6
-  const ptTextPadY = useAscendantLayout || useTarotLayout ? 0 : 2
+    const heightCap = ptInnerHEff * 0.92
+    return floorToHalfPx(Math.min(target, Math.max(28, heightCap)))
+  }, [ptTypography.sizePt, ptInnerHEff, floorToHalfPx])
+  const ptTextPadX = 6
+  const ptTextPadY = 2
 
   if (!showPowerToughnessEffective) {
     return null

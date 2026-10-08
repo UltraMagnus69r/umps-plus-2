@@ -1,5 +1,5 @@
 import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Group, Image, Layer, Text, Ellipse, Line } from 'react-konva'
+import { Group, Image, Layer, Text, Ellipse } from 'react-konva'
 import Konva from 'konva'
 import { shallow } from 'zustand/shallow'
 import { getStandardLayoutGeometry, METADATA_FONT_SIZE, SPELL_PRE_MODERN_NAME_STRIP_PADDING_PX, SPELL_PRE_MODERN_RULES_TEXT_SHIFT_UP_PX, SPELL_PRE_MODERN_RULES_TOP_PADDING_PX, SPELL_PRE_MODERN_SET_SYMBOL_SCALE, SPELL_PRE_MODERN_TYPE_LINE_STRIP_PADDING_PX, STAGE_WIDTH, BEVEL_INSET } from '../../../authority/geometryAuthority'
@@ -12,12 +12,6 @@ import {
   resolveSpellPreModernRulesInnerRect,
 } from '../../../authority/spellPreModernLayoutAuthority'
 import { MODERN_DUMMY_MANA_PIP_SCALE, MODERN_COLLECTOR_DATA_DOWN_NUDGE_PX, MODERN_PLATE_TEXT_STROKE_COLOR, MODERN_PLATE_TEXT_STROKE_PX } from '../../../authority/modernDummyLayoutAuthority'
-import {
-  ASCENDANT_COLLECTOR_DATA_DOWN_NUDGE_PX,
-  ASCENDANT_EXPANSION_SYMBOL_FILL,
-  buildAscendantStageRects,
-} from '../../../authority/ascendantLayoutAuthority'
-import { buildTarotStageRects, TAROT_GEOMETRY } from '../../../authority/tarotLayoutAuthority'
 import { PW_MODERN_V2_COLLECTOR_DATA_DOWN_NUDGE_PX, PW_MODERN_V2_HOLOGRAM_DOWN_NUDGE_PX } from '../../../authority/planeswalkerModernV2LayoutAuthority'
 import { getPreModernTextBoxOuterRect } from '../../../authority/preModernTextBoxAuthority'
 import { resolveCardCopyright } from '../../../authority/collectorDataAuthority'
@@ -271,21 +265,14 @@ function TextIconsLayer() {
   const supportsPowerToughnessBox = activeCapabilities.supportsPowerToughnessBox
   const supportsModernDummyLayout = activeCapabilities.supportsModernDummyLayout
   const supportsPlaneswalkerModernV2Layout = activeCapabilities.supportsPlaneswalkerModernV2Layout
-  const useAscendantLayout = activeCapabilities.useAscendantLayout
-  const useTarotLayout = activeCapabilities.useTarotLayout
-  const specialPlateLayout = useAscendantLayout || useTarotLayout
-  const ascendantRects = useAscendantLayout ? buildAscendantStageRects() : null
-  const tarotRects = useTarotLayout ? buildTarotStageRects() : null
   const collectorDataYAdjust = supportsPlaneswalkerModernV2Layout
     ? PW_MODERN_V2_COLLECTOR_DATA_DOWN_NUDGE_PX
-    : useAscendantLayout
-      ? ASCENDANT_COLLECTOR_DATA_DOWN_NUDGE_PX
-      : supportsModernDummyLayout
-        ? MODERN_COLLECTOR_DATA_DOWN_NUDGE_PX
-        : 0
+    : supportsModernDummyLayout
+      ? MODERN_COLLECTOR_DATA_DOWN_NUDGE_PX
+      : 0
   const hologramYAdjust = supportsPlaneswalkerModernV2Layout ? PW_MODERN_V2_HOLOGRAM_DOWN_NUDGE_PX : 0
-  const modernPlateTextStroke = supportsModernDummyLayout || specialPlateLayout ? MODERN_PLATE_TEXT_STROKE_COLOR : undefined
-  const modernPlateTextStrokeWidth = supportsModernDummyLayout || specialPlateLayout ? MODERN_PLATE_TEXT_STROKE_PX : 0
+  const modernPlateTextStroke = supportsModernDummyLayout ? MODERN_PLATE_TEXT_STROKE_COLOR : undefined
+  const modernPlateTextStrokeWidth = supportsModernDummyLayout ? MODERN_PLATE_TEXT_STROKE_PX : 0
   const nameManaIconSize = supportsPreModernFaceLayout
     ? getSpellPreModernManaCostIconSizePx()
     : supportsModernDummyLayout
@@ -322,18 +309,9 @@ function TextIconsLayer() {
   const ptInnerH = lowerRightRect?.height ?? layout.ptInnerH
   const metadataLeftX = metadataRect.x
   const metadataRightX = metadataRect.x + metadataRect.width
-  const metadataLeftY = useAscendantLayout || useTarotLayout ? metadataRect.y : layout.metadataLeftY
-  const metadataBaseline2 =
-    useTarotLayout
-      ? TAROT_GEOMETRY.collectorSecondary.y
-      : useAscendantLayout
-        ? metadataRect.y + Math.round(metadataRect.height * 0.55)
-        : layout.metadataBaseline2
-  const copyrightY = useTarotLayout
-    ? TAROT_GEOMETRY.collectorSecondary.y + TAROT_GEOMETRY.collectorSecondary.height
-    : useAscendantLayout
-      ? metadataRect.y + metadataRect.height
-      : layout.copyrightY
+  const metadataLeftY = layout.metadataLeftY
+  const metadataBaseline2 = layout.metadataBaseline2
+  const copyrightY = layout.copyrightY
 
   const preModernFaceText = supportsPreModernFooterLayout
 
@@ -343,7 +321,7 @@ function TextIconsLayer() {
   const typeLineIconGap = 8
   const hasCustomSetIcon = Boolean(String(setIconImage ?? '').trim())
   const hasScryfallSetSlot = !hasCustomSetIcon && Boolean(String(set ?? '').trim())
-  const reserveTypeLineForSetSymbol = !specialPlateLayout && (hasCustomSetIcon || hasScryfallSetSlot)
+  const reserveTypeLineForSetSymbol = hasCustomSetIcon || hasScryfallSetSlot
   const typeLineMaxWidth = Math.max(
     TYPE_MIN_FONT * 3,
     (preModernFaceText ? artRect.width : typeInnerW) -
@@ -824,11 +802,9 @@ function TextIconsLayer() {
 
   const nameFontSize = useMemo(() => {
     const nameText = String(cardName ?? '')
-    const maxByHeight = specialPlateLayout ? Math.max(12, nameInnerH * 0.68) : Number.POSITIVE_INFINITY
-    const target = specialPlateLayout ? Math.min(nameTargetPx, maxByHeight) : nameTargetPx
-    const minSize = specialPlateLayout ? Math.min(12, maxByHeight) : NAME_MIN_FONT
-    const fits = (size: number) =>
-      measureTextWidth(nameText, nameStack, nameFontStyle, size) <= nameTextMaxW && size <= maxByHeight
+    const target = nameTargetPx
+    const minSize = NAME_MIN_FONT
+    const fits = (size: number) => measureTextWidth(nameText, nameStack, nameFontStyle, size) <= nameTextMaxW
     let lo = minSize
     let hi = Math.max(lo, target)
     if (fits(hi)) return floorToHalfPx(hi)
@@ -842,8 +818,6 @@ function TextIconsLayer() {
     cardName,
     nameBaseFont,
     nameTextMaxW,
-    nameInnerH,
-    specialPlateLayout,
     measureTextWidth,
     floorToHalfPx,
     nameStack,
@@ -857,27 +831,21 @@ function TextIconsLayer() {
   )
 
   const typeFontSize = useMemo(() => {
-    const maxByHeight = specialPlateLayout ? Math.max(10, typeInnerH * 0.68) : Number.POSITIVE_INFINITY
-    const start = specialPlateLayout
-      ? Math.min(Math.max(10, typeTargetPx), maxByHeight)
-      : Math.max(TYPE_MIN_FONT, typeTargetPx)
-    const minSize = specialPlateLayout ? Math.min(10, maxByHeight) : TYPE_MIN_FONT
+    const start = Math.max(TYPE_MIN_FONT, typeTargetPx)
+    const minSize = TYPE_MIN_FONT
     return getScaledSingleLineFontSize({
       text: String(cardTypeLine ?? ''),
       fontFamily: typeStack,
       fontStyle: typeFontStyle,
       startSize: start,
       minSize,
-      maxWidth: Math.max(1, specialPlateLayout ? typeInnerW : typeLineMaxWidth),
+      maxWidth: Math.max(1, typeLineMaxWidth),
     })
   }, [
     cardTypeLine,
     getScaledSingleLineFontSize,
     typeBaseFont,
     typeLineMaxWidth,
-    typeInnerW,
-    typeInnerH,
-    specialPlateLayout,
     typeStack,
     typeFontStyle,
     typeTargetPx,
@@ -1133,9 +1101,7 @@ function TextIconsLayer() {
     if (!raw) return []
     const leftX = effectiveRulesInnerX + RULES_PADDING
     const bottomY = effectiveRulesInnerY + effectiveRulesInnerH - RULES_PADDING
-    const maxWidth = specialPlateLayout
-      ? Math.max(1, effectiveRulesInnerW - RULES_PADDING * 2)
-      : fullWidth
+    const maxWidth = fullWidth
     const lines: string[] = []
     const paragraphs = raw.split(/\n+/)
     for (const para of paragraphs) {
@@ -1157,7 +1123,7 @@ function TextIconsLayer() {
       }
       if (line) lines.push(line)
     }
-    if (!specialPlateLayout && showPowerToughnessEffective && narrowWidth < fullWidth && lines.length > 0) {
+    if (showPowerToughnessEffective && narrowWidth < fullWidth && lines.length > 0) {
       const lastLine = lines[lines.length - 1]
       const lastW = measureTextWidth(lastLine, flavorStack, effectiveFlavorFontStyle, effectiveFlavorFontSize)
       if (lastW > narrowWidth) {
@@ -1179,18 +1145,6 @@ function TextIconsLayer() {
       }
     }
     const flavorLift = flavorLineHeight
-    const tarotFlavor = useTarotLayout ? TAROT_GEOMETRY.flavorText : null
-    if (tarotFlavor && lines.length > 0) {
-      const totalH = lines.length * flavorLineHeight
-      const startY = tarotFlavor.y + Math.max(0, (tarotFlavor.height - totalH) / 2)
-      return lines.map((text, i) => ({
-        text,
-        x: tarotFlavor.x,
-        y: startY + i * flavorLineHeight,
-        width: tarotFlavor.width,
-        align: undefined as 'center' | undefined,
-      }))
-    }
     return lines.map((text, i) => ({
       text,
       x: leftX,
@@ -1200,9 +1154,6 @@ function TextIconsLayer() {
     }))
   }, [
     flavorText,
-    useAscendantLayout,
-    useTarotLayout,
-    specialPlateLayout,
     effectiveRulesInnerX,
     effectiveRulesInnerY,
     effectiveRulesInnerW,
@@ -1219,34 +1170,6 @@ function TextIconsLayer() {
     supportsPlaneswalkerAbilities,
     showFlavorTextOnCard,
   ])
-
-  const ascendantFlavorDividerY = useMemo(() => {
-    if (useTarotLayout) {
-      const raw = String(flavorText ?? '').trim()
-      return raw ? TAROT_GEOMETRY.flavorDivider.y1 : null
-    }
-    if (!useAscendantLayout || flavorRender.length === 0) return null
-    const topFlavorY = Math.min(...flavorRender.map((l) => l.y))
-    return Math.round(topFlavorY - flavorLineHeight * 0.35)
-  }, [useAscendantLayout, useTarotLayout, flavorText, flavorRender, flavorLineHeight])
-
-  const flavorDividerPoints = useMemo(() => {
-    if (ascendantFlavorDividerY == null) return null
-    if (useTarotLayout) {
-      return [
-        TAROT_GEOMETRY.flavorDivider.x1,
-        TAROT_GEOMETRY.flavorDivider.y1,
-        TAROT_GEOMETRY.flavorDivider.x2,
-        TAROT_GEOMETRY.flavorDivider.y2,
-      ]
-    }
-    return [
-      effectiveRulesInnerX + RULES_PADDING,
-      ascendantFlavorDividerY,
-      effectiveRulesInnerX + effectiveRulesInnerW - RULES_PADDING,
-      ascendantFlavorDividerY,
-    ]
-  }, [ascendantFlavorDividerY, useTarotLayout, effectiveRulesInnerX, effectiveRulesInnerW])
 
   const [setIconImg, setSetIconImg] = useState<HTMLImageElement | null>(null)
   useEffect(() => {
@@ -1321,7 +1244,7 @@ function TextIconsLayer() {
       >
       <Text
         text={cardName}
-        x={specialPlateLayout ? nameInnerX : suppressNameBarManaCostRendering ? nameInnerX : preModernFaceText ? artRect.x : nameInnerX + 10}
+        x={suppressNameBarManaCostRendering ? nameInnerX : preModernFaceText ? artRect.x : nameInnerX + 10}
         y={
           supportsPreModernFaceLayout
             ? nameInnerY + SPELL_PRE_MODERN_NAME_STRIP_PADDING_PX
@@ -1329,22 +1252,14 @@ function TextIconsLayer() {
               ? nameInnerY
               : nameInnerY + 2
         }
-        width={
-          specialPlateLayout
-            ? nameInnerW
-            : suppressNameBarManaCostRendering
-              ? nameInnerW
-              : nameTextMaxW
-        }
-        align={specialPlateLayout ? 'center' : suppressNameBarManaCostRendering ? 'center' : 'left'}
+        width={suppressNameBarManaCostRendering ? nameInnerW : nameTextMaxW}
+        align={suppressNameBarManaCostRendering ? 'center' : 'left'}
         height={
           supportsPreModernFaceLayout
             ? nameManaIconSize
             : preModernFaceText
               ? nameInnerH
-              : specialPlateLayout
-                ? nameInnerH
-                : nameInnerH - 4
+              : nameInnerH - 4
         }
         fontFamily={nameStack}
         fontStyle={standardFullArt ? 'bold' : nameFontStyle}
@@ -1447,13 +1362,7 @@ function TextIconsLayer() {
 
       <Text
         text={cardTypeLine}
-        x={
-          specialPlateLayout
-            ? typeInnerX
-            : preModernFaceText
-              ? artRect.x + typeLineLeftPad
-              : typeInnerX + typeLineLeftPad
-        }
+        x={preModernFaceText ? artRect.x + typeLineLeftPad : typeInnerX + typeLineLeftPad}
         y={floorToHalfPx(
           supportsPreModernFaceLayout
             ? spellPreModernTypeTextY
@@ -1461,7 +1370,7 @@ function TextIconsLayer() {
               ? typeInnerY
               : typeInnerY + TYPE_LINE_TEXT_Y_NUDGE_PX,
         )}
-        width={specialPlateLayout ? typeInnerW : typeLineMaxWidth}
+        width={typeLineMaxWidth}
         height={supportsPreModernFaceLayout ? typeFontSize : typeInnerH}
         wrap="none"
         lineHeight={1}
@@ -1474,7 +1383,7 @@ function TextIconsLayer() {
         shadowColor={standardFullArt ? secondaryStyleShadow : undefined}
         shadowBlur={standardFullArt ? SECONDARY_STYLE_SHADOW_BLUR : 0}
         shadowOffset={standardFullArt ? TEXT_SHADOW_OFFSET : undefined}
-        align={specialPlateLayout ? 'center' : 'left'}
+        align="left"
         verticalAlign={supportsPreModernFaceLayout ? 'top' : 'middle'}
       />
 
@@ -1552,15 +1461,6 @@ function TextIconsLayer() {
             />
           )
         )}
-        {!landRulesAsSecondaryArt && flavorDividerPoints && (
-          <Line
-            points={flavorDividerPoints}
-            stroke={flavorInkOnPanel}
-            strokeWidth={useTarotLayout ? 2.5 : 1.5}
-            opacity={0.55}
-            listening={false}
-          />
-        )}
         {!landRulesAsSecondaryArt &&
           flavorRender.map((line, idx) => (
           <Text
@@ -1587,64 +1487,24 @@ function TextIconsLayer() {
       {setIconImg && (
         <Group
           key={`custom-set-icon-${iconBoxS}`}
-          x={
-            tarotRects
-              ? TAROT_GEOMETRY.expansionCenter.x - Math.max(8, Math.round(tarotRects.expansionSymbol.width * 0.55)) / 2
-              : ascendantRects
-                ? ascendantRects.expansionSymbol.x +
-                  (ascendantRects.expansionSymbol.width -
-                    Math.max(8, Math.round(ascendantRects.expansionSymbol.width * ASCENDANT_EXPANSION_SYMBOL_FILL))) /
-                    2
-                : (preModernFaceText ? artRect.x + artRect.width : typeX + typeW) - iconBoxS - setIconPad
-          }
+          x={(preModernFaceText ? artRect.x + artRect.width : typeX + typeW) - iconBoxS - setIconPad}
           y={
-            tarotRects
-              ? TAROT_GEOMETRY.expansionCenter.y - Math.max(8, Math.round(tarotRects.expansionSymbol.height * 0.55)) / 2
-              : ascendantRects
-                ? ascendantRects.expansionSymbol.y +
-                  (ascendantRects.expansionSymbol.height -
-                    Math.max(8, Math.round(ascendantRects.expansionSymbol.height * ASCENDANT_EXPANSION_SYMBOL_FILL))) /
-                    2
-                : supportsPreModernFaceLayout
-                  ? spellPreModernTypeTextY + (typeFontSize - iconBoxS) / 2
-                  : typeY + (typeH - iconBoxS) / 2
+            supportsPreModernFaceLayout
+              ? spellPreModernTypeTextY + (typeFontSize - iconBoxS) / 2
+              : typeY + (typeH - iconBoxS) / 2
           }
           clipX={0}
           clipY={0}
-          clipWidth={
-            tarotRects
-              ? Math.max(8, Math.round(tarotRects.expansionSymbol.width * 0.55))
-              : ascendantRects
-                ? Math.max(8, Math.round(ascendantRects.expansionSymbol.width * ASCENDANT_EXPANSION_SYMBOL_FILL))
-                : iconBoxS
-          }
-          clipHeight={
-            tarotRects
-              ? Math.max(8, Math.round(tarotRects.expansionSymbol.height * 0.55))
-              : ascendantRects
-                ? Math.max(8, Math.round(ascendantRects.expansionSymbol.height * ASCENDANT_EXPANSION_SYMBOL_FILL))
-                : iconBoxS
-          }
+          clipWidth={iconBoxS}
+          clipHeight={iconBoxS}
           listening={false}
         >
           <Image
             image={setIconImg}
             x={0}
             y={0}
-            width={
-              tarotRects
-                ? Math.max(8, Math.round(tarotRects.expansionSymbol.width * 0.55))
-                : ascendantRects
-                  ? Math.max(8, Math.round(ascendantRects.expansionSymbol.width * ASCENDANT_EXPANSION_SYMBOL_FILL))
-                  : iconBoxS
-            }
-            height={
-              tarotRects
-                ? Math.max(8, Math.round(tarotRects.expansionSymbol.height * 0.55))
-                : ascendantRects
-                  ? Math.max(8, Math.round(ascendantRects.expansionSymbol.height * ASCENDANT_EXPANSION_SYMBOL_FILL))
-                  : iconBoxS
-            }
+            width={iconBoxS}
+            height={iconBoxS}
             listening={false}
           />
         </Group>
@@ -1797,21 +1657,12 @@ function TextIconsLayer() {
         (() => {
           const canonical = normalizeRarity(rarity)
           const baseColor = RARITY_COLORS[canonical] ?? '#FFFFFF'
-          const holo = tarotRects?.hologram ?? ascendantRects?.hologram
-          const centerX = holo
-            ? holo.x + holo.width / 2
-            : useTarotLayout
-              ? TAROT_GEOMETRY.hologramCenter.x
-              : STAGE_WIDTH / 2
-          const centerY = holo
-            ? holo.y + holo.height / 2
-            : useTarotLayout
-              ? TAROT_GEOMETRY.hologramCenter.y
-              : rulesInnerY + rulesInnerH + hologramYAdjust
-          const outerRadiusX = holo ? holo.width / 2 : useTarotLayout ? 60 : 60
-          const outerRadiusY = holo ? holo.height / 2 : useTarotLayout ? 60 : 35
-          const innerRadiusX = outerRadiusX - (holo || useTarotLayout ? Math.max(4, outerRadiusX * 0.12) : 4)
-          const innerRadiusY = outerRadiusY - (holo || useTarotLayout ? Math.max(4, outerRadiusY * 0.12) : 4)
+          const centerX = STAGE_WIDTH / 2
+          const centerY = rulesInnerY + rulesInnerH + hologramYAdjust
+          const outerRadiusX = 60
+          const outerRadiusY = 35
+          const innerRadiusX = outerRadiusX - 4
+          const innerRadiusY = outerRadiusY - 4
 
           const highlightColor = (() => {
             const hex = baseColor.replace('#', '')

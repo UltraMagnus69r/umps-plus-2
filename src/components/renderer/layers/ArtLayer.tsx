@@ -11,7 +11,6 @@ import {
 } from '../../../authority/layoutRegistry'
 import { isBorderlessArtTreatmentLayout } from '../../../authority/layoutTaxonomy'
 import { getPlaneswalkerModernV2ArtInnerRect } from '../../../authority/planeswalkerModernV2LayoutAuthority'
-import { addTarotArtClipPath } from '../../../authority/tarotClipPaths'
 import { getFontStack } from '../../../authority/typographyAuthority'
 import { useKonvaPublicImage } from '../../../hooks/useKonvaPublicImage'
 import { useCardStore } from '../../../store/useCardStore'
@@ -56,7 +55,6 @@ function ArtLayer() {
     cardData: { layout: activeLayout },
   })
   const modernV2Layout = capabilities.supportsPlaneswalkerModernV2Layout
-  const tarotLayout = capabilities.useTarotLayout
   const artR = modernV2Layout
     ? getPlaneswalkerModernV2ArtInnerRect()
     : getActiveLayoutArtRectFromState({
@@ -124,20 +122,12 @@ function ArtLayer() {
                   c.clip()
                 },
               }
-            : tarotLayout
-              ? {
-                  clipFunc: (ctx) => {
-                    const c = ctx as unknown as CanvasRenderingContext2D
-                    addTarotArtClipPath(c)
-                    c.clip()
-                  },
-                }
-              : {
-                  clipX: artInnerX,
-                  clipY: artInnerY,
-                  clipWidth: artInnerW,
-                  clipHeight: artInnerH,
-                })}
+            : {
+                clipX: artInnerX,
+                clipY: artInnerY,
+                clipWidth: artInnerW,
+                clipHeight: artInnerH,
+              })}
           listening={true}
           onWheel={(e) => {
             e.evt.preventDefault()

@@ -13,8 +13,6 @@ import {
   SET_SYMBOL_RARITY_FILLS,
 } from '../../../../rarityAuthority'
 import type { LayoutId } from '../../../authority/layoutTaxonomy'
-import { buildAscendantStageRects, ASCENDANT_EXPANSION_SYMBOL_FILL } from '../../../authority/ascendantLayoutAuthority'
-import { buildTarotStageRects, TAROT_GEOMETRY } from '../../../authority/tarotLayoutAuthority'
 import { TYPE_LINE_BASE_HEIGHT_RATIO } from './textIconsShared'
 
 function setSymbolFillFromRarity(rarity: string | undefined): string {
@@ -113,8 +111,6 @@ function SetSymbolLayer() {
     cardData: { layout: activeLayout },
   })
   const supportsPreModernFaceLayout = layoutCaps.supportsPreModernFaceLayout
-  const useAscendantLayout = layoutCaps.useAscendantLayout
-  const useTarotLayout = layoutCaps.useTarotLayout
 
   const iconBoxS =
     resolveSetSymbolBoxPx(iconScale) *
@@ -130,34 +126,14 @@ function SetSymbolLayer() {
   const layout = getStandardLayoutGeometry()
   const typeCapEstimate = Math.max(1, Math.floor(layout.typeH * TYPE_LINE_BASE_HEIGHT_RATIO))
   const spellPreModernTypeTextY = artRect.y + artRect.height + BEVEL_INSET + SPELL_PRE_MODERN_TYPE_LINE_STRIP_PADDING_PX
-  const ascendantExpansion = useAscendantLayout ? buildAscendantStageRects().expansionSymbol : null
-  const tarotExpansion = useTarotLayout ? buildTarotStageRects().expansionSymbol : null
   const slotRightX = preModernFaceText ? artRect.x + artRect.width : typeRect.x + typeRect.width
-  const slot = tarotExpansion
-    ? (() => {
-        const size = Math.max(8, Math.round(tarotExpansion.width * 0.55))
-        return {
-          x: TAROT_GEOMETRY.expansionCenter.x - size / 2,
-          y: TAROT_GEOMETRY.expansionCenter.y - size / 2,
-          size,
-        }
-      })()
-    : ascendantExpansion
-      ? (() => {
-          const size = Math.max(8, Math.round(ascendantExpansion.width * ASCENDANT_EXPANSION_SYMBOL_FILL))
-          return {
-            x: ascendantExpansion.x + (ascendantExpansion.width - size) / 2,
-            y: ascendantExpansion.y + (ascendantExpansion.height - size) / 2,
-            size,
-          }
-        })()
-      : {
-          x: slotRightX - iconBoxS - setIconPad,
-          y: supportsPreModernFaceLayout
-            ? spellPreModernTypeTextY + (typeCapEstimate - iconBoxS) / 2
-            : typeRect.y + (typeRect.height - iconBoxS) / 2,
-          size: iconBoxS,
-        }
+  const slot = {
+    x: slotRightX - iconBoxS - setIconPad,
+    y: supportsPreModernFaceLayout
+      ? spellPreModernTypeTextY + (typeCapEstimate - iconBoxS) / 2
+      : typeRect.y + (typeRect.height - iconBoxS) / 2,
+    size: iconBoxS,
+  }
   const fill = setSymbolFillFromRarity(rarity)
 
   const [symImg, setSymImg] = useState<HTMLImageElement | null>(null)

@@ -7,8 +7,6 @@ import {
 } from './geometryAuthority'
 import { buildSpellPreModernStageRects } from './spellPreModernLayoutAuthority'
 import { buildModernDummyStageRects } from './modernDummyLayoutAuthority'
-import { buildAscendantStageRects } from './ascendantLayoutAuthority'
-import { buildTarotStageRects } from './tarotLayoutAuthority'
 import { buildPlaneswalkerModernV2StageRects } from './planeswalkerModernV2LayoutAuthority'
 import { getPreModernTextBoxInnerRect } from './preModernTextBoxAuthority'
 import type { LayoutContract, LayoutFamilyRegionExtensions } from './layoutContract'
@@ -979,115 +977,6 @@ function buildClassStandardContract(): LayoutContract {
   })
 }
 
-/** Special / Ascendant — blueprint geometry (floating mana column, flavor ribbon, bottom type line). */
-function buildSpecialAscendantContract(): LayoutContract {
-  const rects = buildAscendantStageRects()
-  return normalizeLayoutContract({
-    id: { family: 'special', variant: 'ascendant' },
-    familyExtensions: {
-      flavorText: pxRectToNormalizedRect(rects.flavorText),
-      expansionSymbol: pxRectToNormalizedRect(rects.expansionSymbol),
-      hologram: pxRectToNormalizedRect(rects.hologram),
-      manaColumn: pxRectToNormalizedRect(rects.manaColumn),
-    },
-    regions: {
-      nameBar: pxRectToNormalizedRect(rects.nameBar),
-      art: pxRectToNormalizedRect(rects.art),
-      typeLine: pxRectToNormalizedRect(rects.typeLine),
-      rulesText: pxRectToNormalizedRect(rects.rulesText),
-      metadataStrip: pxRectToNormalizedRect(rects.metadataStrip),
-      lowerRight: {
-        kind: 'powerToughness',
-        rect: pxRectToNormalizedRect(rects.lowerRight),
-      },
-    },
-    capabilities: {
-      supportsFlavorText: true,
-      supportsPowerToughnessBox: true,
-      supportsMetadataStrip: true,
-      supportsEdgeToBleedArt: false,
-      supportsFloatingTextTreatment: false,
-      supportsSecondaryStructuralRegions: true,
-      supportsLandSecondaryArtInRulesRegion: false,
-      supportsRulesTextBoxTexture: false,
-      suppressNameBarManaCostRendering: true,
-      useLandFullArtManaCircle: false,
-      suppressRulesTextRendering: false,
-      supportsNamePlateBox: false,
-      supportsTypeLineBox: false,
-      supportsHologramSeal: true,
-      supportsPreModernFooterLayout: false,
-      supportsRulesTextBoxFrame: false,
-      supportsSpellTextBoxPanel: false,
-      supportsPreModernFaceLayout: false,
-      supportsPreModernTextBoxFrame: false,
-      supportsPreModernInlinePowerToughness: false,
-      supportsModernDummyLayout: false,
-      supportsStartingLoyaltyBox: false,
-      supportsPlaneswalkerAbilities: false,
-      supportsPlaneswalkerModernV2Layout: false,
-      useAscendantLayout: true,
-      useAscendantManaColumn: true,
-    },
-    bleedBehavior: 'trim-contained',
-  })
-}
-
-/** Special / Tarot — blueprint geometry (arched art, upper-right mana sockets, engraved plates). */
-function buildSpecialTarotContract(): LayoutContract {
-  const rects = buildTarotStageRects()
-  return normalizeLayoutContract({
-    id: { family: 'special', variant: 'tarot' },
-    familyExtensions: {
-      flavorText: pxRectToNormalizedRect(rects.flavorText),
-      expansionSymbol: pxRectToNormalizedRect(rects.expansionSymbol),
-      hologram: pxRectToNormalizedRect(rects.hologram),
-    },
-    regions: {
-      nameBar: pxRectToNormalizedRect(rects.nameBar),
-      art: pxRectToNormalizedRect(rects.art),
-      typeLine: pxRectToNormalizedRect(rects.typeLine),
-      rulesText: pxRectToNormalizedRect(rects.rulesText),
-      metadataStrip: pxRectToNormalizedRect(rects.metadataStrip),
-      lowerRight: {
-        kind: 'powerToughness',
-        rect: pxRectToNormalizedRect(rects.lowerRight),
-      },
-    },
-    capabilities: {
-      supportsFlavorText: true,
-      supportsPowerToughnessBox: true,
-      supportsMetadataStrip: true,
-      supportsEdgeToBleedArt: false,
-      supportsFloatingTextTreatment: false,
-      supportsSecondaryStructuralRegions: true,
-      supportsLandSecondaryArtInRulesRegion: false,
-      supportsRulesTextBoxTexture: false,
-      suppressNameBarManaCostRendering: true,
-      useLandFullArtManaCircle: false,
-      suppressRulesTextRendering: false,
-      supportsNamePlateBox: false,
-      supportsTypeLineBox: false,
-      supportsHologramSeal: true,
-      supportsPreModernFooterLayout: false,
-      supportsRulesTextBoxFrame: false,
-      supportsSpellTextBoxPanel: false,
-      supportsPreModernFaceLayout: false,
-      supportsPreModernTextBoxFrame: false,
-      supportsPreModernInlinePowerToughness: false,
-      supportsModernDummyLayout: false,
-      supportsStartingLoyaltyBox: false,
-      supportsPlaneswalkerAbilities: false,
-      supportsPlaneswalkerModernV2Layout: false,
-      useAscendantLayout: false,
-      useAscendantManaColumn: false,
-      useTarotLayout: true,
-      useTarotManaColumn: true,
-    },
-    bleedBehavior: 'trim-contained',
-  })
-}
-
 const rawContracts: readonly LayoutContract[] = [
   buildStandardModernContract(),
   buildStandardBorderlessContract(),
@@ -1106,8 +995,6 @@ const rawContracts: readonly LayoutContract[] = [
   buildSpellPreModernContract(),
   buildSagaStandardContract(),
   buildClassStandardContract(),
-  buildSpecialAscendantContract(),
-  buildSpecialTarotContract(),
 ]
 
 const registry = new Map<string, LayoutContract>()
