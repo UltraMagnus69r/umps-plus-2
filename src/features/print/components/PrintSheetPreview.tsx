@@ -1,5 +1,5 @@
-import { classifyPrintSource, createPrintCutMarks, printFeatureAuthority } from '../authority/printFeatureAuthority'
-import type { PrintPlacement, PrintSheetSide, PrintSourceFit, PrintUploadedFrontCard } from '../types/printFeature'
+import { createPrintCutMarks, frontImageIncludesBleed, printFeatureAuthority } from '../authority/printFeatureAuthority'
+import type { PrintPlacement, PrintSheetSide, PrintUploadedFrontCard } from '../types/printFeature'
 
 interface PrintSheetPreviewProps {
   title: string
@@ -21,17 +21,19 @@ function getFrontCard(cardId: string, frontCards: PrintUploadedFrontCard[]) {
   return frontCards.find((card) => card.id === cardId)
 }
 
-function sourceFitForPlacement(
+function imageBox(
   side: PrintSheetSide,
   placement: PrintPlacement,
   frontCards: PrintUploadedFrontCard[],
   backSourceSize: { width: number; height: number },
-): PrintSourceFit {
-  if (side === 'front') {
-    const card = getFrontCard(placement.cardId, frontCards)
-    return classifyPrintSource(card?.widthPx ?? 0, card?.heightPx ?? 0)
+) {
+  if (side === 'back') {
+    return { widthPx: backSourceSize.width, heightPx: backSourceSize.height, fillBleedBox: false }
   }
-  return classifyPrintSource(backSourceSize.width, backSourceSize.height)
+  const card = getFrontCard(placement.cardId, frontCards)
+  const widthPx = card?.widthPx ?? 0
+  const heightPx = card?.heightPx ?? 0
+  return { widthPx, heightPx, fillBleedBox: frontImageIncludesBleed(widthPx, heightPx) }
 }
 
 function renderCutGuides(placement: PrintPlacement) {
@@ -81,7 +83,7 @@ export function PrintSheetPreview({
           {placements.map((placement) => {
             const front = getFrontCard(placement.cardId, frontCards)
             const src = side === 'front' ? (front?.url ?? '') : backAssetUrl
-            const fit = sourceFitForPlacement(side, placement, frontCards, backSourceSize)
+            const image = imageBox(side, placement, frontCards, backSourceSize)
             const rotation = placement.rotationDeg ?? 0
             const fullLeft = placement.xPx * SCALE
             const fullTop = placement.yPx * SCALE
@@ -120,22 +122,24 @@ export function PrintSheetPreview({
                       transform: rotation ? `rotate(${rotation}deg)` : undefined,
                     }}
                   >
-                    <img
-                      src={src}
-                      alt=""
-                      style={
-                        fit === 'trim'
-                          ? {
-                              position: 'absolute',
-                              left: BLEED_PREVIEW,
-                              top: BLEED_PREVIEW,
-                              width: unrotW - BLEED_PREVIEW * 2,
-                              height: unrotH - BLEED_PREVIEW * 2,
-                              objectFit: 'fill',
-                            }
-                          : undefined
-                      }
-                    />
+                    {image.widthPx > 0 && image.heightPx > 0 ? (
+                      <img
+                        src={src}
+                        alt=""
+                        style={
+                          image.fillBleedBox
+                            ? { width: '100%', height: '100%', objectFit: 'fill' }
+                            : {
+                                position: 'absolute',
+                                left: (unrotW - image.widthPx * SCALE) / 2,
+                                top: (unrotH - image.heightPx * SCALE) / 2,
+                                width: image.widthPx * SCALE,
+                                height: image.heightPx * SCALE,
+                                objectFit: 'fill',
+                              }
+                        }
+                      />
+                    ) : null}
                   </div>
                 </div>
               </div>

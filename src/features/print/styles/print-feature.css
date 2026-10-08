@@ -712,7 +712,7 @@
   position: absolute;
   overflow: hidden;
   border-radius: 3px;
-  background: #e8eaed;
+  background: #000000;
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--ui-border) 80%, #9aa0a6 20%);
   z-index: 1;
 }
@@ -720,6 +720,10 @@
 .print-feature-root .card-slot,
 .print-feature-root .card-rotator {
   position: absolute;
+}
+
+.print-feature-root .card-slot {
+  background: #000000;
 }
 
 .print-feature-root .card-rotator {

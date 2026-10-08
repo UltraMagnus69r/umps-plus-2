@@ -7,12 +7,10 @@ import {
   TRIM_WIDTH,
 } from '../../../domain/geometry/constants'
 import type {
-  PrintBackImageFit,
   PrintCutMark,
   PrintLayoutTemplate,
   PrintPageLayoutResult,
   PrintPlacement,
-  PrintSourceFit,
   PrintUploadedFrontCard,
 } from '../types/printFeature'
 
@@ -301,58 +299,24 @@ export function createPrintPagePlacements(frontCards: PrintUploadedFrontCard[]):
   }
 }
 
-export function classifyPrintSource(sourceWidthPx: number, sourceHeightPx: number): PrintSourceFit {
-  if (sourceWidthPx === STAGE_WIDTH && sourceHeightPx === STAGE_HEIGHT) return 'full-bleed'
-  if (sourceWidthPx === TRIM_WIDTH && sourceHeightPx === TRIM_HEIGHT) return 'trim'
-  return 'cover'
-}
+const FULL_BLEED_ASPECT = STAGE_WIDTH / STAGE_HEIGHT
+const TRIM_ASPECT = TRIM_WIDTH / TRIM_HEIGHT
+/** Half the gap between 1650:2250 and 1500:2100. Closer than this, and closer to full bleed than to trim, counts as bleed. */
+const FULL_BLEED_ASPECT_EPSILON = Math.abs(FULL_BLEED_ASPECT - TRIM_ASPECT) / 2
 
-export function coverFit(
-  sourceWidthPx: number,
-  sourceHeightPx: number,
-  targetWidthPx: number,
-  targetHeightPx: number,
-): PrintBackImageFit {
-  if (sourceWidthPx <= 0 || sourceHeightPx <= 0) {
-    return {
-      drawWidthPx: targetWidthPx,
-      drawHeightPx: targetHeightPx,
-      offsetXPx: 0,
-      offsetYPx: 0,
-    }
-  }
-
-  const targetRatio = targetWidthPx / targetHeightPx
-  const sourceRatio = sourceWidthPx / sourceHeightPx
-
-  if (sourceRatio > targetRatio) {
-    const drawHeightPx = targetHeightPx
-    const drawWidthPx = Math.round(drawHeightPx * sourceRatio)
-    return {
-      drawWidthPx,
-      drawHeightPx,
-      offsetXPx: Math.round((targetWidthPx - drawWidthPx) / 2),
-      offsetYPx: 0,
-    }
-  }
-
-  const drawWidthPx = targetWidthPx
-  const drawHeightPx = Math.round(drawWidthPx / sourceRatio)
-  return {
-    drawWidthPx,
-    drawHeightPx,
-    offsetXPx: 0,
-    offsetYPx: Math.round((targetHeightPx - drawHeightPx) / 2),
-  }
-}
-
-export function getPrintBackImageFit(sourceWidthPx: number, sourceHeightPx: number): PrintBackImageFit {
-  return coverFit(
-    sourceWidthPx,
-    sourceHeightPx,
-    printFeatureAuthority.card.widthPx,
-    printFeatureAuthority.card.heightPx,
-  )
+/**
+ * Fronts fill the bleed box only when they are the full-bleed print size, or their
+ * width/height clearly matches 2.75×3.75 (1650:2250) rather than 2.5×3.5 (1500:2100).
+ * Exact trim pixels, trim aspect, unknown sizes, and not-yet-loaded images do not.
+ */
+export function frontImageIncludesBleed(widthPx: number, heightPx: number): boolean {
+  if (widthPx <= 0 || heightPx <= 0) return false
+  if (widthPx === TRIM_WIDTH && heightPx === TRIM_HEIGHT) return false
+  if (widthPx === STAGE_WIDTH && heightPx === STAGE_HEIGHT) return true
+  const aspect = widthPx / heightPx
+  const fullDelta = Math.abs(aspect - FULL_BLEED_ASPECT)
+  const trimDelta = Math.abs(aspect - TRIM_ASPECT)
+  return fullDelta <= FULL_BLEED_ASPECT_EPSILON && fullDelta < trimDelta
 }
 
 export function createPrintCutMarks(placement: PrintPlacement): PrintCutMark[] {

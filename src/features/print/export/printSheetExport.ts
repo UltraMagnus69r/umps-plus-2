@@ -1,9 +1,8 @@
 import { jsPDF } from 'jspdf'
 import { exportCanvasPng600Dpi } from '../../../domain/export/png'
 import {
-  classifyPrintSource,
-  coverFit,
   createPrintCutMarks,
+  frontImageIncludesBleed,
   printFeatureAuthority,
 } from '../authority/printFeatureAuthority'
 import type {
@@ -45,13 +44,13 @@ function drawCardIntoSlot(
   placement: PrintPlacement,
   image: HTMLImageElement,
   includeBleed: boolean,
+  fillBleedBox: boolean,
 ) {
   const { xPx, yPx, widthPx, heightPx } = placement
   const rotationDeg = placement.rotationDeg ?? 0
   const bleed = printFeatureAuthority.card.bleedPx
   const sourceW = image.naturalWidth || image.width
   const sourceH = image.naturalHeight || image.height
-  const fit = classifyPrintSource(sourceW, sourceH)
 
   ctx.save()
   ctx.beginPath()
@@ -61,6 +60,8 @@ function drawCardIntoSlot(
     ctx.rect(xPx + bleed, yPx + bleed, widthPx - bleed * 2, heightPx - bleed * 2)
   }
   ctx.clip()
+  ctx.fillStyle = '#000000'
+  ctx.fillRect(xPx, yPx, widthPx, heightPx)
 
   const unrotatedW = rotationDeg ? heightPx : widthPx
   const unrotatedH = rotationDeg ? widthPx : heightPx
@@ -71,22 +72,19 @@ function drawCardIntoSlot(
   const originX = rotationDeg ? -unrotatedW / 2 : xPx
   const originY = rotationDeg ? -unrotatedH / 2 : yPx
 
-  const exactPixels = !rotationDeg && (fit === 'full-bleed' || fit === 'trim')
-  ctx.imageSmoothingEnabled = !exactPixels
-  if (!exactPixels) ctx.imageSmoothingQuality = 'high'
-
-  if (fit === 'full-bleed') {
+  if (sourceW > 0 && sourceH > 0 && fillBleedBox) {
+    const exactPixels = sourceW === unrotatedW && sourceH === unrotatedH && !rotationDeg
+    ctx.imageSmoothingEnabled = !exactPixels
+    if (!exactPixels) ctx.imageSmoothingQuality = 'high'
     ctx.drawImage(image, originX, originY, unrotatedW, unrotatedH)
-  } else if (fit === 'trim') {
-    ctx.drawImage(image, originX + bleed, originY + bleed, unrotatedW - bleed * 2, unrotatedH - bleed * 2)
-  } else {
-    const covered = coverFit(sourceW, sourceH, unrotatedW, unrotatedH)
+  } else if (sourceW > 0 && sourceH > 0) {
+    ctx.imageSmoothingEnabled = false
     ctx.drawImage(
       image,
-      originX + covered.offsetXPx,
-      originY + covered.offsetYPx,
-      covered.drawWidthPx,
-      covered.drawHeightPx,
+      originX + (unrotatedW - sourceW) / 2,
+      originY + (unrotatedH - sourceH) / 2,
+      sourceW,
+      sourceH,
     )
   }
 
@@ -116,7 +114,10 @@ async function renderSheetCanvas(
   placements.forEach((placement) => {
     const image = side === 'front' ? frontImageMap.get(placement.cardId) : backImage
     if (!image) return
-    drawCardIntoSlot(ctx, placement, image, includeBleedInExport)
+    const sourceW = image.naturalWidth || image.width
+    const sourceH = image.naturalHeight || image.height
+    const fillBleedBox = side === 'front' && frontImageIncludesBleed(sourceW, sourceH)
+    drawCardIntoSlot(ctx, placement, image, includeBleedInExport, fillBleedBox)
   })
 
   if (includeBleedInExport) {

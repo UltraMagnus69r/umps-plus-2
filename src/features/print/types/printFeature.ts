@@ -9,9 +9,6 @@ export interface PrintUploadedFrontCard {
   heightPx: number
 }
 
-/** How an uploaded image is placed in a PLUS-1 card slot. */
-export type PrintSourceFit = 'full-bleed' | 'trim' | 'cover'
-
 export interface PrintPlacement {
   id: string
   cardId: string
@@ -63,13 +60,6 @@ export interface PrintPageLayoutResult {
   overflowCount: number
   spilloverCount: number
   sheets: PrintSheetLayout[]
-}
-
-export interface PrintBackImageFit {
-  drawWidthPx: number
-  drawHeightPx: number
-  offsetXPx: number
-  offsetYPx: number
 }
 
 export interface PrintCutMark {

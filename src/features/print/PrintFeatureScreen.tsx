@@ -148,8 +148,8 @@ export function PrintFeatureScreen() {
             <section className="panel">
               <h2>Card back</h2>
               <p className="panel-subtitle">
-                One back fills every back slot at the same cut as the fronts. The default file is cover-fitted
-                into the 1650×2250 slot. Upload your own in the footer, or keep the default.
+                Backs are centered at their real size on a black 2.75×3.75 in box. They are not stretched.
+                Upload your own in the footer, or keep the default.
               </p>
               <p className={`status-chip ${backAssetLoaded ? 'ok' : 'warn'}`}>
                 {backAssetLoaded ? 'Back image is ready' : 'Back image is still loading'}
