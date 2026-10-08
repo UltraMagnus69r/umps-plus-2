@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react'
+
 function IconUpload({ color }: { color: string }) {
   return (
     <svg className="persistent-footer-pill__icon-svg" width="16" height="16" viewBox="0 0 24 24" aria-hidden>
@@ -52,8 +54,22 @@ export function PrintPersistentFooter({
   includeBleedInExport,
   onIncludeBleedInExportChange,
 }: PrintPersistentFooterProps) {
+  const footerRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const el = footerRef.current
+    if (!el) return
+    const apply = () => {
+      document.documentElement.style.setProperty('--print-footer-h', `${Math.ceil(el.getBoundingClientRect().height)}px`)
+    }
+    apply()
+    const observer = new ResizeObserver(apply)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
   return (
-    <footer className="persistent-footer" role="contentinfo">
+    <footer ref={footerRef} className="persistent-footer" role="contentinfo">
       <div className="persistent-footer-inner">
         <button
           type="button"

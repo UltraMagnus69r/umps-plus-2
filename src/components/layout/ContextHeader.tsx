@@ -87,13 +87,13 @@ const ContextHeaderActions = memo(function ContextHeaderActions() {
     <div className="flex shrink-0 items-center gap-ui2">
       <button
         type="button"
-        className="ui-focus-ring flex shrink-0 items-center gap-ui1 rounded-[var(--ui-radius-md)] border border-[color-mix(in_srgb,var(--ui-color-border)_92%,transparent)] bg-[color-mix(in_srgb,var(--ui-color-surface-elevated)_70%,transparent)] px-ui2 py-ui1 text-[var(--ui-color-muted)] transition-[border-color,background-color,box-shadow] duration-ui-standard ease-ui-out hover:border-[color-mix(in_srgb,var(--ui-color-primary)_22%,var(--ui-color-border))] hover:text-[var(--ui-color-text)]"
+        className="ui-focus-ring phone-view-btn flex shrink-0 items-center gap-ui1 rounded-[var(--ui-radius-md)] border border-[color-mix(in_srgb,var(--ui-color-border)_92%,transparent)] bg-[color-mix(in_srgb,var(--ui-color-surface-elevated)_70%,transparent)] px-ui2 py-ui1 text-[var(--ui-color-muted)] transition-[border-color,background-color,box-shadow] duration-ui-standard ease-ui-out hover:border-[color-mix(in_srgb,var(--ui-color-primary)_22%,var(--ui-color-border))] hover:text-[var(--ui-color-text)]"
         aria-label="Open card quick view"
         title="Quick view"
         onClick={onOpenQuickView}
       >
         <Maximize2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        <span className={`hidden sm:inline ${UI_TEXT_METADATA}`}>View</span>
+        <span className={UI_TEXT_METADATA}>View</span>
       </button>
     </div>
   )

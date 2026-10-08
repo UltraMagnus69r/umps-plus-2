@@ -4,7 +4,7 @@ import {
   UI_ASYNC_SPINNER_SM,
 } from '../../authority/stateFeedbackAuthority'
 import { UI_TEXT_FOOTER_INPUT } from '../../authority/typographyAuthority'
-import { memo, useCallback, useId, useRef } from 'react'
+import { memo, useCallback, useEffect, useId, useRef } from 'react'
 import { shallow } from 'zustand/shallow'
 import { useNavigate } from 'react-router-dom'
 import { Check, Redo2, Undo2, FileJson2, Image as ImageIcon, Download, FolderOpen, Plus, Printer } from 'lucide-react'
@@ -225,8 +225,22 @@ const BottomBarToolbar = memo(function BottomBarToolbar() {
 })
 
 export default function BottomBar() {
+  const footerRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const el = footerRef.current
+    if (!el) return
+    const apply = () => {
+      document.documentElement.style.setProperty('--app-footer-h', `${Math.ceil(el.getBoundingClientRect().height)}px`)
+    }
+    apply()
+    const ro = new ResizeObserver(apply)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   return (
-    <footer className={`${UI_CHROME_FOOTER} fixed bottom-0 left-0 right-0 z-20 min-h-0 py-1.5`}>
+    <footer ref={footerRef} className={`${UI_CHROME_FOOTER} app-footer-safe fixed bottom-0 left-0 right-0 z-20 min-h-0 py-1.5`}>
       <div className="flex h-full min-h-[2.75rem] w-full min-w-0 flex-wrap items-center gap-x-ui2 gap-y-ui2 pl-ui3 pr-ui3 sm:flex-nowrap sm:gap-y-0 sm:gap-x-ui3 sm:pl-ui4 sm:pr-ui4">
         <BottomBarFilenameSection />
         <BottomBarToolbar />

@@ -438,6 +438,7 @@ const activeLayoutCapabilities = useMemo(
 
   return (
     <aside
+      data-phone-surface="style"
       className={`sidebar-shell h-full min-h-0 min-w-0 w-full max-w-none flex flex-col flex-none overflow-x-hidden lg:shrink-[2] lg:max-w-[320px] ${asideWidthClass} order-3 max-h-[min(40vh,22rem)] lg:order-none lg:max-h-none`}
       aria-label="Right sidebar"
     >

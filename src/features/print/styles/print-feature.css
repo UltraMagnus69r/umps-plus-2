@@ -67,6 +67,7 @@
     radial-gradient(620px 320px at 16% -4%, color-mix(in srgb, var(--gg-yellow) 14%, transparent), transparent 72%),
     linear-gradient(180deg, #ffffff 0%, var(--ui-bg) 100%);
   min-height: 100vh;
+  min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -88,7 +89,7 @@
 }
 
 .print-feature-root .printer-screen--with-footer {
-  padding-bottom: calc(28px + 88px);
+  padding-bottom: calc(28px + max(88px, var(--print-footer-h, 88px)));
 }
 
 .print-feature-root .persistent-footer {
@@ -712,10 +713,13 @@
 .print-feature-root .sheet-frame {
   overflow-x: auto;
   padding: 8px 4px 4px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .print-feature-root .sheet-preview {
   position: relative;
+  max-width: 100%;
   background: #ffffff;
   border-radius: var(--ui-radius-sm);
   margin: 0 auto;
@@ -788,7 +792,7 @@
 
   .print-feature-root .workspace-grid,
   .print-feature-root .previews-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -805,6 +809,11 @@
 
   .print-feature-root .stats-row-simple {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .print-feature-root .persistent-footer {
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
   }
 
   .print-feature-root .persistent-footer-inner {
@@ -824,5 +833,48 @@
   .print-feature-root .persistent-footer-pill {
     flex-shrink: 1;
     min-width: 0;
+    min-height: 2.75rem;
+  }
+
+  .print-feature-root .print-feature-back-btn--footer {
+    min-height: 2.75rem;
+  }
+}
+
+@media (max-width: 1023px) {
+  .print-feature-root .persistent-footer-pill,
+  .print-feature-root .print-feature-back-btn--footer {
+    min-height: 2.75rem;
+  }
+}
+
+@media (max-height: 520px) {
+  .print-feature-root .persistent-footer {
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+  }
+
+  .print-feature-root .persistent-footer-inner {
+    flex-wrap: wrap;
+    row-gap: var(--ui-space-2);
+    justify-content: flex-start;
+  }
+
+  .print-feature-root .persistent-footer-exports {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    row-gap: var(--ui-space-2);
+  }
+
+  .print-feature-root .persistent-footer-pill {
+    flex-shrink: 1;
+    min-width: 0;
+    min-height: 2.75rem;
+  }
+
+  .print-feature-root .print-feature-back-btn--footer {
+    min-height: 2.75rem;
   }
 }

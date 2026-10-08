@@ -10,8 +10,22 @@ import QuickViewModal from './components/layout/QuickViewModal'
 import { useCardStore } from './store/useCardStore'
 import { CORE_FONT_SPECS, REQUIRED_FONT_SPECS } from './data/fonts'
 
+type PhonePane = 'card' | 'data' | 'style'
+const PHONE_PANE_KEY = 'umps-phone-pane'
+
+function readPhonePane(): PhonePane {
+  try {
+    const value = sessionStorage.getItem(PHONE_PANE_KEY)
+    if (value === 'card' || value === 'data' || value === 'style') return value
+  } catch {
+    /* private mode */
+  }
+  return 'card'
+}
+
 export default function App() {
   const [isMounted, setIsMounted] = useState(false)
+  const [phonePane, setPhonePane] = useState<PhonePane>('card')
   const fontsLoaded = useCardStore((s) => s.fontsLoaded)
   const setFontsLoaded = useCardStore((s) => s.setFontsLoaded)
 
@@ -42,19 +56,51 @@ export default function App() {
   }, [setFontsLoaded])
   useEffect(() => {
     setIsMounted(true)
+    setPhonePane(readPhonePane())
   }, [])
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(PHONE_PANE_KEY, phonePane)
+    } catch {
+      /* private mode */
+    }
+  }, [phonePane])
 
   return (
     <div data-app-theme="googled">
-      <div className="app-frame h-screen w-screen overflow-hidden relative text-[var(--sb-text-strong)]">
+      <div className="app-frame app-frame-viewport overflow-hidden relative text-[var(--sb-text-strong)]">
         {!fontsLoaded ? (
           <div className="absolute inset-0 z-[var(--ui-z-font-blocking)] flex items-center justify-center bg-black/20">
             <div className={`${UI_PANEL_OVERLAY} ui-panel--pad-lg ${UI_TEXT_SECTION_HEADER}`}>Loading Fonts...</div>
           </div>
         ) : null}
 
-        <div className="h-full w-full pb-[4rem] sm:pb-[4.25rem]">
-          <div className="relative flex h-full min-h-0 min-w-0 w-full flex-col overflow-x-hidden lg:flex-row">
+        <div className="app-workspace-inset flex h-full min-h-0 w-full flex-col">
+          <div className="phone-pane-switch lg:hidden" role="tablist" aria-label="Editor section">
+            {(
+              [
+                ['card', 'Card'],
+                ['data', 'Data'],
+                ['style', 'Style'],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={phonePane === id}
+                className="phone-pane-switch__btn"
+                onClick={() => setPhonePane(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div
+            className="app-workspace relative flex min-h-0 w-full flex-1 flex-col overflow-x-hidden lg:flex-row"
+            data-phone-pane={phonePane}
+          >
             <SidebarLeft />
             <CenterRail />
             <SidebarRight />

@@ -6,6 +6,7 @@ import {
 } from '../../authority/guidanceAuthority'
 import { useCardStore } from '../../store/useCardStore'
 import KonvaStage from '../renderer/KonvaStage'
+import { requestArtZoomStep } from '../renderer/layers/ArtLayer'
 
 function CardPreviewSelectionShell() {
   const { openQuickView, showPreviewGuidance } = useCardStore(
@@ -36,6 +37,20 @@ function CardPreviewSelectionShell() {
   return (
     <div className="relative h-full w-full min-h-0" onDoubleClick={onDoubleClickOpenQuickView}>
       <KonvaStage />
+      <div
+        className="art-zoom-controls lg:hidden"
+        role="group"
+        aria-label="Art zoom"
+        onClick={(event) => event.stopPropagation()}
+        onDoubleClick={(event) => event.stopPropagation()}
+      >
+        <button type="button" aria-label="Zoom art out" onClick={() => requestArtZoomStep(-1)}>
+          −
+        </button>
+        <button type="button" aria-label="Zoom art in" onClick={() => requestArtZoomStep(1)}>
+          +
+        </button>
+      </div>
       {showPreviewGuidance ? (
         <p
           className={`pointer-events-none absolute bottom-ui4 left-1/2 z-[12] max-w-[min(20rem,88vw)] -translate-x-1/2 px-ui2 text-center ${UI_GUIDANCE_INLINE}`}

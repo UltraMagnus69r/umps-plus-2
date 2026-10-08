@@ -188,10 +188,6 @@ export function PrintFeatureScreen() {
           <div className="preview-header">
             <h2>Preview</h2>
             <p>What you see here matches the PDF and the 600 DPI PNG sheets. Print at 100% scale, not fit-to-page.</p>
-            <p className="layout-note">
-              <strong>{letterSheetLayoutFacts.gridLabel}.</strong> {letterSheetLayoutFacts.summary}{' '}
-              {letterSheetLayoutFacts.geometry} {letterSheetLayoutFacts.whyNotNine}
-            </p>
             {exportError ? <p className="export-error">{exportError}</p> : null}
           </div>
           <div className="previews-grid">

@@ -2031,3 +2031,145 @@ html, body, #root {
     }
   }
 }
+
+/* Phone shell: dynamic viewport, home-indicator inset, and one editor surface under 1024px. */
+html,
+body,
+#root {
+  height: 100%;
+  height: 100dvh;
+}
+
+.app-frame-viewport {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100vh;
+  height: 100svh;
+  height: 100dvh;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+.app-workspace-inset {
+  box-sizing: border-box;
+  height: 100%;
+  padding-bottom: var(--app-footer-h, 4.25rem);
+}
+
+.app-frame .ui-chrome-footer.app-footer-safe {
+  padding-bottom: max(0.375rem, env(safe-area-inset-bottom, 0px));
+  padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+  padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+}
+
+.phone-pane-switch {
+  gap: 6px;
+  padding: 8px 12px 4px;
+  flex: none;
+}
+
+.phone-pane-switch__btn {
+  flex: 1;
+  min-height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--ui-color-border);
+  background: var(--ui-color-surface-elevated);
+  color: var(--ui-color-text-strong);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.phone-pane-switch__btn[aria-selected='true'] {
+  background: var(--ui-color-primary);
+  border-color: var(--ui-color-primary);
+  color: #fff;
+}
+
+.art-zoom-controls {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 20;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.art-zoom-controls button {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--ui-color-border);
+  background: color-mix(in srgb, var(--ui-color-surface-elevated) 92%, transparent);
+  color: var(--ui-color-text-strong);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+  box-shadow: 0 1px 2px rgba(60, 64, 67, 0.16);
+}
+
+@media (max-width: 1023px) {
+  .phone-pane-switch,
+  .art-zoom-controls {
+    display: flex;
+  }
+
+  .app-workspace > [data-phone-surface] {
+    max-height: none;
+    min-height: 0;
+    height: 100%;
+    flex: 1 1 auto;
+  }
+
+  .app-workspace[data-phone-pane='card'] > [data-phone-surface='data'],
+  .app-workspace[data-phone-pane='card'] > [data-phone-surface='style'],
+  .app-workspace[data-phone-pane='data'] > [data-phone-surface='style'],
+  .app-workspace[data-phone-pane='style'] > [data-phone-surface='data'] {
+    display: none;
+  }
+
+  .app-workspace[data-phone-pane='data'] > [data-phone-surface='card'],
+  .app-workspace[data-phone-pane='style'] > [data-phone-surface='card'] {
+    visibility: hidden;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    height: auto;
+  }
+
+  .app-workspace[data-phone-pane='data'] > [data-phone-surface='data'],
+  .app-workspace[data-phone-pane='style'] > [data-phone-surface='style'] {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    max-height: none;
+    display: flex;
+    overflow: hidden;
+  }
+
+  .ui-chrome-footer .footer-action-btn,
+  .ui-chrome-footer .export-options-bleed-toggle {
+    width: 2.75rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .sidebar-input,
+  .sidebar-textarea,
+  .sidebar-shell select,
+  .sidebar-shell input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='color']):not([type='range']),
+  .ui-chrome-footer input {
+    font-size: 16px;
+  }
+
+  .sidebar-icon-btn,
+  .sidebar-shell button[aria-expanded],
+  .sidebar-shell .h-9.w-9,
+  .phone-view-btn,
+  .sidebar-section-trigger {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+}

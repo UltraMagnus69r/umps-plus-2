@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef } from 'react'
+import { memo, useCallback, useEffect, useRef } from 'react'
 import { Group, Image, Layer, Text } from 'react-konva'
 import type Konva from 'konva'
 import { shallow } from 'zustand/shallow'
@@ -98,6 +98,45 @@ function ArtLayer() {
     return Math.max(20, Math.min(90, Math.floor(v * 2) / 2))
   })()
 
+  const pinchRef = useRef<{ distance: number; zoom: number } | null>(null)
+
+  const applyArtZoom = useCallback(
+    (nextZoom: number, commit: boolean) => {
+      const state = useCardStore.getState()
+      const zoom = Math.min(4, Math.max(1, nextZoom))
+      if (!artImg) {
+        state.setManualArtPlacement({ artZoom: zoom })
+        if (commit) state.commitState()
+        return
+      }
+      const clamped = clampArtPlacementOffsets({
+        imageWidth: artImg.width,
+        imageHeight: artImg.height,
+        bounds: { x: artInnerX, y: artInnerY, width: artInnerW, height: artInnerH },
+        artZoom: zoom,
+        artOffsetX: state.cardData.artOffsetX ?? 0,
+        artOffsetY: state.cardData.artOffsetY ?? 0,
+      })
+      state.setManualArtPlacement({
+        artZoom: zoom,
+        artOffsetX: clamped.artOffsetX,
+        artOffsetY: clamped.artOffsetY,
+      })
+      if (commit) state.commitState()
+    },
+    [artImg, artInnerH, artInnerW, artInnerX, artInnerY],
+  )
+
+  useEffect(() => {
+    const onStep = (event: Event) => {
+      const direction = (event as CustomEvent<number>).detail
+      const current = useCardStore.getState().cardData.artZoom ?? 1
+      applyArtZoom(current + direction * 0.12, true)
+    }
+    window.addEventListener('umps-art-zoom-step', onStep)
+    return () => window.removeEventListener('umps-art-zoom-step', onStep)
+  }, [applyArtZoom])
+
   const baseScale = artInnerW / (artImg?.width ?? 1)
   const zoom = Math.max(1, artZoom ?? 1)
   const scale = baseScale * zoom
@@ -131,35 +170,33 @@ function ArtLayer() {
           listening={true}
           onWheel={(e) => {
             e.evt.preventDefault()
-            const state = useCardStore.getState()
-            const current = state.cardData.artZoom ?? 1
-            const delta = e.evt.deltaY
-            const step = delta > 0 ? -0.08 : 0.08
-            const nextZoom = Math.min(4, Math.max(1, current + step))
-            state.setManualArtPlacement({ artZoom: nextZoom })
+            const current = useCardStore.getState().cardData.artZoom ?? 1
+            const step = e.evt.deltaY > 0 ? -0.08 : 0.08
+            applyArtZoom(current + step, false)
             const win = window as unknown as { __artZoomCommit?: ReturnType<typeof setTimeout> }
             if (win.__artZoomCommit) clearTimeout(win.__artZoomCommit)
             win.__artZoomCommit = setTimeout(() => {
-              const s2 = useCardStore.getState()
-              const clamped = clampArtPlacementOffsets({
-                imageWidth: artImg.width,
-                imageHeight: artImg.height,
-                bounds: {
-                  x: artInnerX,
-                  y: artInnerY,
-                  width: artInnerW,
-                  height: artInnerH,
-                },
-                artZoom: Math.max(1, s2.cardData.artZoom ?? 1),
-                artOffsetX: s2.cardData.artOffsetX ?? 0,
-                artOffsetY: s2.cardData.artOffsetY ?? 0,
-              })
-              s2.setManualArtPlacement({
-                artOffsetX: clamped.artOffsetX,
-                artOffsetY: clamped.artOffsetY,
-              })
-              s2.commitState()
+              useCardStore.getState().commitState()
             }, 250)
+          }}
+          onTouchStart={(e) => {
+            const dist = touchSpan(e.evt.touches)
+            if (dist <= 0) return
+            pinchRef.current = { distance: dist, zoom: useCardStore.getState().cardData.artZoom ?? 1 }
+            e.target.stopDrag()
+          }}
+          onTouchMove={(e) => {
+            const pinch = pinchRef.current
+            const dist = touchSpan(e.evt.touches)
+            if (!pinch || dist <= 0) return
+            e.evt.preventDefault()
+            e.target.stopDrag()
+            applyArtZoom(pinch.zoom * (dist / pinch.distance), false)
+          }}
+          onTouchEnd={(e) => {
+            if (!pinchRef.current || e.evt.touches.length >= 2) return
+            pinchRef.current = null
+            useCardStore.getState().commitState()
           }}
         >
           <Image
@@ -212,6 +249,19 @@ function ArtLayer() {
       )}
     </Layer>
   )
+}
+
+function touchSpan(touches: TouchList): number {
+  if (touches.length < 2) return 0
+  const a = touches[0]
+  const b = touches[1]
+  if (!a || !b) return 0
+  return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
+}
+
+/** Phone art-zoom buttons. The stage stays mounted and applies the same clamp as the mouse wheel. */
+export function requestArtZoomStep(direction: 1 | -1) {
+  window.dispatchEvent(new CustomEvent('umps-art-zoom-step', { detail: direction }))
 }
 
 export default memo(ArtLayer)

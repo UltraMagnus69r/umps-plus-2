@@ -402,6 +402,7 @@ export default function SidebarLeft() {
   return (
     <>
       <aside
+        data-phone-surface="data"
         className={`${SHELL_CLASS} ${asideWidthClass} order-2 max-h-[min(40vh,22rem)] lg:order-none lg:max-h-none`}
         dir="ltr"
       >
