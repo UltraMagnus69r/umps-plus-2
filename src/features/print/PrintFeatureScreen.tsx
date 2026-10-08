@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { PrintPersistentFooter } from './components/PrintPersistentFooter'
 import { PrintSheetPreview } from './components/PrintSheetPreview'
 import { PrintUploadPanel } from './components/PrintUploadPanel'
-import { exportPrintFullSetPdf } from './export/printSheetExport'
+import { letterSheetLayoutFacts } from './authority/printFeatureAuthority'
+import { exportPrintFullSetPdf, exportPrintFullSetPng } from './export/printSheetExport'
 import { usePrintFeatureState } from './state/usePrintFeatureState'
 
 export function PrintFeatureScreen() {
@@ -28,6 +29,8 @@ export function PrintFeatureScreen() {
   } = usePrintFeatureState()
 
   const [includeBleedInExport, setIncludeBleedInExport] = useState(true)
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
 
   const activeSheet = layout.sheets[activeSheetIndex] ?? layout.sheets[0]
 
@@ -57,6 +60,19 @@ export function PrintFeatureScreen() {
     [frontCards, backAssetUrl, layout.sheets, includeBleedInExport],
   )
 
+  const runExport = async (kind: 'pdf' | 'png') => {
+    setExporting(true)
+    setExportError(null)
+    try {
+      if (kind === 'pdf') await exportPrintFullSetPdf(exportContext)
+      else await exportPrintFullSetPng(exportContext)
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'Export failed')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const readyToPrintLabel = useMemo(() => {
     if (layout.uploadedCount === 0) {
       return 'Add cards to start'
@@ -72,13 +88,17 @@ export function PrintFeatureScreen() {
       <main className="printer-screen printer-screen--with-footer">
         <header className="hero-header">
           <h1>Proxy Printer</h1>
-          <p>Build printable proxy sheets with a clear front-and-back workflow.</p>
+          <p>US Letter at actual size, 600 DPI. Upload fronts, then print fronts and backs.</p>
         </header>
 
         <section className="stats-row stats-row-simple">
           <div className="stat-card stat-card-primary">
             <span>Cards Added</span>
             <strong>{layout.uploadedCount}</strong>
+          </div>
+          <div className="stat-card stat-card-primary">
+            <span>Per sheet</span>
+            <strong>{letterSheetLayoutFacts.cardsPerSheet}</strong>
           </div>
           <div className="stat-card stat-card-primary">
             <span>Sheets Ready</span>
@@ -128,7 +148,8 @@ export function PrintFeatureScreen() {
             <section className="panel">
               <h2>Card back</h2>
               <p className="panel-subtitle">
-                One back image fills every back slot. Upload your own in the footer, or keep the default.
+                One back fills every back slot at the same cut as the fronts. The default file is cover-fitted
+                into the 1650×2250 slot. Upload your own in the footer, or keep the default.
               </p>
               <p className={`status-chip ${backAssetLoaded ? 'ok' : 'warn'}`}>
                 {backAssetLoaded ? 'Back image is ready' : 'Back image is still loading'}
@@ -140,7 +161,12 @@ export function PrintFeatureScreen() {
         <section className="previews-workspace panel">
           <div className="preview-header">
             <h2>Preview</h2>
-            <p>What you see here matches your exported files.</p>
+            <p>What you see here matches the PDF and the 600 DPI PNG sheets. Print at 100% scale, not fit-to-page.</p>
+            <p className="layout-note">
+              <strong>{letterSheetLayoutFacts.gridLabel}.</strong> {letterSheetLayoutFacts.summary}{' '}
+              {letterSheetLayoutFacts.geometry} {letterSheetLayoutFacts.whyNotNine}
+            </p>
+            {exportError ? <p className="export-error">{exportError}</p> : null}
           </div>
           <div className="previews-grid">
             <PrintSheetPreview
@@ -151,15 +177,17 @@ export function PrintFeatureScreen() {
               frontCards={frontCards}
               backAssetUrl={backAssetUrl}
               backSourceSize={backSourceSize}
+              includeBleed={includeBleedInExport}
             />
             <PrintSheetPreview
               title="Backs"
-              instruction="Flip the paper, then print these pages."
+              instruction="Flip the paper on the long edge, then print these pages."
               side="back"
               placements={activeSheet?.backPlacements ?? []}
               frontCards={frontCards}
               backAssetUrl={backAssetUrl}
               backSourceSize={backSourceSize}
+              includeBleed={includeBleedInExport}
             />
           </div>
         </section>
@@ -170,7 +198,9 @@ export function PrintFeatureScreen() {
         onUploadBack={setCustomBackFromFiles}
         includeBleedInExport={includeBleedInExport}
         onIncludeBleedInExportChange={setIncludeBleedInExport}
-        onExportPdf={() => void exportPrintFullSetPdf(exportContext)}
+        exporting={exporting}
+        onExportPdf={() => void runExport('pdf')}
+        onExportPng={() => void runExport('png')}
       />
     </>
   )

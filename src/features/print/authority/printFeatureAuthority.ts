@@ -1,124 +1,253 @@
+import {
+  BLEED_PX,
+  DPI,
+  STAGE_HEIGHT,
+  STAGE_WIDTH,
+  TRIM_HEIGHT,
+  TRIM_WIDTH,
+} from '../../../domain/geometry/constants'
 import type {
   PrintBackImageFit,
   PrintCutMark,
   PrintLayoutTemplate,
   PrintPageLayoutResult,
   PrintPlacement,
+  PrintSourceFit,
   PrintUploadedFrontCard,
 } from '../types/printFeature'
 
-const INCHES_TO_PX = 600
-const CARD_WIDTH_PX = 1650
-const CARD_HEIGHT_PX = 2250
-const BLEED_PX = 75
-const TRIM_WIDTH_PX = CARD_WIDTH_PX - BLEED_PX * 2
-const TRIM_HEIGHT_PX = CARD_HEIGHT_PX - BLEED_PX * 2
+const PAGE_WIDTH_IN = 8.5
+const PAGE_HEIGHT_IN = 11
+const PAGE_WIDTH_PX = Math.round(PAGE_WIDTH_IN * DPI)
+const PAGE_HEIGHT_PX = Math.round(PAGE_HEIGHT_IN * DPI)
 
-/** Namespaced print layout authority (integrated from Proxy Print). */
+/**
+ * Crop marks sit just outside the bleed and extend this far past the card tile.
+ * Must stay ≤ bleed so a zero-gap neighbor still keeps the mark out of its trim.
+ */
+const MARK_OUTSIDE_GAP_PX = 20
+const MARK_LENGTH_PX = 40
+const MARK_REACH_PX = MARK_OUTSIDE_GAP_PX + MARK_LENGTH_PX
+
+/** Namespaced print layout authority. Card pixels match the PLUS-1 600 DPI exporter. */
 export const printFeatureAuthority = {
   assets: {
     canonicalBackAssetPath: '/assets/print/card-back.png',
   },
   page: {
     name: 'US Letter Portrait',
-    widthIn: 8.5,
-    heightIn: 11,
-    dpi: INCHES_TO_PX,
-    get widthPx() {
-      return Math.round(this.widthIn * this.dpi)
-    },
-    get heightPx() {
-      return Math.round(this.heightIn * this.dpi)
-    },
+    widthIn: PAGE_WIDTH_IN,
+    heightIn: PAGE_HEIGHT_IN,
+    dpi: DPI,
+    widthPx: PAGE_WIDTH_PX,
+    heightPx: PAGE_HEIGHT_PX,
   },
   margins: {
-    topIn: 0.1,
-    rightIn: 0.1,
-    bottomIn: 0.1,
-    leftIn: 0.1,
+    /** Equal side margin of the 3-across block. Three full-bleed cards leave only this much. */
+    portraitSidePx: Math.floor((PAGE_WIDTH_PX - 3 * STAGE_WIDTH) / 2),
+    topPx: 75,
+    bottomPx: 75,
   },
   card: {
-    widthPx: CARD_WIDTH_PX,
-    heightPx: CARD_HEIGHT_PX,
+    widthPx: STAGE_WIDTH,
+    heightPx: STAGE_HEIGHT,
     bleedPx: BLEED_PX,
-    trimWidthPx: TRIM_WIDTH_PX,
-    trimHeightPx: TRIM_HEIGHT_PX,
+    trimWidthPx: TRIM_WIDTH,
+    trimHeightPx: TRIM_HEIGHT,
     trimInsetLeftPx: BLEED_PX,
     trimInsetTopPx: BLEED_PX,
-    trimInsetRightPx: CARD_WIDTH_PX - BLEED_PX,
-    trimInsetBottomPx: CARD_HEIGHT_PX - BLEED_PX,
+    trimInsetRightPx: STAGE_WIDTH - BLEED_PX,
+    trimInsetBottomPx: STAGE_HEIGHT - BLEED_PX,
   },
   spacing: {
-    gapIn: 0.025,
-    get gapPx() {
-      return Math.round(this.gapIn * INCHES_TO_PX)
-    },
+    /** Portrait columns touch at the bleed edge. Any gap would push the outer marks off the page. */
+    portraitGapPx: 0,
+    /** White gutter between the two portrait rows. Wide enough for both rows' crop marks. */
+    portraitRowGapPx: MARK_REACH_PX * 2,
+    /** White gutter between the two sideways cards. */
+    rotatedGapPx: MARK_REACH_PX * 2,
   },
   cutGuides: {
-    outsideBleedGapPx: 20,
-    tickLengthPx: 40,
+    outsideBleedGapPx: MARK_OUTSIDE_GAP_PX,
+    tickLengthPx: MARK_LENGTH_PX,
     tickThicknessPx: 2,
+    reachPx: MARK_REACH_PX,
     previewMinTickLengthPx: 6,
     previewMinThicknessPx: 2,
   },
 }
 
-function getTrimBounds(placement: PrintPlacement) {
-  return {
-    trimLeftX: placement.xPx + printFeatureAuthority.card.bleedPx,
-    trimRightX: placement.xPx + placement.widthPx - printFeatureAuthority.card.bleedPx,
-    trimTopY: placement.yPx + printFeatureAuthority.card.bleedPx,
-    trimBottomY: placement.yPx + placement.heightPx - printFeatureAuthority.card.bleedPx,
+export const letterSheetLayoutFacts = {
+  cardsPerSheet: 8,
+  gridLabel: '8-up',
+  summary: 'Six portrait cards in a 3×2 block, plus two sideways cards on the bottom row.',
+  geometry:
+    'Each card is the PLUS-1 size: 2.75×3.75 in full bleed (1650×2250 at 600 DPI), trim 2.5×3.5 in, bleed 0.125 in per side.',
+  whyNotNine:
+    'A 3×3 nine-up is 3 × 3.75 in = 11.25 in tall. US Letter is 11 in, so nine cards fit only by shrinking the card or cutting into the bleed. Eight is the densest sheet that keeps true size, the full bleed, and cut marks outside the trim. The three columns touch at the bleed edge — letter is only 0.25 in wider than 3 × 2.75 in — so the marks between columns land in the bleed, not on the finished card. The rows have a white gutter so those marks sit on paper.',
+} as const
+
+type TemplateSlot = { xPx: number; yPx: number; widthPx: number; heightPx: number; rotationDeg: number }
+
+type Rect = { x: number; y: number; w: number; h: number }
+
+function assertFit(condition: boolean, message: string) {
+  if (!condition) {
+    throw new Error(`Print sheet layout: ${message}`)
   }
 }
 
-type TemplateSlot = { xPx: number; yPx: number; widthPx: number; heightPx: number; rotationDeg: number }
-function createCanonical8UpTemplate(): PrintLayoutTemplate {
-  const frontSlots: TemplateSlot[] = [
-    { xPx: 60, yPx: 60, widthPx: 1650, heightPx: 2250, rotationDeg: 0 },
-    { xPx: 1725, yPx: 60, widthPx: 1650, heightPx: 2250, rotationDeg: 0 },
-    { xPx: 3390, yPx: 60, widthPx: 1650, heightPx: 2250, rotationDeg: 0 },
+function rectsIntersect(a: Rect, b: Rect) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y
+}
 
-    { xPx: 60, yPx: 2325, widthPx: 1650, heightPx: 2250, rotationDeg: 0 },
-    { xPx: 1725, yPx: 2325, widthPx: 1650, heightPx: 2250, rotationDeg: 0 },
-    { xPx: 3390, yPx: 2325, widthPx: 1650, heightPx: 2250, rotationDeg: 0 },
+function trimRect(slot: TemplateSlot): Rect {
+  return {
+    x: slot.xPx + BLEED_PX,
+    y: slot.yPx + BLEED_PX,
+    w: slot.widthPx - BLEED_PX * 2,
+    h: slot.heightPx - BLEED_PX * 2,
+  }
+}
 
-    { xPx: 300, yPx: 4733, widthPx: 2250, heightPx: 1650, rotationDeg: 90 },
-    { xPx: 2550, yPx: 4733, widthPx: 2250, heightPx: 1650, rotationDeg: 90 },
-  ]
+function markReachRect(slot: TemplateSlot): Rect {
+  const reach = printFeatureAuthority.cutGuides.reachPx
+  return {
+    x: slot.xPx - reach,
+    y: slot.yPx - reach,
+    w: slot.widthPx + reach * 2,
+    h: slot.heightPx + reach * 2,
+  }
+}
 
-  const backSlots: TemplateSlot[] = [
-    { xPx: 3390, yPx: 60, widthPx: 1650, heightPx: 2250, rotationDeg: 0 },
-    { xPx: 1725, yPx: 60, widthPx: 1650, heightPx: 2250, rotationDeg: 0 },
-    { xPx: 60, yPx: 60, widthPx: 1650, heightPx: 2250, rotationDeg: 0 },
+function assertSlotsFit(slots: TemplateSlot[], label: string) {
+  const pageW = printFeatureAuthority.page.widthPx
+  const pageH = printFeatureAuthority.page.heightPx
+  slots.forEach((slot, index) => {
+    const reach = markReachRect(slot)
+    assertFit(reach.x >= 0 && reach.y >= 0, `${label} slot ${index} crop marks start off the page`)
+    assertFit(
+      reach.x + reach.w <= pageW && reach.y + reach.h <= pageH,
+      `${label} slot ${index} crop marks run off the page`,
+    )
+    assertFit(slot.widthPx > BLEED_PX * 2 && slot.heightPx > BLEED_PX * 2, `${label} slot ${index} is smaller than its bleed`)
+  })
 
-    { xPx: 3390, yPx: 2325, widthPx: 1650, heightPx: 2250, rotationDeg: 0 },
-    { xPx: 1725, yPx: 2325, widthPx: 1650, heightPx: 2250, rotationDeg: 0 },
-    { xPx: 60, yPx: 2325, widthPx: 1650, heightPx: 2250, rotationDeg: 0 },
+  for (let i = 0; i < slots.length; i += 1) {
+    for (let j = i + 1; j < slots.length; j += 1) {
+      const a = slots[i]
+      const b = slots[j]
+      assertFit(
+        !rectsIntersect(
+          { x: a.xPx, y: a.yPx, w: a.widthPx, h: a.heightPx },
+          { x: b.xPx, y: b.yPx, w: b.widthPx, h: b.heightPx },
+        ),
+        `${label} slots ${i} and ${j} overlap`,
+      )
+      assertFit(
+        !rectsIntersect(markReachRect(a), trimRect(b)) && !rectsIntersect(markReachRect(b), trimRect(a)),
+        `${label} crop marks of slots ${i} and ${j} cross a trim box`,
+      )
+    }
+  }
+}
 
-    { xPx: 2550, yPx: 4733, widthPx: 2250, heightPx: 1650, rotationDeg: 90 },
-    { xPx: 300, yPx: 4733, widthPx: 2250, heightPx: 1650, rotationDeg: 90 },
-  ]
+function mirrorSlot(slot: TemplateSlot): TemplateSlot {
+  return {
+    ...slot,
+    xPx: printFeatureAuthority.page.widthPx - slot.xPx - slot.widthPx,
+  }
+}
+
+/**
+ * Densest safe US Letter imposition at PLUS-1 full bleed.
+ * Nine-up is rejected by the height check below; do not "make it fit" by scaling.
+ */
+function createLetter8UpTemplate(): PrintLayoutTemplate {
+  const cardW = STAGE_WIDTH
+  const cardH = STAGE_HEIGHT
+  const pageW = PAGE_WIDTH_PX
+  const pageH = PAGE_HEIGHT_PX
+  const { portraitGapPx, portraitRowGapPx, rotatedGapPx } = printFeatureAuthority.spacing
+  const { topPx, bottomPx } = printFeatureAuthority.margins
+
+  const nineUpHeight = 3 * cardH
+  assertFit(
+    nineUpHeight > pageH,
+    '9-up unexpectedly fits; re-check before keeping the 8-up cap',
+  )
+
+  const cols = 3
+  const portraitSpan = cols * cardW + (cols - 1) * portraitGapPx
+  const marginX = Math.floor((pageW - portraitSpan) / 2)
+  assertFit(marginX * 2 + portraitSpan === pageW, 'portrait block is not centered on the page')
+
+  const portraitYs = [0, 1].map((row) => topPx + row * (cardH + portraitRowGapPx))
+  const frontSlots: TemplateSlot[] = []
+  portraitYs.forEach((yPx) => {
+    for (let col = 0; col < cols; col += 1) {
+      frontSlots.push({
+        xPx: marginX + col * (cardW + portraitGapPx),
+        yPx,
+        widthPx: cardW,
+        heightPx: cardH,
+        rotationDeg: 0,
+      })
+    }
+  })
+
+  const rotatedWidth = cardH
+  const rotatedHeight = cardW
+  const rotatedY = pageH - bottomPx - rotatedHeight
+  const portraitBottom = portraitYs[portraitYs.length - 1] + cardH
+  assertFit(rotatedY >= portraitBottom, 'sideways row overlaps the portrait block')
+
+  const rotatedSpan = rotatedWidth * 2 + rotatedGapPx
+  const rotatedX = Math.floor((pageW - rotatedSpan) / 2)
+  frontSlots.push(
+    { xPx: rotatedX, yPx: rotatedY, widthPx: rotatedWidth, heightPx: rotatedHeight, rotationDeg: 90 },
+    {
+      xPx: rotatedX + rotatedWidth + rotatedGapPx,
+      yPx: rotatedY,
+      widthPx: rotatedWidth,
+      heightPx: rotatedHeight,
+      rotationDeg: 90,
+    },
+  )
+
+  const backSlots = frontSlots.map(mirrorSlot)
+  assertSlotsFit(frontSlots, 'front')
+  assertSlotsFit(backSlots, 'back')
 
   return {
-    id: 'canonical-8-up',
-    label: 'Canonical 8-Up Layout',
+    id: 'letter-8-up',
+    label: 'Letter 8-up',
     orientation: 'hybrid',
     columns: 3,
     rows: 3,
-    gridLabel: 'Canonical 8-Up Layout',
-    layoutDescription: 'Six portrait slots in a 3 x 2 block; two 90-degree rotated slots centered beneath.',
+    gridLabel: letterSheetLayoutFacts.gridLabel,
+    layoutDescription: `${letterSheetLayoutFacts.summary} ${letterSheetLayoutFacts.whyNotNine}`,
     capacity: frontSlots.length,
     frontSlots,
     backSlots,
   }
 }
 
+const letterTemplate = createLetter8UpTemplate()
+
+function getTrimBounds(placement: PrintPlacement) {
+  const bleed = printFeatureAuthority.card.bleedPx
+  return {
+    trimLeftX: placement.xPx + bleed,
+    trimRightX: placement.xPx + placement.widthPx - bleed,
+    trimTopY: placement.yPx + bleed,
+    trimBottomY: placement.yPx + placement.heightPx - bleed,
+  }
+}
+
 export function createPrintPagePlacements(frontCards: PrintUploadedFrontCard[]): PrintPageLayoutResult {
-  const template = createCanonical8UpTemplate()
+  const template = letterTemplate
   const capacity = template.capacity
-  const columns = template.columns
-  const rows = template.rows
   const uploadedCount = frontCards.length
   const totalSheets = capacity > 0 ? Math.max(1, Math.ceil(uploadedCount / capacity)) : 1
 
@@ -130,22 +259,14 @@ export function createPrintPagePlacements(frontCards: PrintUploadedFrontCard[]):
       id: `front-${sheetIndex}-${card.id}`,
       cardId: card.id,
       index: slotIndex,
-      xPx: template.frontSlots[slotIndex].xPx,
-      yPx: template.frontSlots[slotIndex].yPx,
-      widthPx: template.frontSlots[slotIndex].widthPx,
-      heightPx: template.frontSlots[slotIndex].heightPx,
-      rotationDeg: template.frontSlots[slotIndex].rotationDeg,
+      ...template.frontSlots[slotIndex],
     }))
 
     const backPlacements: PrintPlacement[] = cards.map((card, slotIndex) => ({
       id: `back-${sheetIndex}-${card.id}`,
       cardId: card.id,
       index: slotIndex,
-      xPx: template.backSlots[slotIndex].xPx,
-      yPx: template.backSlots[slotIndex].yPx,
-      widthPx: template.backSlots[slotIndex].widthPx,
-      heightPx: template.backSlots[slotIndex].heightPx,
-      rotationDeg: template.backSlots[slotIndex].rotationDeg,
+      ...template.backSlots[slotIndex],
     }))
 
     return {
@@ -158,10 +279,19 @@ export function createPrintPagePlacements(frontCards: PrintUploadedFrontCard[]):
 
   return {
     capacity,
-    columns,
-    rows,
+    columns: template.columns,
+    rows: template.rows,
     template,
-    templateEvaluations: [],
+    templateEvaluations: [
+      {
+        templateId: template.id,
+        label: template.label,
+        columns: template.columns,
+        rows: template.rows,
+        capacity,
+        valid: true,
+      },
+    ],
     totalSheets,
     uploadedCount,
     placedCount,
@@ -171,41 +301,58 @@ export function createPrintPagePlacements(frontCards: PrintUploadedFrontCard[]):
   }
 }
 
-export function getPrintBackImageFit(sourceWidthPx: number, sourceHeightPx: number): PrintBackImageFit {
-  const targetWidth = printFeatureAuthority.card.widthPx
-  const targetHeight = printFeatureAuthority.card.heightPx
+export function classifyPrintSource(sourceWidthPx: number, sourceHeightPx: number): PrintSourceFit {
+  if (sourceWidthPx === STAGE_WIDTH && sourceHeightPx === STAGE_HEIGHT) return 'full-bleed'
+  if (sourceWidthPx === TRIM_WIDTH && sourceHeightPx === TRIM_HEIGHT) return 'trim'
+  return 'cover'
+}
 
+export function coverFit(
+  sourceWidthPx: number,
+  sourceHeightPx: number,
+  targetWidthPx: number,
+  targetHeightPx: number,
+): PrintBackImageFit {
   if (sourceWidthPx <= 0 || sourceHeightPx <= 0) {
     return {
-      drawWidthPx: targetWidth,
-      drawHeightPx: targetHeight,
+      drawWidthPx: targetWidthPx,
+      drawHeightPx: targetHeightPx,
       offsetXPx: 0,
       offsetYPx: 0,
     }
   }
 
-  const targetRatio = targetWidth / targetHeight
+  const targetRatio = targetWidthPx / targetHeightPx
   const sourceRatio = sourceWidthPx / sourceHeightPx
 
   if (sourceRatio > targetRatio) {
-    const drawHeightPx = targetHeight
+    const drawHeightPx = targetHeightPx
     const drawWidthPx = Math.round(drawHeightPx * sourceRatio)
     return {
       drawWidthPx,
       drawHeightPx,
-      offsetXPx: Math.round((targetWidth - drawWidthPx) / 2),
+      offsetXPx: Math.round((targetWidthPx - drawWidthPx) / 2),
       offsetYPx: 0,
     }
   }
 
-  const drawWidthPx = targetWidth
+  const drawWidthPx = targetWidthPx
   const drawHeightPx = Math.round(drawWidthPx / sourceRatio)
   return {
     drawWidthPx,
     drawHeightPx,
     offsetXPx: 0,
-    offsetYPx: Math.round((targetHeight - drawHeightPx) / 2),
+    offsetYPx: Math.round((targetHeightPx - drawHeightPx) / 2),
   }
+}
+
+export function getPrintBackImageFit(sourceWidthPx: number, sourceHeightPx: number): PrintBackImageFit {
+  return coverFit(
+    sourceWidthPx,
+    sourceHeightPx,
+    printFeatureAuthority.card.widthPx,
+    printFeatureAuthority.card.heightPx,
+  )
 }
 
 export function createPrintCutMarks(placement: PrintPlacement): PrintCutMark[] {
@@ -222,7 +369,6 @@ export function createPrintCutMarks(placement: PrintPlacement): PrintCutMark[] {
 
   const topStartY = tileTopY - outsideBleedGapPx - tickLength
   const bottomStartY = tileBottomY + outsideBleedGapPx
-
   const leftStartX = tileLeftX - outsideBleedGapPx - tickLength
   const rightStartX = tileRightX + outsideBleedGapPx
 

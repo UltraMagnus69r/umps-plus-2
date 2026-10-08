@@ -1,6 +1,17 @@
 import { jsPDF } from 'jspdf'
-import { createPrintCutMarks, printFeatureAuthority } from '../authority/printFeatureAuthority'
-import type { PrintPlacement, PrintSheetLayout, PrintSheetSide, PrintUploadedFrontCard } from '../types/printFeature'
+import { exportCanvasPng600Dpi } from '../../../domain/export/png'
+import {
+  classifyPrintSource,
+  coverFit,
+  createPrintCutMarks,
+  printFeatureAuthority,
+} from '../authority/printFeatureAuthority'
+import type {
+  PrintPlacement,
+  PrintSheetLayout,
+  PrintSheetSide,
+  PrintUploadedFrontCard,
+} from '../types/printFeature'
 
 export interface PrintExportContext {
   frontCards: PrintUploadedFrontCard[]
@@ -29,23 +40,7 @@ async function buildImageMap(frontCards: PrintUploadedFrontCard[], backAssetUrl:
   return { frontImageMap: map, backImage }
 }
 
-function drawImageCover(
-  ctx: CanvasRenderingContext2D,
-  image: HTMLImageElement,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-) {
-  const scale = Math.max(width / image.width, height / image.height)
-  const drawWidth = image.width * scale
-  const drawHeight = image.height * scale
-  const offsetX = x + (width - drawWidth) / 2
-  const offsetY = y + (height - drawHeight) / 2
-  ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight)
-}
-
-function drawPlacementImage(
+function drawCardIntoSlot(
   ctx: CanvasRenderingContext2D,
   placement: PrintPlacement,
   image: HTMLImageElement,
@@ -53,31 +48,48 @@ function drawPlacementImage(
 ) {
   const { xPx, yPx, widthPx, heightPx } = placement
   const rotationDeg = placement.rotationDeg ?? 0
-  const b = printFeatureAuthority.card.bleedPx
+  const bleed = printFeatureAuthority.card.bleedPx
+  const sourceW = image.naturalWidth || image.width
+  const sourceH = image.naturalHeight || image.height
+  const fit = classifyPrintSource(sourceW, sourceH)
 
   ctx.save()
   ctx.beginPath()
   if (includeBleed) {
     ctx.rect(xPx, yPx, widthPx, heightPx)
   } else {
-    ctx.rect(xPx + b, yPx + b, widthPx - b * 2, heightPx - b * 2)
+    ctx.rect(xPx + bleed, yPx + bleed, widthPx - bleed * 2, heightPx - bleed * 2)
   }
   ctx.clip()
 
-  if (rotationDeg === 0) {
-    drawImageCover(ctx, image, xPx, yPx, widthPx, heightPx)
-    ctx.restore()
-    return
+  const unrotatedW = rotationDeg ? heightPx : widthPx
+  const unrotatedH = rotationDeg ? widthPx : heightPx
+  if (rotationDeg) {
+    ctx.translate(xPx + widthPx / 2, yPx + heightPx / 2)
+    ctx.rotate((rotationDeg * Math.PI) / 180)
+  }
+  const originX = rotationDeg ? -unrotatedW / 2 : xPx
+  const originY = rotationDeg ? -unrotatedH / 2 : yPx
+
+  const exactPixels = !rotationDeg && (fit === 'full-bleed' || fit === 'trim')
+  ctx.imageSmoothingEnabled = !exactPixels
+  if (!exactPixels) ctx.imageSmoothingQuality = 'high'
+
+  if (fit === 'full-bleed') {
+    ctx.drawImage(image, originX, originY, unrotatedW, unrotatedH)
+  } else if (fit === 'trim') {
+    ctx.drawImage(image, originX + bleed, originY + bleed, unrotatedW - bleed * 2, unrotatedH - bleed * 2)
+  } else {
+    const covered = coverFit(sourceW, sourceH, unrotatedW, unrotatedH)
+    ctx.drawImage(
+      image,
+      originX + covered.offsetXPx,
+      originY + covered.offsetYPx,
+      covered.drawWidthPx,
+      covered.drawHeightPx,
+    )
   }
 
-  const cx = xPx + widthPx / 2
-  const cy = yPx + heightPx / 2
-  const drawAreaWidth = heightPx
-  const drawAreaHeight = widthPx
-
-  ctx.translate(cx, cy)
-  ctx.rotate((rotationDeg * Math.PI) / 180)
-  drawImageCover(ctx, image, -drawAreaWidth / 2, -drawAreaHeight / 2, drawAreaWidth, drawAreaHeight)
   ctx.restore()
 }
 
@@ -103,17 +115,14 @@ async function renderSheetCanvas(
   const placements = side === 'front' ? sheet.frontPlacements : sheet.backPlacements
   placements.forEach((placement) => {
     const image = side === 'front' ? frontImageMap.get(placement.cardId) : backImage
-    if (!image) {
-      return
-    }
-    drawPlacementImage(ctx, placement, image, includeBleedInExport)
+    if (!image) return
+    drawCardIntoSlot(ctx, placement, image, includeBleedInExport)
   })
 
   if (includeBleedInExport) {
     ctx.fillStyle = '#0e0c12'
     placements.forEach((placement) => {
-      const marks = createPrintCutMarks(placement)
-      marks.forEach((mark) => {
+      createPrintCutMarks(placement).forEach((mark) => {
         ctx.fillRect(mark.xPx, mark.yPx, mark.widthPx, mark.heightPx)
       })
     })
@@ -130,6 +139,10 @@ function pageSizePt() {
   }
 }
 
+function sheetBaseName(includeBleed: boolean) {
+  return includeBleed ? 'proxy-printer_sheets' : 'proxy-printer_sheets_trim'
+}
+
 export async function exportPrintFullSetPdf(context: PrintExportContext) {
   const includeBleedInExport = context.includeBleedInExport !== false
   const { frontImageMap, backImage } = await buildImageMap(context.frontCards, context.backAssetUrl)
@@ -142,6 +155,10 @@ export async function exportPrintFullSetPdf(context: PrintExportContext) {
     format: [wPt, hPt],
     orientation,
     compress: true,
+  })
+  pdf.setProperties({
+    title: 'UMPS proxy sheets',
+    subject: 'US Letter at actual size. Print at 100% scale. Source is 600 DPI.',
   })
 
   let first = true
@@ -162,6 +179,33 @@ export async function exportPrintFullSetPdf(context: PrintExportContext) {
     addCanvasPage(canvas)
   }
 
-  const baseName = includeBleedInExport ? 'proxy-printer_sheets.pdf' : 'proxy-printer_sheets_trim.pdf'
-  pdf.save(baseName)
+  pdf.save(`${sheetBaseName(includeBleedInExport)}.pdf`)
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 15_000)
+}
+
+export async function exportPrintFullSetPng(context: PrintExportContext) {
+  const includeBleedInExport = context.includeBleedInExport !== false
+  const { frontImageMap, backImage } = await buildImageMap(context.frontCards, context.backAssetUrl)
+  const suffix = includeBleedInExport ? '' : '-trim'
+
+  for (let index = 0; index < context.sheets.length; index += 1) {
+    const sheet = context.sheets[index]
+    const sheetNo = String(sheet.sheetIndex + 1).padStart(2, '0')
+    for (const side of ['front', 'back'] as const) {
+      const canvas = await renderSheetCanvas(side, sheet, frontImageMap, backImage, includeBleedInExport)
+      const blob = await exportCanvasPng600Dpi(canvas)
+      downloadBlob(blob, `proxy-sheet-${sheetNo}-${side}${suffix}-600dpi.png`)
+      await new Promise((resolve) => window.setTimeout(resolve, 300))
+    }
+  }
 }

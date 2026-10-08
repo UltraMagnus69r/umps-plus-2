@@ -317,7 +317,7 @@
 }
 
 .print-feature-root .stats-row-simple {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .print-feature-root .stat-card {
@@ -678,6 +678,20 @@
   font-size: 13px;
 }
 
+.print-feature-root .layout-note {
+  margin: 8px 0 0;
+  color: var(--ui-text);
+  font-size: 13px;
+  line-height: 1.45;
+  max-width: 78ch;
+}
+
+.print-feature-root .export-error {
+  margin: 8px 0 0;
+  color: var(--ui-danger);
+  font-size: 13px;
+}
+
 .print-feature-root .sheet-frame {
   overflow-x: auto;
   padding: 8px 4px 4px;
@@ -703,12 +717,20 @@
   z-index: 1;
 }
 
+.print-feature-root .card-slot,
+.print-feature-root .card-rotator {
+  position: absolute;
+}
+
+.print-feature-root .card-rotator {
+  transform-origin: center;
+}
+
 .print-feature-root .card-tile img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  transform-origin: center;
 }
 
 .print-feature-root .cut-guide {

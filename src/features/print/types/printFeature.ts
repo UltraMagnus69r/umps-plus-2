@@ -4,7 +4,13 @@ export interface PrintUploadedFrontCard {
   id: string
   name: string
   url: string
+  /** Natural pixel size. 0 until the file has loaded. */
+  widthPx: number
+  heightPx: number
 }
+
+/** How an uploaded image is placed in a PLUS-1 card slot. */
+export type PrintSourceFit = 'full-bleed' | 'trim' | 'cover'
 
 export interface PrintPlacement {
   id: string
@@ -18,7 +24,7 @@ export interface PrintPlacement {
 }
 
 export interface PrintLayoutTemplate {
-  id: 'canonical-8-up'
+  id: 'letter-8-up'
   label: string
   orientation: 'portrait' | 'hybrid'
   columns: number

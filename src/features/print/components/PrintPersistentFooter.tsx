@@ -36,6 +36,8 @@ interface PrintPersistentFooterProps {
   onUploadFronts: (files: FileList | null) => void
   onUploadBack: (files: FileList | null) => void
   onExportPdf: () => void
+  onExportPng: () => void
+  exporting: boolean
   includeBleedInExport: boolean
   onIncludeBleedInExportChange: (value: boolean) => void
 }
@@ -45,6 +47,8 @@ export function PrintPersistentFooter({
   onUploadFronts,
   onUploadBack,
   onExportPdf,
+  onExportPng,
+  exporting,
   includeBleedInExport,
   onIncludeBleedInExportChange,
 }: PrintPersistentFooterProps) {
@@ -96,12 +100,24 @@ export function PrintPersistentFooter({
               checked={includeBleedInExport}
               onChange={(e) => onIncludeBleedInExportChange(e.target.checked)}
             />
-            <span>Include bleed in PDF</span>
+            <span>Bleed and cut marks</span>
           </label>
           <button
             type="button"
             className="persistent-footer-pill persistent-footer-pill--pdf"
+            onClick={() => void onExportPng()}
+            disabled={exporting}
+          >
+            <span className="persistent-footer-pill__icon" aria-hidden>
+              <IconPdf color="var(--persistent-footer-icon-pdf)" />
+            </span>
+            <span className="persistent-footer-pill__label">{exporting ? 'Exporting…' : '600 DPI PNG'}</span>
+          </button>
+          <button
+            type="button"
+            className="persistent-footer-pill persistent-footer-pill--pdf"
             onClick={() => void onExportPdf()}
+            disabled={exporting}
           >
             <span className="persistent-footer-pill__icon" aria-hidden>
               <IconPdf color="var(--persistent-footer-icon-pdf)" />

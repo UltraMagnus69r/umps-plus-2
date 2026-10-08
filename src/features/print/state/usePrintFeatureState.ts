@@ -64,14 +64,22 @@ export function usePrintFeatureState() {
       return
     }
 
-    setFrontCards((prev) => {
-      const nextBatch = pngFiles.map((file, index) => ({
-        id: createCardId(file, index, prev.length),
-        name: file.name,
-        url: URL.createObjectURL(file),
-      }))
-      return [...prev, ...nextBatch]
+    const nextBatch: PrintUploadedFrontCard[] = pngFiles.map((file, index) => {
+      const id = createCardId(file, index, frontCards.length)
+      const url = URL.createObjectURL(file)
+      const image = new Image()
+      image.onload = () => {
+        const widthPx = image.naturalWidth
+        const heightPx = image.naturalHeight
+        setFrontCards((current) =>
+          current.map((card) => (card.id === id ? { ...card, widthPx, heightPx } : card)),
+        )
+      }
+      image.src = url
+      return { id, name: file.name, url, widthPx: 0, heightPx: 0 }
     })
+
+    setFrontCards((prev) => [...prev, ...nextBatch])
   }
 
   const removeFrontCard = (cardId: string) => {
