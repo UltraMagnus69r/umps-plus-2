@@ -21,7 +21,7 @@ export default function App() {
     async function loadRequiredFonts() {
       try {
         await Promise.allSettled(
-          REQUIRED_FONT_SPECS.map((d) => (document as any).fonts.load(d)),
+          CORE_FONT_SPECS.map((d) => (document as any).fonts.load(d)),
         )
         await (document as any).fonts.ready
         const coreOk = CORE_FONT_SPECS.every((d) => (document as any).fonts.check(d))
@@ -29,6 +29,10 @@ export default function App() {
       } catch {
         // Strict: do not enable Layer 4 on failure.
       }
+      if (cancelled) return
+      const core = new Set<string>(CORE_FONT_SPECS)
+      const extended = REQUIRED_FONT_SPECS.filter((spec) => !core.has(spec))
+      void Promise.allSettled(extended.map((d) => (document as any).fonts.load(d)))
     }
 
     loadRequiredFonts()

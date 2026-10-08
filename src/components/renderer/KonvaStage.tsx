@@ -9,6 +9,8 @@ import {
 } from '../../authority/geometryAuthority'
 import { getOuterBorderFill } from '../../authority/colorAuthority'
 import { UI_PREVIEW_SURFACE } from '../../authority/panelSurfaceAuthority'
+import { getActiveLayoutCapabilitiesFromState } from '../../authority/layoutRegistry'
+import type { LayoutId } from '../../authority/layoutTaxonomy'
 import { useCardStore } from '../../store/useCardStore'
 
 import ArtLayer from './layers/ArtLayer'
@@ -89,6 +91,20 @@ function KonvaStage({
   const exportPngIncludeBleed = useCardStore((s) => s.exportPngIncludeBleed)
   const currentLayout = useCardStore((s) => s.currentLayout)
   const clonedCardImage = useCardStore((s) => s.cardData.clonedCardImage)
+  const activeLayout = useCardStore((s) => s.cardData.layout as LayoutId)
+  const layoutCaps = useMemo(
+    () =>
+      getActiveLayoutCapabilitiesFromState({
+        currentLayout,
+        cardData: { layout: activeLayout },
+      }),
+    [currentLayout, activeLayout],
+  )
+  const showRulesTexture =
+    layoutCaps.supportsPlaneswalkerModernV2Layout ||
+    (layoutCaps.supportsRulesTextBoxTexture && !layoutCaps.supportsPreModernTextBoxFrame)
+  const showBundledRulesPanel =
+    layoutCaps.supportsPreModernTextBoxFrame || layoutCaps.supportsPlaneswalkerModernV2Layout
   const hiddenCloneChrome =
     currentLayout === 'Hidden' && String(clonedCardImage ?? '').trim().length > 0
   const stageRef = useRef<Konva.Stage | null>(null)
@@ -113,10 +129,10 @@ function KonvaStage({
     [w, h, scale],
   )
 
-  const trimViewport = useMemo(
-    () => ({ width: tw * scale, height: th * scale }),
-    [tw, th, scale],
-  )
+  const previewW = Math.max(1, Math.round(scaled.width))
+  const previewH = Math.max(1, Math.round(scaled.height))
+  const stageScaleX = previewW / w
+  const stageScaleY = previewH / h
 
   const exportStage = useCallback(async () => {
     const stage = stageRef.current
@@ -128,11 +144,18 @@ function KonvaStage({
     const prevLabelsVisible = labelsLayer ? labelsLayer.visible() : undefined
     const prevOverlayVisible = overlayLayer ? overlayLayer.visible() : undefined
     const prevReferenceVisible = referenceLayer ? referenceLayer.visible() : undefined
+    const prevWidth = stage.width()
+    const prevHeight = stage.height()
+    const prevScaleX = stage.scaleX()
+    const prevScaleY = stage.scaleY()
 
     try {
       if (labelsLayer) labelsLayer.visible(false)
       if (overlayLayer) overlayLayer.visible(false)
       if (referenceLayer) referenceLayer.visible(false)
+      stage.width(STAGE_EXPORT_WIDTH)
+      stage.height(STAGE_EXPORT_HEIGHT)
+      stage.scale({ x: 1, y: 1 })
       stage.draw()
 
       const stageCanvas = stage.toCanvas({ pixelRatio: 1 })
@@ -178,6 +201,9 @@ function KonvaStage({
         overlayLayer.visible(prevOverlayVisible)
       if (referenceLayer && typeof prevReferenceVisible === 'boolean')
         referenceLayer.visible(prevReferenceVisible)
+      stage.width(prevWidth)
+      stage.height(prevHeight)
+      stage.scale({ x: prevScaleX, y: prevScaleY })
       stage.draw()
     }
   }, [])
@@ -196,66 +222,65 @@ function KonvaStage({
     .join(' ')
 
   const stageInner = (
-    <div
-      style={{
-        width: w,
-        height: h,
-        transform: `scale(${scale})`,
-        transformOrigin: 'top left',
-      }}
-      className="absolute left-0 top-0"
+    <Stage
+      ref={stageRef}
+      width={previewW}
+      height={previewH}
+      scaleX={stageScaleX}
+      scaleY={stageScaleY}
     >
-      <Stage ref={stageRef} width={w} height={h}>
         {/* Hidden + clone: printable proxy only (Module 4.1); editor overlays remain. */}
         {!hiddenCloneChrome && (
           <>
             <TextureBorderLayer />
             <ArtLayer />
             <FrameLayer />
-            <AscendantChromeLayer />
-            <TarotChromeLayer />
-            <RulesTextBoxTextureLayer />
+            {layoutCaps.useAscendantLayout ? <AscendantChromeLayer /> : null}
+            {layoutCaps.useTarotLayout ? <TarotChromeLayer /> : null}
+            {showRulesTexture ? <RulesTextBoxTextureLayer /> : null}
             <WatermarkLayer />
-            <LandSecondaryArtLayer />
-            <SpellTextBoxLayer />
-            <PreModernRulesTextBoxLayer />
-            <LandFullArtManaCircleLayer />
-            <AscendantManaColumnLayer />
-            <TarotManaColumnLayer />
+            {layoutCaps.supportsLandSecondaryArtInRulesRegion ? <LandSecondaryArtLayer /> : null}
+            {layoutCaps.supportsSpellTextBoxPanel ? <SpellTextBoxLayer /> : null}
+            {showBundledRulesPanel ? <PreModernRulesTextBoxLayer /> : null}
+            {layoutCaps.useLandFullArtManaCircle ? <LandFullArtManaCircleLayer /> : null}
+            {layoutCaps.useAscendantLayout ? <AscendantManaColumnLayer /> : null}
+            {layoutCaps.useTarotManaColumn ? <TarotManaColumnLayer /> : null}
             <TextIconsLayer />
-            <PlaneswalkerAbilitiesLayer />
+            {layoutCaps.supportsPlaneswalkerAbilities ? <PlaneswalkerAbilitiesLayer /> : null}
             <SetSymbolLayer />
             <PowerToughnessOverlayLayer />
-            <StartingLoyaltyOverlayLayer />
-            <SecondaryNameLayer />
+            {layoutCaps.supportsStartingLoyaltyBox ? <StartingLoyaltyOverlayLayer /> : null}
+            {layoutCaps.supportsPreModernFaceLayout ? <SecondaryNameLayer /> : null}
           </>
         )}
         <ClonedCardLayer />
         <DebugOverlayLayer />
         <ReferenceLayer />
-      </Stage>
-    </div>
+    </Stage>
   )
 
   return (
     <div ref={containerRef} className={shellClass}>
       {exportPngIncludeBleed ? (
-        <div style={{ width: scaled.width, height: scaled.height }} className="relative">
+        <div style={{ width: previewW, height: previewH }} className="relative">
           {stageInner}
         </div>
       ) : (
         <div
-          style={{ width: trimViewport.width, height: trimViewport.height }}
+          style={{
+            width: Math.max(1, Math.round(tw * stageScaleX)),
+            height: Math.max(1, Math.round(th * stageScaleY)),
+          }}
           className="relative shrink-0 overflow-hidden"
           aria-label="Trim preview (matches PNG export without bleed)"
         >
           <div
             className="absolute"
             style={{
-              left: -BLEED_PX * scale,
-              top: -BLEED_PX * scale,
-              width: scaled.width,
-              height: scaled.height,
+              left: -BLEED_PX * stageScaleX,
+              top: -BLEED_PX * stageScaleY,
+              width: previewW,
+              height: previewH,
             }}
           >
             {stageInner}

@@ -9,6 +9,11 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  server: {
+    watch: {
+      ignored: ['**/.local-history/**', '**/dist/**', '**/New Assets/**'],
+    },
+  },
   plugins: [
     react(),
     VitePWA({
@@ -39,13 +44,37 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
-        // Print feature default back is high-DPI (~6MB); exclude from precache (loaded on demand).
-        globIgnores: ['**/features/print/**', '**/assets/print/**'],
+        // On-demand art stays out of the install precache and is cached after first use.
+        globIgnores: [
+          '**/features/print/**',
+          '**/assets/print/**',
+          '**/card-parts/outer-border-texture/**',
+          '**/armor/**',
+          '**/assets/layouts/warframe/**',
+          '**/land-panels/**',
+          '**/spell-panels/**',
+          '**/premodern-rules-textbox/**',
+        ],
         navigateFallback: '/index.html',
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
         runtimeCaching: [
+          {
+            urlPattern: ({ request, url }) =>
+              request.destination === 'image' &&
+              (url.pathname.startsWith('/card-parts/outer-border-texture/') ||
+                url.pathname.startsWith('/armor/') ||
+                url.pathname.startsWith('/assets/layouts/warframe/') ||
+                url.pathname.startsWith('/land-panels/') ||
+                url.pathname.startsWith('/spell-panels/') ||
+                url.pathname.startsWith('/premodern-rules-textbox/')),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'umps-ondemand-art',
+              expiration: { maxEntries: 180, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
           {
             // Module 5.5 — static icon/watermark/texture assets only.
             // Keep cache scope tight to avoid remote/user image caching side effects.

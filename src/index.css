@@ -16,7 +16,7 @@ html, body, #root {
   src: url("/fonts/2012c863631ba71f874aba70590795a1.otf") format("opentype");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -24,7 +24,7 @@ html, body, #root {
   src: url("/fonts/Acme-Regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -32,7 +32,7 @@ html, body, #root {
   src: url("/fonts/Amanda%20Std%20Regular.otf") format("opentype");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -40,7 +40,7 @@ html, body, #root {
   src: url("/fonts/DIN-Next-Bold.otf") format("opentype");
   font-weight: 700;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -48,7 +48,7 @@ html, body, #root {
   src: url("/fonts/DIN-Next-Medium.otf") format("opentype");
   font-weight: 500;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -56,7 +56,7 @@ html, body, #root {
   src: url("/fonts/DIN-Next-Regular.otf") format("opentype");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -64,7 +64,7 @@ html, body, #root {
   src: url("/fonts/Davison%20Americana%20CG%20Regular.otf") format("opentype");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -72,7 +72,7 @@ html, body, #root {
   src: url("/fonts/Gill%20Sans%20Bold%20Italic.otf") format("opentype");
   font-weight: 700;
   font-style: italic;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -88,7 +88,7 @@ html, body, #root {
   src: url("/fonts/Gill%20Sans%20Medium%20Italic.otf") format("opentype");
   font-weight: 500;
   font-style: italic;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -96,7 +96,7 @@ html, body, #root {
   src: url("/fonts/Gill%20Sans%20Medium.otf") format("opentype");
   font-weight: 500;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -104,7 +104,7 @@ html, body, #root {
   src: url("/fonts/Invocation.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -112,7 +112,7 @@ html, body, #root {
   src: url("/fonts/Magic-Fomalhaut.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -136,7 +136,7 @@ html, body, #root {
   src: url("/fonts/Montserrat-Medium.ttf") format("truetype");
   font-weight: 500;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -144,7 +144,7 @@ html, body, #root {
   src: url("/fonts/Montserrat-SemiBold.ttf") format("truetype");
   font-weight: 600;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -152,7 +152,7 @@ html, body, #root {
   src: url("/fonts/NeoSansProItalic.OTF") format("opentype");
   font-weight: 400;
   font-style: italic;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -160,7 +160,7 @@ html, body, #root {
   src: url("/fonts/NeoSansProRegular.OTF") format("opentype");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -168,7 +168,7 @@ html, body, #root {
   src: url("/fonts/NotoSans-Regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -176,7 +176,7 @@ html, body, #root {
   src: url("/fonts/NudMotoyaExAporo_W6.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -184,7 +184,7 @@ html, body, #root {
   src: url("/fonts/OCR%20A%20Std%20Regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -192,7 +192,7 @@ html, body, #root {
   src: url("/fonts/Palatino%20Font.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -200,7 +200,7 @@ html, body, #root {
   src: url("/fonts/Plantin-SemiboldItalic.otf") format("opentype");
   font-weight: 600;
   font-style: italic;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -208,7 +208,7 @@ html, body, #root {
   src: url("/fonts/PlantinMTProBold.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -232,7 +232,7 @@ html, body, #root {
   src: url("/fonts/PlantinMTProRgIt.woff2") format("woff2");
   font-weight: 400;
   font-style: italic;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -248,7 +248,7 @@ html, body, #root {
   src: url("/fonts/Souvenir-Itc-T-OT-Bold.otf") format("opentype");
   font-weight: 700;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -256,7 +256,7 @@ html, body, #root {
   src: url("/fonts/SpecialElite-Regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -264,7 +264,7 @@ html, body, #root {
   src: url("/fonts/Thunderman.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -272,7 +272,7 @@ html, body, #root {
   src: url("/fonts/arial_black.ttf") format("truetype");
   font-weight: 900;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -288,7 +288,7 @@ html, body, #root {
   src: url("/fonts/beleren-bsc.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -296,7 +296,7 @@ html, body, #root {
   src: url("/fonts/decour-cnd-regular-italic.ttf") format("truetype");
   font-weight: 400;
   font-style: italic;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -304,7 +304,7 @@ html, body, #root {
   src: url("/fonts/decour-cnd-regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -312,7 +312,7 @@ html, body, #root {
   src: url("/fonts/fritz-quadrata.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -320,7 +320,7 @@ html, body, #root {
   src: url("/fonts/gotham-medium.ttf") format("truetype");
   font-weight: 500;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -328,7 +328,7 @@ html, body, #root {
   src: url("/fonts/gothambold.otf") format("opentype");
   font-weight: 700;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -336,7 +336,7 @@ html, body, #root {
   src: url("/fonts/goudy-medieval.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -352,7 +352,7 @@ html, body, #root {
   src: url("/fonts/matrix.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -368,7 +368,7 @@ html, body, #root {
   src: url("/fonts/mplantin-i.ttf") format("truetype");
   font-weight: 400;
   font-style: italic;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -384,7 +384,7 @@ html, body, #root {
   src: url("/fonts/officina-ser-itc-black.otf") format("opentype");
   font-weight: 900;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -392,7 +392,7 @@ html, body, #root {
   src: url("/fonts/phy.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -400,7 +400,7 @@ html, body, #root {
   src: url("/fonts/phy.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -408,7 +408,7 @@ html, body, #root {
   src: url("/fonts/phyrexian.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -416,7 +416,7 @@ html, body, #root {
   src: url("/fonts/plantin-semibold.otf") format("opentype");
   font-weight: 600;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -424,7 +424,7 @@ html, body, #root {
   src: url("/fonts/saloon-girl.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -432,7 +432,7 @@ html, body, #root {
   src: url("/fonts/shango-gothic-bold.ttf") format("truetype");
   font-weight: 700;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -440,7 +440,7 @@ html, body, #root {
   src: url("/fonts/souvenirstd-medium.otf") format("opentype");
   font-weight: 500;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 :root {
