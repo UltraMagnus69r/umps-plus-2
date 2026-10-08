@@ -17,7 +17,7 @@ const TRIM_HEIGHT_PX = CARD_HEIGHT_PX - BLEED_PX * 2
 /** Namespaced print layout authority (integrated from Proxy Print). */
 export const printFeatureAuthority = {
   assets: {
-    canonicalBackAssetPath: '/features/print/card-back.png',
+    canonicalBackAssetPath: '/assets/print/card-back.png',
   },
   page: {
     name: 'US Letter Portrait',

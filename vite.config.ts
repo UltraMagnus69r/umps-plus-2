@@ -1,8 +1,14 @@
+import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
   plugins: [
     react(),
     VitePWA({
@@ -34,7 +40,7 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
         // Print feature default back is high-DPI (~6MB); exclude from precache (loaded on demand).
-        globIgnores: ['**/features/print/**'],
+        globIgnores: ['**/features/print/**', '**/assets/print/**'],
         navigateFallback: '/index.html',
         cleanupOutdatedCaches: true,
         skipWaiting: true,
