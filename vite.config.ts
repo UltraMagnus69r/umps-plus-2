@@ -50,7 +50,6 @@ export default defineConfig({
           '**/assets/print/**',
           '**/card-parts/outer-border-texture/**',
           '**/armor/**',
-          '**/assets/layouts/warframe/**',
           '**/land-panels/**',
           '**/spell-panels/**',
           '**/premodern-rules-textbox/**',
@@ -65,7 +64,6 @@ export default defineConfig({
               request.destination === 'image' &&
               (url.pathname.startsWith('/card-parts/outer-border-texture/') ||
                 url.pathname.startsWith('/armor/') ||
-                url.pathname.startsWith('/assets/layouts/warframe/') ||
                 url.pathname.startsWith('/land-panels/') ||
                 url.pathname.startsWith('/spell-panels/') ||
                 url.pathname.startsWith('/premodern-rules-textbox/')),

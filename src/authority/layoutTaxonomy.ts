@@ -124,6 +124,7 @@ export function normalizeLayout(layout: Partial<LayoutId> | null | undefined): L
   if (legacyFamily === 'standard' && legacyVariant === 'planeswalker') {
     return { family: 'planeswalker', variant: 'modern' }
   }
+  if (legacyFamily === 'warframe') return { family: 'standard', variant: 'modern' }
   const family = normalizeFamily(layout?.family)
   const variant = normalizeVariant(layout?.variant)
   if (isVariantCompatible(family, variant)) return { family, variant }
