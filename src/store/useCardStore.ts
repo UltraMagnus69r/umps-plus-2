@@ -906,6 +906,9 @@ setManualUseTwoColors: (enabled: boolean) => void
   exportCardImage: () => Promise<void>
 
   commitState: () => void
+  /** Session-only: true after edits since last Save Design / load / new card. Not persisted. */
+  designDirty: boolean
+  markDesignSaved: () => void
   /** Module 5.3 — full default card, preview-first layout, field dirty cleared; bumps UI epoch. */
   resetCard: () => void
   /** @deprecated Prefer `resetCard`; identical behavior. */
@@ -1442,6 +1445,7 @@ colorBlendDirection: 'vertical',
       past: [],
       future: [],
       committed: defaultCardData,
+      designDirty: false,
 
       setField: (key, value) => {
         set((state) => {
@@ -2469,9 +2473,12 @@ setManualUseTwoColors: (enabled) =>
             past: trimmedPast,
             future: [],
             committed: { ...current },
+            designDirty: true,
           }
         })
       },
+
+      markDesignSaved: () => set({ designDirty: false }),
 
       resetCard: () => {
         set((state) => {
@@ -2485,6 +2492,7 @@ setManualUseTwoColors: (enabled) =>
             committed: { ...nextCardData },
             past: [],
             future: [],
+            designDirty: false,
             isFieldDirty: createInitialFieldDirty(),
             currentLayout: 'Standard',
             manaPopupOpen: false,
@@ -2579,6 +2587,7 @@ setManualUseTwoColors: (enabled) =>
             past: [],
             future: [],
             committed: { ...cardData },
+            designDirty: false,
             isFieldDirty: createInitialFieldDirty(),
             quickViewOpen: false,
           }

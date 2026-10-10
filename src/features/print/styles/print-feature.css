@@ -572,7 +572,45 @@
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 6px;
-  align-items: center;
+  align-items: flex-start;
+}
+
+.print-feature-root .upload-list-item__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.print-feature-root .upload-margin-note {
+  display: block;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--ui-text-muted);
+}
+
+.print-feature-root .upload-margin-note--bleed {
+  color: color-mix(in srgb, var(--gg-blue) 70%, var(--ui-text-muted));
+}
+
+.print-feature-root .upload-margin-note--trim {
+  color: color-mix(in srgb, #b45309 75%, var(--ui-text-muted));
+}
+
+.print-feature-root .print-checklist {
+  margin-bottom: 12px;
+}
+
+.print-feature-root .print-checklist__list {
+  margin: 8px 0 0;
+  padding-left: 1.25rem;
+  color: var(--ui-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.print-feature-root .print-checklist__list li.is-done {
+  color: var(--ui-text-strong);
 }
 
 .print-feature-root .upload-list-item button,

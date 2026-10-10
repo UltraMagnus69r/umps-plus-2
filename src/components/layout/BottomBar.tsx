@@ -12,6 +12,7 @@ import { migrateDesignPayload, useCardStore } from '../../store/useCardStore'
 import { saveDesign } from '../../utils/fileUtils'
 import ExportOptionsControls from '../ui/ExportOptionsControls'
 import FooterActionButton from '../ui/FooterActionButton'
+import PrimaryActionButton from '../ui/PrimaryActionButton'
 
 const BAR_INPUT_CLASS =
   `h-[var(--ui-control-height-sm)] w-full min-w-0 max-w-full rounded-[var(--ui-radius-md)] px-ui2 ${UI_TEXT_FOOTER_INPUT} ${UI_FOCUS_RING_CONTROL} outline-none ` +
@@ -70,6 +71,7 @@ const BottomBarToolbar = memo(function BottomBarToolbar() {
     asyncDesignLoad,
     asyncExport,
     exportCardImage,
+    markDesignSaved,
   } = useCardStore(
     (s) => ({
       undo: s.undo,
@@ -82,6 +84,7 @@ const BottomBarToolbar = memo(function BottomBarToolbar() {
       asyncDesignLoad: s.asyncStatus.designLoad,
       asyncExport: s.asyncStatus.export,
       exportCardImage: s.exportCardImage,
+      markDesignSaved: s.markDesignSaved,
     }),
     shallow,
   )
@@ -94,7 +97,8 @@ const BottomBarToolbar = memo(function BottomBarToolbar() {
       st.cardData.filenameSlug,
       st.isFieldDirty.filename,
     )
-  }, [])
+    markDesignSaved()
+  }, [markDesignSaved])
 
   const handleResetCard = useCallback(() => {
     resetCard()
@@ -112,12 +116,12 @@ const BottomBarToolbar = memo(function BottomBarToolbar() {
           <span className="footer-action-btn__label">Proxy Printer</span>
         </FooterActionButton>
 
-        <FooterActionButton onClick={undo} disabled={!canUndo} ariaLabel="Undo">
+        <FooterActionButton onClick={undo} disabled={!canUndo} ariaLabel="Undo last change" title="Undo (Ctrl+Z)">
           <Undo2 className="h-3.5 w-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
           <span className="footer-action-btn__label">Undo</span>
         </FooterActionButton>
 
-        <FooterActionButton onClick={redo} disabled={!canRedo} ariaLabel="Redo">
+        <FooterActionButton onClick={redo} disabled={!canRedo} ariaLabel="Redo last change" title="Redo (Ctrl+Y)">
           <Redo2 className="h-3.5 w-3.5 shrink-0 text-indigo-600 dark:text-indigo-400" />
           <span className="footer-action-btn__label">Redo</span>
         </FooterActionButton>
@@ -196,24 +200,24 @@ const BottomBarToolbar = memo(function BottomBarToolbar() {
           disabled={asyncExport.status === 'loading'}
           bleedCheckboxId={exportOptionsBleedId}
           showPreset={false}
+          compactLabels
         />
 
-        <FooterActionButton
+        <PrimaryActionButton
           onClick={handleExportPng}
           disabled={asyncExport.status === 'loading'}
-          ariaLabel="Export card as PNG"
-          className={`shrink-0 ${asyncExport.status === 'success' ? UI_ACTION_SUCCESS_SURFACE : ''}`}
-          title={asyncExport.status === 'error' && asyncExport.message ? asyncExport.message : undefined}
+          ariaLabel="Download card as PNG"
+          className={`footer-download-card shrink-0 !h-8 !min-h-8 !rounded-[var(--ui-radius-md)] !px-2.5 !text-[length:clamp(0.6875rem,0.4rem+0.65vw,0.8125rem)] ${asyncExport.status === 'success' ? UI_ACTION_SUCCESS_SURFACE : ''}`}
         >
           {asyncExport.status === 'loading' ? (
             <span className={UI_ASYNC_SPINNER_SM} aria-hidden />
           ) : asyncExport.status === 'success' ? (
-            <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden />
+            <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />
           ) : (
-            <ImageIcon className="h-3.5 w-3.5 shrink-0 text-rose-600 dark:text-rose-400" />
+            <ImageIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
           )}
-          <span className="footer-action-btn__label">Export PNG</span>
-        </FooterActionButton>
+          <span className="footer-action-btn__label">Download card</span>
+        </PrimaryActionButton>
         {asyncExport.status === 'error' && asyncExport.message ? (
           <span className="sr-only" role="alert">
             {asyncExport.message}

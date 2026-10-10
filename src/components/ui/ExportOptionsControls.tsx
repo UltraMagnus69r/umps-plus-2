@@ -1,4 +1,5 @@
 import { useId } from 'react'
+import { CONSTRAINT_COPY } from '../../authority/constraintFeedbackAuthority'
 import { useCardStore } from '../../store/useCardStore'
 import ExportPresetSelect from './ExportPresetSelect'
 
@@ -10,10 +11,12 @@ type Props = {
   presetClassName?: string
   /** Hide export preset dropdown (footer uses default preset only). */
   showPreset?: boolean
+  /** Compact footer labels: Bleed / Trim instead of PNG bleed. */
+  compactLabels?: boolean
 }
 
 /**
- * Shared export output controls — preset + PNG bleed.
+ * Shared export output controls — preset + PNG bleed/trim.
  * Footer toolbar and Quick View both use this so state stays in sync via the store.
  */
 export default function ExportOptionsControls({
@@ -21,6 +24,7 @@ export default function ExportOptionsControls({
   bleedCheckboxId: bleedIdProp,
   presetClassName = '',
   showPreset = true,
+  compactLabels = false,
 }: Props) {
   const generatedBleedId = useId()
   const bleedCheckboxId = bleedIdProp ?? generatedBleedId
@@ -28,6 +32,8 @@ export default function ExportOptionsControls({
   const setExportPresetId = useCardStore((s) => s.setExportPresetId)
   const exportPngIncludeBleed = useCardStore((s) => s.exportPngIncludeBleed)
   const setExportPngIncludeBleed = useCardStore((s) => s.setExportPngIncludeBleed)
+
+  const tip = exportPngIncludeBleed ? CONSTRAINT_COPY.exportBleedOn : CONSTRAINT_COPY.exportBleedOff
 
   return (
     <>
@@ -39,21 +45,57 @@ export default function ExportOptionsControls({
           className={presetClassName || 'max-w-[11rem]'}
         />
       ) : null}
-      <label
-        className="export-options-bleed-toggle ui-focus-ring flex shrink-0 cursor-pointer select-none items-center gap-1.5 rounded-[var(--ui-radius-md)] border border-[color-mix(in_srgb,var(--ui-color-border)_70%,transparent)] bg-[color-mix(in_srgb,var(--ui-color-surface-elevated)_88%,transparent)] px-2 py-1 text-[length:clamp(0.6875rem,0.4rem+0.65vw,0.8125rem)] text-[var(--ui-color-text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]"
-        title="Checked: 1650×2250 full bleed. Unchecked: 1500×2100 trim only; adds -trim to the filename."
+      <div
+        className="export-options-bleed-toggle flex shrink-0 items-center gap-1 rounded-[var(--ui-radius-md)] border border-[color-mix(in_srgb,var(--ui-color-border)_70%,transparent)] bg-[color-mix(in_srgb,var(--ui-color-surface-elevated)_88%,transparent)] p-0.5 text-[length:clamp(0.6875rem,0.4rem+0.65vw,0.8125rem)] shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]"
+        role="group"
+        aria-label="PNG export margin"
+        title={tip}
       >
+        <button
+          type="button"
+          disabled={disabled}
+          aria-pressed={exportPngIncludeBleed}
+          title={CONSTRAINT_COPY.exportBleedOn}
+          onClick={() => setExportPngIncludeBleed(true)}
+          className={[
+            'ui-focus-ring rounded-[calc(var(--ui-radius-md)-2px)] px-2 py-1 font-semibold transition-colors',
+            exportPngIncludeBleed
+              ? 'bg-[color-mix(in_srgb,var(--ui-color-primary)_18%,transparent)] text-[var(--ui-color-text-strong)]'
+              : 'text-[var(--ui-color-muted)] hover:text-[var(--ui-color-text)]',
+          ].join(' ')}
+        >
+          <span className="export-options-bleed-toggle__label whitespace-nowrap">
+            {compactLabels ? 'Bleed' : 'With bleed'}
+          </span>
+        </button>
+        <button
+          type="button"
+          disabled={disabled}
+          aria-pressed={!exportPngIncludeBleed}
+          title={CONSTRAINT_COPY.exportBleedOff}
+          onClick={() => setExportPngIncludeBleed(false)}
+          className={[
+            'ui-focus-ring rounded-[calc(var(--ui-radius-md)-2px)] px-2 py-1 font-semibold transition-colors',
+            !exportPngIncludeBleed
+              ? 'bg-[color-mix(in_srgb,var(--ui-color-primary)_18%,transparent)] text-[var(--ui-color-text-strong)]'
+              : 'text-[var(--ui-color-muted)] hover:text-[var(--ui-color-text)]',
+          ].join(' ')}
+        >
+          <span className="export-options-bleed-toggle__label whitespace-nowrap">
+            {compactLabels ? 'Trim' : 'Trim only'}
+          </span>
+        </button>
         <input
           id={bleedCheckboxId}
           type="checkbox"
-          className="h-3.5 w-3.5 shrink-0 accent-rose-600"
+          className="sr-only"
           checked={exportPngIncludeBleed}
           onChange={(e) => setExportPngIncludeBleed(e.target.checked)}
           disabled={disabled}
           aria-label="Include bleed margin in PNG export"
+          tabIndex={-1}
         />
-        <span className="export-options-bleed-toggle__label whitespace-nowrap">PNG bleed</span>
-      </label>
+      </div>
     </>
   )
 }

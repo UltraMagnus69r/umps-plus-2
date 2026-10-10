@@ -79,6 +79,8 @@ import {
 } from '../../authority/progressiveDisclosureAuthority'
 import { filterScryfallPrintCandidates } from '../../authority/scryfallResultsFilterAuthority'
 import PlaneswalkerCoreInputs from './PlaneswalkerCoreInputs'
+import { usePersistedUiState, useUiComplexityMode } from '../../hooks/usePersistedUiState'
+import { useScrollFieldIntoView } from '../../hooks/useScrollFieldIntoView'
 
 // Styling tokens to keep SidebarLeft visually aligned with SidebarRight.
 const SHELL_CLASS =
@@ -102,15 +104,16 @@ function ManaSymbolAssistantIcon({ target }: { target: 'manaCost' | 'rulesText' 
     <div className="relative shrink-0">
       <button
         type="button"
-        className="sidebar-icon-btn ui-focus-ring h-6 w-6 rounded-lg flex items-center justify-center"
-        aria-label="Insert Mana Symbol"
-        title="Insert Mana Symbol"
+        className="sidebar-icon-btn ui-focus-ring flex h-8 items-center gap-1 rounded-lg px-2"
+        aria-label="Open mana picker"
+        title="Pick mana symbols"
         onClick={() => {
           setManaPopupTarget(target)
           openManaPopup()
         }}
       >
-        <Sparkles size={12} className="text-[var(--sb-accent)]" />
+        <Sparkles size={14} className="text-[var(--sb-accent)]" />
+        <span className="text-[11px] font-semibold text-[var(--sb-accent)]">Mana</span>
       </button>
     </div>
   )
@@ -175,9 +178,30 @@ function useCaretPreservingField<T extends HTMLInputElement | HTMLTextAreaElemen
   }
 }
 
+type LeftOpenStored = LeftSectionKey | 'none'
+
+function isLeftOpenStored(v: string): v is LeftOpenStored {
+  return (
+    v === 'none' ||
+    v === 'import-sync' ||
+    v === 'core' ||
+    v === 'collector' ||
+    v === 'font-styling' ||
+    v === 'art'
+  )
+}
+
 export default function SidebarLeft() {
   const [collapsed, setCollapsed] = useState(false)
-  const [leftOpenSection, setLeftOpenSection] = useState<LeftSectionKey | null>(null)
+  const [leftOpenStored, setLeftOpenStored] = usePersistedUiState<LeftOpenStored>(
+    'umps-left-open-section',
+    'core',
+    isLeftOpenStored,
+  )
+  const leftOpenSection: LeftSectionKey | null = leftOpenStored === 'none' ? null : leftOpenStored
+  const [uiMode, setUiMode] = useUiComplexityMode()
+  const scrollFieldIntoView = useScrollFieldIntoView()
+  const isAdvanced = uiMode === 'advanced'
   const [openFontPanel, setOpenFontPanel] = useState<LeftFontPanelKey | null>(null)
   const [metadataFontOpen, setMetadataFontOpen] = useState(false)
   const [scryfallSearchQuery, setScryfallSearchQuery] = useState('')
@@ -189,11 +213,12 @@ export default function SidebarLeft() {
 
   const toggleLeftSection = (key: LeftSectionKey) => {
     startTransition(() => {
-      setLeftOpenSection((cur) => {
-        const next = cur === key ? null : key
+      setLeftOpenStored((cur) => {
+        const current = cur === 'none' ? null : cur
+        const next = current === key ? null : key
         if (next !== 'font-styling') setOpenFontPanel(null)
         if (next !== 'collector') setMetadataFontOpen(false)
-        return next
+        return next ?? 'none'
       })
     })
   }
@@ -297,7 +322,7 @@ export default function SidebarLeft() {
   // Module 5.3 — New Card / reset: clear scratch URL/search fields; collapse section accordions.
   useEffect(() => {
     if (workspaceInitEpoch === 0) return
-    setLeftOpenSection(null)
+    setLeftOpenStored('none')
     setOpenFontPanel(null)
     setMetadataFontOpen(false)
     setScryfallSearchQuery('')
@@ -407,12 +432,35 @@ export default function SidebarLeft() {
         dir="ltr"
       >
         <div className={HEADER_CLASS}>
-          <div className="flex items-center gap-2">
-            <Wand2 size={16} className="sidebar-header-icon" />
+          <div className="flex min-w-0 items-center gap-2">
+            <Wand2 size={16} className="sidebar-header-icon shrink-0" />
             {!collapsed && (
-              <div className="leading-tight">
+              <div className="min-w-0 leading-tight">
                 <div className="text-sm font-semibold">Card Data</div>
-                <div className="text-xs text-neutral-500 dark:text-neutral-400">High-frequency edits</div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <div
+                    className="inline-flex rounded-lg border border-neutral-200 p-0.5 dark:border-[var(--sb-border)]"
+                    role="group"
+                    aria-label="Editor complexity"
+                  >
+                    <button
+                      type="button"
+                      className={`ui-focus-ring rounded-md px-2 py-0.5 text-[10px] font-semibold ${uiMode === 'simple' ? 'bg-[var(--sb-accent)] text-white' : 'text-neutral-500'}`}
+                      aria-pressed={uiMode === 'simple'}
+                      onClick={() => setUiMode('simple')}
+                    >
+                      Simple
+                    </button>
+                    <button
+                      type="button"
+                      className={`ui-focus-ring rounded-md px-2 py-0.5 text-[10px] font-semibold ${uiMode === 'advanced' ? 'bg-[var(--sb-accent)] text-white' : 'text-neutral-500'}`}
+                      aria-pressed={uiMode === 'advanced'}
+                      onClick={() => setUiMode('advanced')}
+                    >
+                      Advanced
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -787,7 +835,7 @@ export default function SidebarLeft() {
               </CollapsibleSection>
 
             <CollapsibleSection
-              title="Core Inputs"
+              title="Identity"
               icon={<Type size={16} className="text-neutral-500 dark:text-neutral-400" />}
               open={leftOpenSection === 'core'}
               onToggle={() => toggleLeftSection('core')}
@@ -801,6 +849,7 @@ export default function SidebarLeft() {
                     <div className="space-y-2">
                       <input
                         {...nameField}
+                        onFocus={scrollFieldIntoView}
                         onBlur={commitState}
                         className={`${INPUT_CLASS} w-full`}
                         placeholder="e.g., Lightning Bolt"
@@ -845,6 +894,7 @@ export default function SidebarLeft() {
                     <div className="space-y-2">
                       <input
                         {...nameField}
+                        onFocus={scrollFieldIntoView}
                         onBlur={commitState}
                         className={`${INPUT_CLASS} w-full`}
                         placeholder="e.g., Lightning Bolt"
@@ -860,7 +910,6 @@ export default function SidebarLeft() {
                       ) : null}
                     </div>
                   </FieldRow>
-
                   <div className="space-y-2">
                     <div className="space-y-1">
                       <SwitchRow
@@ -928,6 +977,7 @@ export default function SidebarLeft() {
                       manaField.ref.current = node
                     }}
                     onFocus={(e) => {
+                      scrollFieldIntoView(e)
                       setActiveInputId('manaCost')
                       queueSelectionSyncToStore(e.currentTarget)
                     }}
@@ -1005,6 +1055,7 @@ export default function SidebarLeft() {
                           rulesField.ref.current = node
                         }}
                         onFocus={(e) => {
+                          scrollFieldIntoView(e)
                           setActiveInputId('rulesText')
                           queueSelectionSyncToStore(e.currentTarget)
                         }}
@@ -1090,7 +1141,7 @@ export default function SidebarLeft() {
             </CollapsibleSection>
 
             <CollapsibleSection
-              title="Art Assets"
+              title="Art"
               icon={<ImageIcon size={16} className="text-neutral-500 dark:text-neutral-400" />}
               open={leftOpenSection === 'art'}
               onToggle={() => toggleLeftSection('art')}
@@ -1238,8 +1289,9 @@ export default function SidebarLeft() {
               </div>
             </CollapsibleSection>
 
+            {isAdvanced ? (
             <CollapsibleSection
-              title="Collector Data"
+              title="Collector"
               icon={<BookOpen size={16} className="text-neutral-500 dark:text-neutral-400" />}
               open={leftOpenSection === 'collector'}
               onToggle={() => toggleLeftSection('collector')}
@@ -1343,9 +1395,11 @@ export default function SidebarLeft() {
 
 
             </CollapsibleSection>
+            ) : null}
 
+            {isAdvanced ? (
             <CollapsibleSection
-              title="Font Styling"
+              title="Text"
               icon={<ALargeSmall size={16} className="text-neutral-500 dark:text-neutral-400" />}
               open={leftOpenSection === 'font-styling'}
               onToggle={() => toggleLeftSection('font-styling')}
@@ -1397,6 +1451,7 @@ export default function SidebarLeft() {
                 </CollapsibleSection>
               ) : null}
             </CollapsibleSection>
+            ) : null}
 
           <div className="h-2" />
         </div>

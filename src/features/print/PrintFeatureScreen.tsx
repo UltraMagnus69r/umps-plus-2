@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { PrintPersistentFooter } from './components/PrintPersistentFooter'
 import { PrintSheetPreview } from './components/PrintSheetPreview'
 import { PrintUploadPanel } from './components/PrintUploadPanel'
+import { CONSTRAINT_COPY } from '../../authority/constraintFeedbackAuthority'
 import { letterSheetLayoutFacts, printBuiltinBacks } from './authority/printFeatureAuthority'
 import { exportPrintFullSetPdf, exportPrintFullSetPng } from './export/printSheetExport'
 import { usePrintFeatureState } from './state/usePrintFeatureState'
@@ -93,8 +94,31 @@ export function PrintFeatureScreen() {
       <main className="printer-screen printer-screen--with-footer">
         <header className="hero-header">
           <h1>Proxy Printer</h1>
-          <p>US Letter at actual size, 600 DPI. Upload fronts, then print fronts and backs.</p>
+          <p>
+            US Letter · {letterSheetLayoutFacts.gridLabel} · 600 DPI. Upload fronts, then print fronts
+            and backs.
+          </p>
         </header>
+
+        <section className="panel print-checklist" aria-label="Print checklist">
+          <h2>Before you print</h2>
+          <ol className="print-checklist__list">
+            <li className={layout.uploadedCount > 0 ? 'is-done' : undefined}>
+              Upload card fronts ({layout.uploadedCount > 0 ? 'done' : 'needed'})
+            </li>
+            <li className={backAssetLoaded ? 'is-done' : undefined}>
+              Confirm a card back is ready ({backAssetLoaded ? 'ready' : 'loading'})
+            </li>
+            <li>
+              Export PDF or 600 DPI PNG sheets from the footer ({letterSheetLayoutFacts.gridLabel},{' '}
+              {letterSheetLayoutFacts.cardsPerSheet} per sheet)
+            </li>
+            <li title={CONSTRAINT_COPY.printAt100Percent}>
+              In the print dialog: Actual size / 100% — not Fit to page
+            </li>
+          </ol>
+          <p className="panel-subtitle">{CONSTRAINT_COPY.printAt100Percent}</p>
+        </section>
 
         <section className="stats-row stats-row-simple">
           <div className="stat-card stat-card-primary">
@@ -102,8 +126,8 @@ export function PrintFeatureScreen() {
             <strong>{layout.uploadedCount}</strong>
           </div>
           <div className="stat-card stat-card-primary">
-            <span>Per sheet</span>
-            <strong>{letterSheetLayoutFacts.cardsPerSheet}</strong>
+            <span>{letterSheetLayoutFacts.gridLabel}</span>
+            <strong>{letterSheetLayoutFacts.cardsPerSheet}/sheet</strong>
           </div>
           <div className="stat-card stat-card-primary">
             <span>Sheets Ready</span>
@@ -187,7 +211,10 @@ export function PrintFeatureScreen() {
         <section className="previews-workspace panel">
           <div className="preview-header">
             <h2>Preview</h2>
-            <p>What you see here matches the PDF and the 600 DPI PNG sheets. Print at 100% scale, not fit-to-page.</p>
+            <p title={CONSTRAINT_COPY.printAt100Percent}>
+              What you see here matches the PDF and the 600 DPI PNG sheets. Print at 100% scale, not
+              fit-to-page.
+            </p>
             {exportError ? <p className="export-error">{exportError}</p> : null}
           </div>
           <div className="previews-grid">

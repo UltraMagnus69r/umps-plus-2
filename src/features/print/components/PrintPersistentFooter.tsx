@@ -110,7 +110,14 @@ export function PrintPersistentFooter({
           />
         </label>
         <div className="persistent-footer-exports">
-          <label className="persistent-footer-bleed-toggle">
+          <label
+            className="persistent-footer-bleed-toggle"
+            title={
+              includeBleedInExport
+                ? 'On: sheet uses full-bleed cards and shows cut marks.'
+                : 'Off: sheet uses trim-sized placement without cut marks.'
+            }
+          >
             <input
               type="checkbox"
               checked={includeBleedInExport}

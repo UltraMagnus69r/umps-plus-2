@@ -27,13 +27,6 @@ import {
   mergeAutoColorIdentityPips,
 } from '../../authority/colorAuthority'
 import { normalizeColorIdentityPips, resolveProceduralIdentity, useCardStore } from '../../store/useCardStore'
-import type { LayoutFamily, LayoutVariant } from '../../authority/layoutTaxonomy'
-import {
-  getAllowedVariantsForFamily,
-  getLayoutFamilyLabel,
-  getLayoutVariantLabel,
-  LAYOUT_FAMILY_LABELS,
-} from '../../authority/layoutTaxonomy'
 import {
   WATERMARK_SELECT_OPTIONS,
   type WatermarkPathKey,
@@ -69,6 +62,9 @@ import CollapsibleSection from './CollapsibleSection'
 import SwitchRow from '../ui/SwitchRow'
 import FieldRow from '../ui/FieldRow'
 import ConstraintHint from '../ui/ConstraintHint'
+import LayoutThumbnailPicker from './LayoutThumbnailPicker'
+import { usePersistedUiState, useUiComplexityMode } from '../../hooks/usePersistedUiState'
+import { useScrollFieldIntoView } from '../../hooks/useScrollFieldIntoView'
 
 const BoxPanelGradientControls = memo(function BoxPanelGradientControls({
   enabled,
@@ -172,6 +168,11 @@ const BoxPanelGradientControls = memo(function BoxPanelGradientControls({
 
 /** Phase 10.3 correction — exactly one top-level section open per right sidebar. */
 type RightSectionId = 'layout' | 'identity' | 'panels' | 'settings'
+type RightOpenStored = RightSectionId | 'none'
+
+function isRightOpenStored(v: string): v is RightOpenStored {
+  return v === 'none' || v === 'layout' || v === 'identity' || v === 'panels' || v === 'settings'
+}
 
 const IdentitySwirlPreviewBar = memo(function IdentitySwirlPreviewBar({ stops }: { stops: string[] }) {
   const ref = useRef<HTMLCanvasElement>(null)
@@ -201,16 +202,31 @@ const IdentitySwirlPreviewBar = memo(function IdentitySwirlPreviewBar({ stops }:
 
 export default function SidebarRight() {
   const [collapsed, setCollapsed] = useState(false)
-  const [rightOpenSection, setRightOpenSection] = useState<RightSectionId | null>(null)
+  const [rightOpenStored, setRightOpenStored] = usePersistedUiState<RightOpenStored>(
+    'umps-right-open-section',
+    'layout',
+    isRightOpenStored,
+  )
+  const rightOpenSection: RightSectionId | null = rightOpenStored === 'none' ? null : rightOpenStored
+  const [uiMode] = useUiComplexityMode()
+  const isAdvanced = uiMode === 'advanced'
+  const scrollFieldIntoView = useScrollFieldIntoView()
   const toggleRightSection = (id: RightSectionId) => {
     startTransition(() => {
-      setRightOpenSection((cur) => (cur === id ? null : id))
+      setRightOpenStored((cur) => {
+        const current = cur === 'none' ? null : cur
+        const next = current === id ? null : id
+        return next ?? 'none'
+      })
     })
   }
   const workspaceInitEpoch = useCardStore((s) => s.workspaceInitEpoch)
   const restoreSession = useCardStore((s) => s.settings.restoreSession)
 
   const showTooltips = useCardStore((s) => s.showTooltips)
+  const showBleed = useCardStore((s) => s.cardData.showBleed)
+  const showTrim = useCardStore((s) => s.cardData.showTrim)
+  const showSafeZone = useCardStore((s) => s.cardData.showSafeZone)
 
 // Phase 4.1 – Procedural Color & Stroke Identity (behavioral pass)
 const autoColorEnabled = useCardStore((s) => s.autoColorEnabled)
@@ -433,7 +449,7 @@ const activeLayoutCapabilities = useMemo(
 
   useEffect(() => {
     if (workspaceInitEpoch === 0) return
-    setRightOpenSection(null)
+    setRightOpenStored('none')
   }, [workspaceInitEpoch])
 
   return (
@@ -477,48 +493,23 @@ const activeLayoutCapabilities = useMemo(
 	          {!collapsed && (
             <>
   <CollapsibleSection
-    title="Layout"
+    title="Frame"
     icon={<LayoutTemplate className="h-4 w-4" />}
     open={rightOpenSection === 'layout'}
     onToggle={() => toggleRightSection('layout')}
   >
-    <div className="space-y-2">
-      <FieldRow label="Layout Family" layout="stacked">
-        <select
-          value={activeLayout.family}
-          onChange={(e) => {
-            const family = e.target.value as LayoutFamily
-            setLayout({ family, variant: activeLayout.variant })
-            commitState()
-          }}
-          className="w-full h-10 rounded-xl border border-neutral-200 bg-white px-3 ui-text-control outline-none ui-focus-ring-control dark:border-[var(--sb-border)] dark:bg-[var(--sb-surface-soft)]"
-          aria-label="Layout family"
-        >
-          {(Object.keys(LAYOUT_FAMILY_LABELS) as LayoutFamily[]).map((family) => (
-            <option key={family} value={family}>
-              {getLayoutFamilyLabel(family)}
-            </option>
-          ))}
-        </select>
-      </FieldRow>
-      <FieldRow label="Layout Variant" layout="stacked">
-        <select
-          value={activeLayout.variant}
-          onChange={(e) => {
-            const variant = e.target.value as LayoutVariant
-            setLayout({ family: activeLayout.family, variant })
-            commitState()
-          }}
-          className="w-full h-10 rounded-xl border border-neutral-200 bg-white px-3 ui-text-control outline-none ui-focus-ring-control dark:border-[var(--sb-border)] dark:bg-[var(--sb-surface-soft)]"
-          aria-label="Layout variant"
-        >
-          {getAllowedVariantsForFamily(activeLayout.family).map((v) => (
-            <option key={v} value={v}>
-              {getLayoutVariantLabel(v)}
-            </option>
-          ))}
-        </select>
-      </FieldRow>
+    <div className="space-y-2" onFocusCapture={scrollFieldIntoView}>
+      <LayoutThumbnailPicker
+        layout={activeLayout}
+        onSelectFamily={(family) => {
+          setLayout({ family, variant: activeLayout.variant })
+          commitState()
+        }}
+        onSelectVariant={(variant) => {
+          setLayout({ family: activeLayout.family, variant })
+          commitState()
+        }}
+      />
       {shouldShowSpellTextBoxSelector({ layoutFamily: activeLayout.family, layout: activeLayout }) ? (
         <FieldRow label="Spell Text Box" layout="stacked">
           <select
@@ -572,7 +563,7 @@ const activeLayoutCapabilities = useMemo(
   </CollapsibleSection>
 
   <CollapsibleSection
-    title="Color & Borders"
+    title="Colors"
     icon={<Wand2 className="h-4 w-4" />}
     open={rightOpenSection === 'identity'}
     onToggle={() => toggleRightSection('identity')}
@@ -877,6 +868,7 @@ const activeLayoutCapabilities = useMemo(
     </div>
   </CollapsibleSection>
 
+  {isAdvanced ? (
   <CollapsibleSection
     title="Panels"
     icon={<Blend className="h-4 w-4" aria-hidden />}
@@ -1142,28 +1134,62 @@ const activeLayoutCapabilities = useMemo(
       </div>
     </div>
   </CollapsibleSection>
+  ) : null}
   <CollapsibleSection
-    title="Settings & Debug"
+    title="Settings"
     icon={<Settings2 className="h-4 w-4" />}
     open={rightOpenSection === 'settings'}
     onToggle={() => toggleRightSection('settings')}
   >
     <div className="space-y-3">
-                <div className="space-y-2">
-                  <SwitchRow
-                    label="Restore last session"
-                    checked={!!restoreSession}
-                    onToggle={() => setRestoreSession(!restoreSession)}
-                    ariaLabel="Restore last session"
-                  />
-                  <SwitchRow
-                    label="Show Layout Labels"
-                    checked={!!showTooltips}
-                    onToggle={() => toggleTooltips()}
-                    ariaLabel="Show layout labels"
-                  />
-                </div>
-              
+      <div className="space-y-2">
+        <SwitchRow
+          label="Restore last session"
+          checked={!!restoreSession}
+          onToggle={() => setRestoreSession(!restoreSession)}
+          ariaLabel="Restore last session"
+        />
+        <SwitchRow
+          label="Show Layout Labels"
+          checked={!!showTooltips}
+          onToggle={() => toggleTooltips()}
+          ariaLabel="Show layout labels"
+        />
+        <SwitchRow
+          label="Show bleed guide"
+          checked={!!showBleed}
+          onToggle={() => {
+            setField('showBleed', !showBleed)
+            commitState()
+          }}
+          ariaLabel="Show bleed guide"
+        />
+        <ConstraintHint>{CONSTRAINT_COPY.printGuideBleed}</ConstraintHint>
+        <SwitchRow
+          label="Show trim guide"
+          checked={!!showTrim}
+          onToggle={() => {
+            setField('showTrim', !showTrim)
+            commitState()
+          }}
+          ariaLabel="Show trim guide"
+        />
+        <ConstraintHint>{CONSTRAINT_COPY.printGuideTrim}</ConstraintHint>
+        {isAdvanced ? (
+          <>
+            <SwitchRow
+              label="Show safe zone"
+              checked={!!showSafeZone}
+              onToggle={() => {
+                setField('showSafeZone', !showSafeZone)
+                commitState()
+              }}
+              ariaLabel="Show safe zone"
+            />
+            <ConstraintHint>{CONSTRAINT_COPY.printGuideSafe}</ConstraintHint>
+          </>
+        ) : null}
+      </div>
     </div>
   </CollapsibleSection>
 </>

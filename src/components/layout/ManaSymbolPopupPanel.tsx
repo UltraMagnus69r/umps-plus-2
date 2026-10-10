@@ -32,7 +32,9 @@ import { scaleManaPipDisplaySizePx } from '../../authority/symbolAuthority'
 import { useCardStore } from '../../store/useCardStore'
 
 const MOUNTAIN_RED = '#d3202a'
-const MANA_PICKER_PREVIEW_SIZE_PX = 24
+const MANA_PICKER_PREVIEW_SIZE_PX = 28
+/** Common WUBRG + colorless + digits shown first for faster picking. */
+const QUICK_MANA_TOKENS = ['W', 'U', 'B', 'R', 'G', 'C', '1', '2', '3', 'X'] as const
 
 const manaSetToggleClass = (active: boolean) =>
   [
@@ -228,8 +230,14 @@ export default function ManaSymbolPopupPanel() {
           </p>
         ) : null}
 
-        <div className="flex flex-wrap gap-2">
-          {manaPickerKeys.map(({ token, dataKey }) => {
+        {(() => {
+          const byToken = new Map(manaPickerKeys.map((k) => [k.token.toUpperCase(), k]))
+          const quick = QUICK_MANA_TOKENS.map((t) => byToken.get(t)).filter(
+            (k): k is (typeof manaPickerKeys)[number] => !!k && !!manaSymbolMap[k.dataKey],
+          )
+          const quickSet = new Set(quick.map((k) => k.dataKey))
+          const rest = manaPickerKeys.filter((k) => !quickSet.has(k.dataKey))
+          const renderBtn = (token: string, dataKey: string) => {
             const src = manaSymbolMap[dataKey]
             if (!src) return null
             return (
@@ -239,12 +247,12 @@ export default function ManaSymbolPopupPanel() {
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => handleInsert(token)}
                 className={[
-                  'ui-focus-ring flex h-8 w-8 items-center justify-center rounded-md border transition-colors duration-ui-standard ease-ui-out',
+                  'ui-focus-ring flex h-10 w-10 items-center justify-center rounded-lg border transition-colors duration-ui-standard ease-ui-out',
                   'border-neutral-300 hover:bg-neutral-100 active:bg-neutral-200',
                   'dark:border-neutral-700 dark:hover:bg-neutral-900 dark:active:bg-neutral-800',
                 ].join(' ')}
-              aria-label={`Insert {${formatManaTokenInnerForSet(manaSymbolSet, token)}} mana symbol`}
-              title={`Insert {${formatManaTokenInnerForSet(manaSymbolSet, token)}}`}
+                aria-label={`Insert {${formatManaTokenInnerForSet(manaSymbolSet, token)}} mana symbol`}
+                title={`Insert {${formatManaTokenInnerForSet(manaSymbolSet, token)}}`}
               >
                 <img
                   src={src}
@@ -259,8 +267,23 @@ export default function ManaSymbolPopupPanel() {
                 />
               </button>
             )
-          })}
-        </div>
+          }
+          return (
+            <>
+              {quick.length > 0 ? (
+                <div className="space-y-1">
+                  <div className={UI_TEXT_HELP_COMPACT}>Quick picks</div>
+                  <div className="flex flex-wrap gap-2">
+                    {quick.map((k) => renderBtn(k.token, k.dataKey))}
+                  </div>
+                </div>
+              ) : null}
+              <div className="flex flex-wrap gap-2">
+                {rest.map((k) => renderBtn(k.token, k.dataKey))}
+              </div>
+            </>
+          )
+        })()}
 
         <button
           type="button"
