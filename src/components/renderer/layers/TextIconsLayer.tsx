@@ -265,11 +265,12 @@ function TextIconsLayer() {
   const supportsPowerToughnessBox = activeCapabilities.supportsPowerToughnessBox
   const supportsModernDummyLayout = activeCapabilities.supportsModernDummyLayout
   const supportsPlaneswalkerModernV2Layout = activeCapabilities.supportsPlaneswalkerModernV2Layout
-  const collectorDataYAdjust = supportsPlaneswalkerModernV2Layout
-    ? PW_MODERN_V2_COLLECTOR_DATA_DOWN_NUDGE_PX
-    : supportsModernDummyLayout
-      ? MODERN_COLLECTOR_DATA_DOWN_NUDGE_PX
-      : 0
+  const collectorDataYAdjust =
+    (supportsPlaneswalkerModernV2Layout
+      ? PW_MODERN_V2_COLLECTOR_DATA_DOWN_NUDGE_PX
+      : supportsModernDummyLayout
+        ? MODERN_COLLECTOR_DATA_DOWN_NUDGE_PX
+        : 0)
   const hologramYAdjust = supportsPlaneswalkerModernV2Layout ? PW_MODERN_V2_HOLOGRAM_DOWN_NUDGE_PX : 0
   const modernPlateTextStroke = supportsModernDummyLayout ? MODERN_PLATE_TEXT_STROKE_COLOR : undefined
   const modernPlateTextStrokeWidth = supportsModernDummyLayout ? MODERN_PLATE_TEXT_STROKE_PX : 0
@@ -795,9 +796,12 @@ function TextIconsLayer() {
           (manaCostRender.totalWidth > 0 ? manaCostRender.totalWidth + (preModernFaceText ? 6 : 10) : 0),
       )
 
+  const nameSizeReferencePx = nameBaseFont
+  const typeSizeReferencePx = typeBaseFont
+
   const nameTargetPx = useMemo(
-    () => typographyPtToStagePx(nameTypography.sizePt, nameBaseFont),
-    [nameTypography.sizePt, nameBaseFont],
+    () => typographyPtToStagePx(nameTypography.sizePt, nameSizeReferencePx),
+    [nameTypography.sizePt, nameSizeReferencePx],
   )
 
   const nameFontSize = useMemo(() => {
@@ -816,7 +820,7 @@ function TextIconsLayer() {
     return floorToHalfPx(lo)
   }, [
     cardName,
-    nameBaseFont,
+    nameSizeReferencePx,
     nameTextMaxW,
     measureTextWidth,
     floorToHalfPx,
@@ -826,8 +830,8 @@ function TextIconsLayer() {
   ])
 
   const typeTargetPx = useMemo(
-    () => typographyPtToStagePx(typeTypography.sizePt, typeBaseFont),
-    [typeTypography.sizePt, typeBaseFont],
+    () => typographyPtToStagePx(typeTypography.sizePt, typeSizeReferencePx),
+    [typeTypography.sizePt, typeSizeReferencePx],
   )
 
   const typeFontSize = useMemo(() => {
@@ -844,7 +848,7 @@ function TextIconsLayer() {
   }, [
     cardTypeLine,
     getScaledSingleLineFontSize,
-    typeBaseFont,
+    typeSizeReferencePx,
     typeLineMaxWidth,
     typeStack,
     typeFontStyle,
@@ -1145,13 +1149,17 @@ function TextIconsLayer() {
       }
     }
     const flavorLift = flavorLineHeight
-    return lines.map((text, i) => ({
-      text,
-      x: leftX,
-      y: bottomY - (lines.length - i) * flavorLineHeight - flavorLift,
-      width: maxWidth,
-      align: undefined as 'center' | undefined,
-    }))
+    return lines.map((text, i) => {
+      const naturalY = bottomY - (lines.length - i) * flavorLineHeight - flavorLift
+      const maxY = bottomY - (lines.length - i) * flavorLineHeight
+      return {
+        text,
+        x: leftX,
+        y: Math.min(naturalY, maxY),
+        width: maxWidth,
+        align: undefined as 'center' | undefined,
+      }
+    })
   }, [
     flavorText,
     effectiveRulesInnerX,

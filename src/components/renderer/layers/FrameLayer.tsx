@@ -40,7 +40,6 @@ import { addPlaneswalkerModernV2RulesPanelPath } from './planeswalkerModernV2Rul
 
 /** Module 2.2 — micro-shadow for printed edge (2–4 px). */
 const FRAME_SHADOW_BLUR = 3
-const FRAME_SHADOW_BLUR_FEATHER = 4
 const FRAME_SHADOW_OPACITY = 0.4
 const FRAME_SHADOW_OFFSET = { x: 1, y: 1 }
 
@@ -64,15 +63,12 @@ function lightenHex(hex: string, amount: number): string {
 
 /**
  * Layer 3 — Frame.
- * Name, art, type, rules. P/T chrome is in PowerToughnessOverlayLayer (z-index above Surface FX / text / set symbol).
+ * Art, type, rules bevels. Name plate is NamePlateLayer (above CrownLayer).
+ * P/T chrome is in PowerToughnessOverlayLayer (z-index above Surface FX / text / set symbol).
  */
 function FrameLayer() {
   const layout = getStandardLayoutGeometry()
   const {
-    nameX,
-    nameY,
-    nameW,
-    nameH,
     artX,
     artY,
     artW,
@@ -106,15 +102,9 @@ function FrameLayer() {
     currentLayout,
     activeLayout,
     rulesTextBoxColor,
-    nameBoxColor,
     typeLineBoxColor,
-    nameBarShape,
     typeBarShape,
     bezierPlateEnabled,
-    nameBoxGradientEnabled,
-    nameBoxGradientDirection,
-    nameBoxGradientSaturation,
-    nameBoxGradientReversed,
     typeLineBoxGradientEnabled,
     typeLineBoxGradientDirection,
     typeLineBoxGradientSaturation,
@@ -142,15 +132,9 @@ function FrameLayer() {
       currentLayout: s.currentLayout,
       activeLayout: s.cardData.layout as LayoutId,
       rulesTextBoxColor: s.cardData.rulesTextBoxColor,
-      nameBoxColor: s.cardData.nameBoxColor,
       typeLineBoxColor: s.cardData.typeLineBoxColor,
-      nameBarShape: s.cardData.nameBarShape,
       typeBarShape: s.cardData.typeBarShape,
       bezierPlateEnabled: s.cardData.bezierPlateEnabled,
-      nameBoxGradientEnabled: s.cardData.nameBoxGradientEnabled,
-      nameBoxGradientDirection: s.cardData.nameBoxGradientDirection,
-      nameBoxGradientSaturation: s.cardData.nameBoxGradientSaturation,
-      nameBoxGradientReversed: s.cardData.nameBoxGradientReversed,
       typeLineBoxGradientEnabled: s.cardData.typeLineBoxGradientEnabled,
       typeLineBoxGradientDirection: s.cardData.typeLineBoxGradientDirection,
       typeLineBoxGradientSaturation: s.cardData.typeLineBoxGradientSaturation,
@@ -163,10 +147,6 @@ function FrameLayer() {
     shallow,
   )
   const panelBackgroundPreview = useCardStore((s) => s.panelBackgroundPreview)
-  const effectiveNameBoxColor = useMemo(
-    () => effectivePanelBackground('nameBoxColor', nameBoxColor, panelBackgroundPreview),
-    [nameBoxColor, panelBackgroundPreview],
-  )
   const effectiveTypeLineBoxColor = useMemo(
     () => effectivePanelBackground('typeLineBoxColor', typeLineBoxColor, panelBackgroundPreview),
     [typeLineBoxColor, panelBackgroundPreview],
@@ -175,12 +155,10 @@ function FrameLayer() {
     () => effectivePanelBackground('rulesTextBoxColor', rulesTextBoxColor, panelBackgroundPreview),
     [rulesTextBoxColor, panelBackgroundPreview],
   )
-  const nameBoxBgImage = usePanelBackgroundImage(effectiveNameBoxColor)
   const typeLineBoxBgImage = usePanelBackgroundImage(effectiveTypeLineBoxColor)
   const rulesBoxBgImage = usePanelBackgroundImage(effectiveRulesTextBoxColor)
   const {
     supportsRulesTextBoxTexture,
-    supportsNamePlateBox,
     supportsTypeLineBox,
     supportsRulesTextBoxFrame,
     supportsPreModernFaceLayout,
@@ -194,7 +172,6 @@ function FrameLayer() {
   })
   const borderlessLike = isBorderlessArtTreatmentLayout(activeLayout)
   const preModernShiftY = isPreModernLayout(activeLayout) ? getPreModernLayoutVerticalShiftPx() : 0
-  const nameYEff = nameY - preModernShiftY
   const artYEff = artY - preModernShiftY
   const typeYEff = typeY - preModernShiftY
   const rulesYEff = rulesY - preModernShiftY
@@ -203,19 +180,6 @@ function FrameLayer() {
     : (manaCost ?? '')
   const identityPips = useLandFullArtManaCircle ? [] : colorIdentity
   const identityAutoColorEnabled = useLandFullArtManaCircle ? true : autoColorEnabled
-
-  const landFullArtNameOuter = useMemo(() => {
-    if (!useLandFullArtManaCircle) return null
-    const inner = layoutRegionToStageRect(
-      getActiveLayoutRegionsFromState({ currentLayout, cardData: { layout: activeLayout } }).nameBar,
-    )
-    return {
-      x: inner.x - BEVEL_INSET,
-      y: inner.y - BEVEL_INSET,
-      w: inner.width + 2 * BEVEL_INSET,
-      h: inner.height + 2 * BEVEL_INSET,
-    }
-  }, [useLandFullArtManaCircle, currentLayout, activeLayout])
 
   const contractRegions = getActiveLayoutRegionsFromState({ currentLayout, cardData: { layout: activeLayout } })
 
@@ -228,11 +192,6 @@ function FrameLayer() {
     }),
     [],
   )
-
-  const contractNamePlate = useMemo(() => {
-    if (!supportsModernDummyLayout) return null
-    return plateOuterFromInner(layoutRegionToStageRect(contractRegions.nameBar))
-  }, [supportsModernDummyLayout, contractRegions.nameBar, plateOuterFromInner])
 
   const contractTypePlate = useMemo(() => {
     if (!supportsModernDummyLayout) return null
@@ -266,11 +225,6 @@ function FrameLayer() {
       ? FRAME_BOX_OUTER_STROKE_PX * 2
       : FRAME_BOX_OUTER_STROKE_PX
 
-  const nameOuterX = contractNamePlate?.x ?? (useLandFullArtManaCircle && landFullArtNameOuter ? landFullArtNameOuter.x : nameX)
-  const nameOuterY = contractNamePlate?.y ?? (useLandFullArtManaCircle && landFullArtNameOuter ? landFullArtNameOuter.y : nameYEff)
-  const nameOuterW = contractNamePlate?.w ?? (useLandFullArtManaCircle && landFullArtNameOuter ? landFullArtNameOuter.w : nameW)
-  const nameOuterH = contractNamePlate?.h ?? (useLandFullArtManaCircle && landFullArtNameOuter ? landFullArtNameOuter.h : nameH)
-
   const typeOuterX = contractTypePlate?.x ?? typeX
   const typeOuterY = contractTypePlate?.y ?? typeYEff
   const typeOuterW = contractTypePlate?.w ?? typeW
@@ -285,7 +239,6 @@ function FrameLayer() {
   const plateBarRadius = supportsPlaneswalkerModernV2Layout
     ? Math.round(barRadius * PW_MODERN_V2_PLATE_RADIUS_MULTIPLIER)
     : barRadius
-  const effectiveNameBarShape = resolveEffectiveNameplateShape(bezierPlateEnabled, nameBarShape)
   const effectiveTypeBarShape = resolveEffectiveNameplateShape(bezierPlateEnabled, typeBarShape)
   const rulesBoxCornerRadius = supportsPlaneswalkerModernV2Layout ? PW_MODERN_V2_RULES_BOX_CORNER_RADIUS_PX : 0
 
@@ -350,26 +303,6 @@ function FrameLayer() {
     [raisedBevelLight, raisedBevelDark, recessedBevelLight, recessedBevelDark],
   )
 
-  const nameReversePlateSpan = useMemo(
-    () =>
-      effectiveNameBarShape === 'reverseBezierPlate'
-        ? {
-            boxLeftStage: nameOuterX,
-            artColumnLeftStage: supportsPlaneswalkerModernV2Layout
-              ? (modernV2ArtOuter?.x ?? artX)
-              : supportsModernDummyLayout
-                ? artFrameX
-                : artX,
-            artColumnWidthStage: supportsPlaneswalkerModernV2Layout
-              ? (modernV2ArtOuter?.width ?? artW)
-              : supportsModernDummyLayout
-                ? artFrameW
-                : artW,
-          }
-        : undefined,
-    [effectiveNameBarShape, nameOuterX, supportsPlaneswalkerModernV2Layout, supportsModernDummyLayout, modernV2ArtOuter, artFrameX, artFrameW, artX, artW],
-  )
-
   const typeReversePlateSpan = useMemo(
     () =>
       effectiveTypeBarShape === 'reverseBezierPlate'
@@ -396,14 +329,6 @@ function FrameLayer() {
    * proxy look). Falls back to the plain micro-shadow when the M15 frame is active.
    */
   const useM15PanelStyle = proxyPanelsUseM15Style(M15_PAINTED_FRAME_ACTIVE)
-  const namePanelShadow = useM15PanelStyle
-    ? getM15ProxyPanelShadowProps()
-    : {
-        shadowColor: '#000',
-        shadowBlur: FRAME_SHADOW_BLUR_FEATHER,
-        shadowOffset: FRAME_SHADOW_OFFSET,
-        shadowOpacity: FRAME_SHADOW_OPACITY,
-      }
   const typePanelShadow = useM15PanelStyle
     ? getM15ProxyPanelShadowProps()
     : {
@@ -415,33 +340,6 @@ function FrameLayer() {
 
   return (
     <Layer listening={false}>
-      {supportsNamePlateBox && (
-        <Shape
-          x={nameOuterX}
-          y={nameOuterY}
-          sceneFunc={(ctx, _shape) => {
-            const c = ctx as unknown as CanvasRenderingContext2D
-            const inner = createBoxPanelInnerFillStyle(
-              c,
-              nameOuterW,
-              nameOuterH,
-              effectiveNameBoxColor,
-              nameBoxGradientEnabled,
-              nameBoxGradientDirection,
-              nameBoxGradientSaturation,
-              nameBoxGradientReversed,
-              nameBoxBgImage,
-            )
-            drawBeveledFrameOnContext(c, nameOuterW, nameOuterH, plateBarRadius, inner, 'raised', outerStrokeColor, bevelColors, {
-              shape: effectiveNameBarShape,
-              reversePlateSpan: nameReversePlateSpan,
-              fillOnly: supportsPlaneswalkerModernV2Layout,
-            })
-          }}
-          listening={false}
-          {...namePanelShadow}
-        />
-      )}
       {!borderlessLike && (
         <Shape
           x={artFrameX}

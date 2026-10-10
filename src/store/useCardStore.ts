@@ -115,6 +115,8 @@ import {
 import { resolveSetSymbolBoxPx } from '../authority/symbolAuthority'
 import { normalizeSpellTextBoxId } from '../data/spellPanelOptions'
 import { normalizePreModernRulesTextBoxId } from '../data/preModernRulesTextBoxOptions'
+import { normalizeCrownId } from '../data/crownOptions'
+import { normalizeArmorId } from '../data/armorOptions'
 
 export type { ColorIdentityPip, ManualColorKey } from '../authority/colorAuthority'
 export type { BoxColorGradientDirection } from '../authority/boxPanelFillAuthority'
@@ -184,6 +186,10 @@ export interface CardData {
   spellTextBoxId: string
   /** Standard / Land Pre-Modern: bundled rules text box background in `public/premodern-rules-textbox`. */
   preModernRulesTextBoxId: string
+  /** Modern / Borderless: Crown asset id from `public/crown` (Showcase nameplate flourish). */
+  crownAssetId: string
+  /** Modern / Borderless: Armor asset id from `public/armor` (UI only until preview wiring). */
+  armorAssetId: string
   /** Land / Full Art only — single basic-land style pip in the name-plate mana circle (`manaData` keys). */
   landFullArtManaCircleKey: LandFullArtManaCircleKey
   layout: LayoutId
@@ -987,6 +993,8 @@ export const defaultCardData: CardData = {
   landSecondaryPanelId: '',
   spellTextBoxId: 'white',
   preModernRulesTextBoxId: 'white',
+  crownAssetId: '',
+  armorAssetId: '',
   landFullArtManaCircleKey: 'c',
   layout: { ...DEFAULT_LAYOUT_ID },
   artIntrinsicWidth: 0,
@@ -1217,6 +1225,8 @@ function normalizeSnapshot(s: Snapshot): Snapshot {
     landFullArtManaCircleKey: normalizeLandFullArtManaCircleKey(anyS?.landFullArtManaCircleKey),
     spellTextBoxId: normalizeSpellTextBoxId(anyS?.spellTextBoxId),
     preModernRulesTextBoxId: normalizePreModernRulesTextBoxId(anyS?.preModernRulesTextBoxId),
+    crownAssetId: normalizeCrownId(anyS?.crownAssetId),
+    armorAssetId: normalizeArmorId(anyS?.armorAssetId),
     artIntrinsicWidth,
     artIntrinsicHeight,
     iconScale: resolveSetSymbolBoxPx(anyS?.iconScale ?? defaultCardData.iconScale),

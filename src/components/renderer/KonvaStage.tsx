@@ -9,6 +9,7 @@ import {
 } from '../../authority/geometryAuthority'
 import { getOuterBorderFill } from '../../authority/colorAuthority'
 import { UI_PREVIEW_SURFACE } from '../../authority/panelSurfaceAuthority'
+import { shouldRenderNameplateCrown } from '../../authority/crownLayoutAuthority'
 import { getActiveLayoutCapabilitiesFromState } from '../../authority/layoutRegistry'
 import type { LayoutId } from '../../authority/layoutTaxonomy'
 import { useCardStore } from '../../store/useCardStore'
@@ -16,6 +17,8 @@ import { useCardStore } from '../../store/useCardStore'
 import ArtLayer from './layers/ArtLayer'
 import TextureBorderLayer from './layers/TextureBorderLayer'
 import FrameLayer from './layers/FrameLayer'
+import CrownLayer from './layers/CrownLayer'
+import NamePlateLayer from './layers/NamePlateLayer'
 import LandFullArtManaCircleLayer from './layers/LandFullArtManaCircleLayer'
 import RulesTextBoxTextureLayer from './layers/RulesTextBoxTextureLayer'
 import WatermarkLayer from './layers/WatermarkLayer'
@@ -67,8 +70,10 @@ function useContainerSize<T extends HTMLElement>() {
  * Stage orchestrator — canonical layer stack (Module 5.2 adds watermark + set symbol).
  * 1. Texture / Border
  * 2. Art
- * 3. Frame (bevel boxes; rules recess transparent when Rules Text Box Surface FX applies)
- * 3b. Rules Text Box Surface FX (base color + texture), below watermark
+ * 3. Frame (art / type / rules bevels; name plate is separate)
+ * 3a. Crown (Showcase flourish — above art + inner border + art frame, below name plate)
+ * 3b. Name plate
+ * 3c. Rules Text Box Surface FX (base color + texture), below watermark
  * 4. Watermark — rules-area mark, above frame fill, below text
  * 5. Text & Icons
  * 6. Set symbol — Scryfall CDN SVG in type-line slot (above type-line text on the right)
@@ -88,6 +93,7 @@ function KonvaStage({
   const currentLayout = useCardStore((s) => s.currentLayout)
   const clonedCardImage = useCardStore((s) => s.cardData.clonedCardImage)
   const activeLayout = useCardStore((s) => s.cardData.layout as LayoutId)
+  const crownAssetId = useCardStore((s) => s.cardData.crownAssetId)
   const layoutCaps = useMemo(
     () =>
       getActiveLayoutCapabilitiesFromState({
@@ -96,6 +102,11 @@ function KonvaStage({
       }),
     [currentLayout, activeLayout],
   )
+  const showCrown = shouldRenderNameplateCrown({
+    layout: activeLayout,
+    currentLayout,
+    crownAssetId,
+  })
   const showRulesTexture =
     layoutCaps.supportsPlaneswalkerModernV2Layout ||
     (layoutCaps.supportsRulesTextBoxTexture && !layoutCaps.supportsPreModernTextBoxFrame)
@@ -231,6 +242,8 @@ function KonvaStage({
             <TextureBorderLayer />
             <ArtLayer />
             <FrameLayer />
+            {showCrown ? <CrownLayer /> : null}
+            {layoutCaps.supportsNamePlateBox ? <NamePlateLayer /> : null}
             {showRulesTexture ? <RulesTextBoxTextureLayer /> : null}
             <WatermarkLayer />
             {layoutCaps.supportsLandSecondaryArtInRulesRegion ? <LandSecondaryArtLayer /> : null}

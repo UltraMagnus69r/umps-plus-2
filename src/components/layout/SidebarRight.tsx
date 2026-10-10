@@ -50,12 +50,14 @@ import {
   shouldShowColorIdentityPipControls,
   shouldShowManualColorPaletteControls,
   shouldShowPtPanelGradientField,
+  shouldShowCrownArmorSelectors,
   shouldShowPlateGeometry,
   shouldShowPreModernTextBoxSelector,
   shouldShowSpellTextBoxSelector,
 } from '../../authority/progressiveDisclosureAuthority'
 import { SPELL_PANEL_OPTIONS } from '../../data/spellPanelOptions'
 import { PRE_MODERN_RULES_TEXT_BOX_OPTIONS } from '../../data/preModernRulesTextBoxOptions'
+import { CROWN_OPTIONS } from '../../data/crownOptions'
 import { BOX_PANEL_COLOR_UI } from '../../authority/boxColorUiAuthority'
 import { CONSTRAINT_COPY } from '../../authority/constraintFeedbackAuthority'
 import CollapsibleSection from './CollapsibleSection'
@@ -305,6 +307,7 @@ const activeLayoutCapabilities = useMemo(
   const bezierPlateEnabled = useCardStore((s) => s.cardData.bezierPlateEnabled)
   const spellTextBoxId = useCardStore((s) => s.cardData.spellTextBoxId)
   const preModernRulesTextBoxId = useCardStore((s) => s.cardData.preModernRulesTextBoxId)
+  const crownAssetId = useCardStore((s) => s.cardData.crownAssetId)
   const pdColorInput = useMemo(
     () => ({ autoColorEnabled: !!autoColorEnabled }),
     [autoColorEnabled],
@@ -558,6 +561,25 @@ const activeLayoutCapabilities = useMemo(
           }}
           ariaLabel="Bezier plate"
         />
+      ) : null}
+      {shouldShowCrownArmorSelectors({ layout: activeLayout }) ? (
+        <FieldRow label="Crown" layout="stacked">
+          <select
+            value={crownAssetId}
+            onChange={(e) => {
+              setField('crownAssetId', e.target.value)
+              commitState()
+            }}
+            className="w-full h-10 rounded-xl border border-neutral-200 bg-white px-3 ui-text-control outline-none ui-focus-ring-control dark:border-[var(--sb-border)] dark:bg-[var(--sb-surface-soft)]"
+            aria-label="Crown asset"
+          >
+            {CROWN_OPTIONS.map((o) => (
+              <option key={o.id || 'none'} value={o.id}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </FieldRow>
       ) : null}
     </div>
   </CollapsibleSection>

@@ -119,6 +119,13 @@ export function shouldShowSpellTextBoxSelector(input: {
   return input.layout.variant === 'pre-modern' && input.layoutFamily === 'spell'
 }
 
+/** Crown / Armor asset pickers — Modern layout variant only. */
+export function shouldShowCrownArmorSelectors(input: {
+  layout: LayoutId
+}): boolean {
+  return input.layout.variant === 'modern'
+}
+
 export function shouldShowPreModernTextBoxSelector(input: {
   layoutFamily: LayoutFamily
   layout: LayoutId
