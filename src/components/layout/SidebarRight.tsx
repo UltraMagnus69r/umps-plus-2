@@ -54,7 +54,7 @@ import SwitchRow from '../ui/SwitchRow'
 import FieldRow from '../ui/FieldRow'
 import ConstraintHint from '../ui/ConstraintHint'
 import LayoutThumbnailPicker from './LayoutThumbnailPicker'
-import { usePersistedUiState, useUiComplexityMode } from '../../hooks/usePersistedUiState'
+import { usePersistedUiState } from '../../hooks/usePersistedUiState'
 import { useScrollFieldIntoView } from '../../hooks/useScrollFieldIntoView'
 
 /** Phase 10.3 correction — exactly one top-level section open per right sidebar. */
@@ -109,9 +109,7 @@ export default function SidebarRight({ inspectorSegment }: SidebarRightProps) {
     isRightOpenStored,
   )
   const rightOpenSection: RightSectionId | null = rightOpenStored === 'none' ? null : rightOpenStored
-  const [uiMode] = useUiComplexityMode()
   /** Look = frame/colors/panels; Details = guides (replaces Advanced). */
-  const isAdvanced = embedded ? inspectorSegment === 'details' : uiMode === 'advanced'
   const showLookSections = !embedded || inspectorSegment === 'look'
   const showDetailsSections = !embedded || inspectorSegment === 'details'
   const showPanelsSection = !embedded || inspectorSegment === 'look'
@@ -140,9 +138,6 @@ export default function SidebarRight({ inspectorSegment }: SidebarRightProps) {
   const restoreSession = useCardStore((s) => s.settings.restoreSession)
 
   const showTooltips = useCardStore((s) => s.showTooltips)
-  const showBleed = useCardStore((s) => s.cardData.showBleed)
-  const showTrim = useCardStore((s) => s.cardData.showTrim)
-  const showSafeZone = useCardStore((s) => s.cardData.showSafeZone)
 
 // Phase 4.1 – Procedural Color & Stroke Identity (behavioral pass)
 const autoColorEnabled = useCardStore((s) => s.autoColorEnabled)
@@ -869,40 +864,6 @@ const activeLayoutCapabilities = useMemo(
           onToggle={() => toggleTooltips()}
           ariaLabel="Show layout labels"
         />
-        <SwitchRow
-          label="Show bleed guide"
-          checked={!!showBleed}
-          onToggle={() => {
-            setField('showBleed', !showBleed)
-            commitState()
-          }}
-          ariaLabel="Show bleed guide"
-        />
-        <ConstraintHint>{CONSTRAINT_COPY.printGuideBleed}</ConstraintHint>
-        <SwitchRow
-          label="Show trim guide"
-          checked={!!showTrim}
-          onToggle={() => {
-            setField('showTrim', !showTrim)
-            commitState()
-          }}
-          ariaLabel="Show trim guide"
-        />
-        <ConstraintHint>{CONSTRAINT_COPY.printGuideTrim}</ConstraintHint>
-        {isAdvanced || embedded ? (
-          <>
-            <SwitchRow
-              label="Show safe zone"
-              checked={!!showSafeZone}
-              onToggle={() => {
-                setField('showSafeZone', !showSafeZone)
-                commitState()
-              }}
-              ariaLabel="Show safe zone"
-            />
-            <ConstraintHint>{CONSTRAINT_COPY.printGuideSafe}</ConstraintHint>
-          </>
-        ) : null}
       </div>
     </div>
   </CollapsibleSection>

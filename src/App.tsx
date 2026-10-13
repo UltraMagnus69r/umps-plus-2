@@ -64,6 +64,18 @@ export default function App() {
     setIsMounted(true)
   }, [])
 
+  // New Card / flow reset: always land on Content + pill 1 Start (no drill).
+  useEffect(() => {
+    const onFlowStep = (e: Event) => {
+      const detail = (e as CustomEvent<{ stepId?: string }>).detail
+      if (detail?.stepId === 'start') {
+        setSegment('content')
+      }
+    }
+    window.addEventListener('umps-flow-step', onFlowStep)
+    return () => window.removeEventListener('umps-flow-step', onFlowStep)
+  }, [setSegment])
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey

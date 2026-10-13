@@ -70,45 +70,44 @@ function StudioTopBar({ segment, onSegmentChange, onOpenDownload }: Props) {
 
   return (
     <header className="studio-topbar" role="banner">
-      <div className="flex min-w-0 flex-1 items-center gap-3">
+      <div className="studio-topbar__left">
         <div className="studio-brand shrink-0" title="UltraMagnus Proxy Showcase">
           UMPS
         </div>
-        <div className="hidden min-w-0 flex-col sm:flex">
-          <div className="truncate text-[0.8125rem] font-semibold tracking-[-0.01em] text-[var(--text-primary)]">
-            {displayName}
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <StatusTriIndicator
-              status={readiness}
-              title={`Workflow: ${WORKFLOW_STATE_LABEL[workflowState]}`}
-            />
-            <span
-              className={`studio-status-chip ${designDirty ? 'studio-status-chip--unsaved' : 'studio-status-chip--saved'}`}
-              title={designDirty ? 'Changes since last save or load' : 'No unsaved design changes'}
-            >
-              {designDirty ? 'Unsaved' : 'Saved'}
-            </span>
-          </div>
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <StatusTriIndicator
+            status={readiness}
+            title={`Workflow: ${WORKFLOW_STATE_LABEL[workflowState]}`}
+          />
+          <span
+            className={`studio-status-chip ${designDirty ? 'studio-status-chip--unsaved' : 'studio-status-chip--saved'}`}
+            title={designDirty ? 'Changes since last save or load' : 'No unsaved design changes'}
+          >
+            {designDirty ? 'Unsaved' : 'Saved'}
+          </span>
         </div>
       </div>
 
-      <div className="studio-segmented order-3 w-full sm:order-none sm:w-auto" role="tablist" aria-label="Inspector">
-        {SEGMENTS.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={segment === id}
-            className="studio-segmented__btn"
-            onClick={() => onSegmentChange(id)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <h1 className="studio-topbar__title" title={displayName}>
+        {displayName}
+      </h1>
 
-      <div className="ml-auto flex shrink-0 items-center gap-1.5">
+      <div className="studio-topbar__right">
+        <div className="studio-segmented" role="tablist" aria-label="Inspector">
+          {SEGMENTS.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={segment === id}
+              className="studio-segmented__btn"
+              onClick={() => onSegmentChange(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <button
           type="button"
           className="ui-focus-ring flex h-9 w-9 items-center justify-center rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-white/70 text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-40"

@@ -192,6 +192,28 @@ export function inferStudioFlowStep(args: {
   return STUDIO_FLOW_STEPS[0]
 }
 
+const INSPECTOR_SEGMENT_KEY = 'umps-inspector-segment'
+
+function writeStudioFlowStartKeys() {
+  try {
+    window.localStorage.setItem(FLOW_STEP_STORAGE_KEY, 'start')
+    window.localStorage.setItem('umps-left-open-section', 'none')
+    window.localStorage.setItem('umps-right-open-section', 'none')
+    window.localStorage.setItem(INSPECTOR_SEGMENT_KEY, 'content')
+  } catch {
+    /* private mode */
+  }
+}
+
+/**
+ * Full-page load: force inspector UI to pill 1 Start with collapsed menus.
+ * Call before React mounts so persisted segment/drill keys do not rehydrate mid-flow.
+ * Card data restore (session) is unaffected.
+ */
+export function seedStudioFlowStartOnBoot() {
+  writeStudioFlowStartKeys()
+}
+
 /**
  * Collapse inspector sidebars to the section list (no drill-in panel).
  * Used by step-strip clicks and Content/Look/Details segment switches.
@@ -206,6 +228,19 @@ export function clearStudioInspectorDrill() {
   window.dispatchEvent(
     new CustomEvent('umps-flow-step', {
       detail: { menuLevel: true as const },
+    }),
+  )
+}
+
+/**
+ * New Card / explicit flow reset: Content segment, pill 1 Start, no drill-in.
+ * Dispatches `umps-flow-step` so sidebars/strip sync; listeners should set segment to content.
+ */
+export function resetStudioFlowToStart() {
+  writeStudioFlowStartKeys()
+  window.dispatchEvent(
+    new CustomEvent('umps-flow-step', {
+      detail: { menuLevel: true as const, stepId: 'start' as const },
     }),
   )
 }

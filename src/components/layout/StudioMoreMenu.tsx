@@ -11,6 +11,7 @@ import {
   Send,
 } from 'lucide-react'
 import { shallow } from 'zustand/shallow'
+import { resetStudioFlowToStart } from '../../authority/studioFlowAuthority'
 import { migrateDesignPayload, useCardStore } from '../../store/useCardStore'
 import { saveDesign } from '../../utils/fileUtils'
 import { generateHighResExport } from '../../services/exportService'
@@ -162,7 +163,16 @@ export default function StudioMoreMenu({ onOpenDownload }: Props) {
           <div className="px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.04em] text-[var(--text-tertiary)]">
             Save · Load · Print
           </div>
-          <button type="button" role="menuitem" className={itemClass} onClick={() => { resetCard(); setOpen(false) }}>
+          <button
+            type="button"
+            role="menuitem"
+            className={itemClass}
+            onClick={() => {
+              resetCard()
+              resetStudioFlowToStart()
+              setOpen(false)
+            }}
+          >
             <Plus className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
             New card
           </button>

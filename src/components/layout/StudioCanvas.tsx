@@ -4,6 +4,7 @@ import { WORKING_PREVIEW_FOCUS_ID } from '../../data/layoutConstants'
 import {
   isCardEffectivelyEmptyForGuidance,
 } from '../../authority/guidanceAuthority'
+import { resetStudioFlowToStart } from '../../authority/studioFlowAuthority'
 import { useCardStore } from '../../store/useCardStore'
 import type { InspectorSegment } from '../../hooks/useInspectorSegment'
 import CardPreviewSelectionShell from './CardPreviewSelectionShell'
@@ -208,17 +209,9 @@ function StudioCanvas({ onRequestSegment, onRequestImport }: Props) {
 
   const startBlank = useCallback(() => {
     resetCard()
-    // Land on Look at the collapsed menu (Frame / Colors / Panels). Do not
-    // auto-drill Frame — step strip / menu rows own drill-in.
-    try {
-      window.localStorage.setItem('umps-right-open-section', 'none')
-      window.localStorage.setItem('umps-left-open-section', 'none')
-      window.localStorage.setItem('umps-studio-flow-step', 'frame')
-    } catch {
-      /* private mode */
-    }
-    window.dispatchEvent(new CustomEvent('umps-flow-step', { detail: { menuLevel: true } }))
-    onRequestSegment('look')
+    // Full new-document reset: Content + pill 1 Start, collapsed menus (no drill).
+    resetStudioFlowToStart()
+    onRequestSegment('content')
   }, [onRequestSegment, resetCard])
 
   return (

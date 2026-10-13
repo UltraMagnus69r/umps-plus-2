@@ -8,6 +8,7 @@ import { memo, useCallback, useEffect, useId, useRef } from 'react'
 import { shallow } from 'zustand/shallow'
 import { useNavigate } from 'react-router-dom'
 import { Check, Redo2, Undo2, FileJson2, Image as ImageIcon, Download, FolderOpen, Plus, Printer } from 'lucide-react'
+import { resetStudioFlowToStart } from '../../authority/studioFlowAuthority'
 import { migrateDesignPayload, useCardStore } from '../../store/useCardStore'
 import { saveDesign } from '../../utils/fileUtils'
 import ExportOptionsControls from '../ui/ExportOptionsControls'
@@ -102,6 +103,7 @@ const BottomBarToolbar = memo(function BottomBarToolbar() {
 
   const handleResetCard = useCallback(() => {
     resetCard()
+    resetStudioFlowToStart()
   }, [resetCard])
 
   const handleExportPng = useCallback(() => {
