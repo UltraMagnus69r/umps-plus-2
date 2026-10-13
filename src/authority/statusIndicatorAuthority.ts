@@ -1,16 +1,19 @@
 /**
- * Phase 16.1 — Status indicators (Ready / Invalid / Processing).
+ * Phase 16.1 — Status indicators (Ready / Needs name / Processing).
  * Maps existing workflow + async store signals only; no parallel business rules.
+ * Studio redesign: readiness is separate from Saved / Unsaved design state.
  */
 
 import type { AsyncStatusState } from '../store/useCardStore'
 import type { WorkflowState } from './workflowAuthority'
 
-export type TriStatus = 'ready' | 'invalid' | 'processing'
+export type TriStatus = 'ready' | 'needs_name' | 'invalid' | 'processing'
 
 export const TRI_STATUS_LABEL: Record<TriStatus, string> = {
   ready: 'Ready',
-  invalid: 'Invalid',
+  needs_name: 'Needs name',
+  /** @deprecated Prefer needs_name in studio chrome; kept for export cluster compatibility. */
+  invalid: 'Needs name',
   processing: 'Processing',
 }
 
@@ -29,7 +32,8 @@ type CardSideAsyncSlice = Pick<
 
 /**
  * Context header: import / design load / asset uploads in flight, else card workflow readiness.
- * Export loading is surfaced on the footer export cluster only.
+ * Export loading is surfaced on the download cluster only.
+ * Never conflates with Saved/Unsaved.
  */
 export function deriveContextTriStatus(
   workflowState: WorkflowState,
@@ -41,7 +45,7 @@ export function deriveContextTriStatus(
     asyncSlice.setIconUpload.status === 'loading' ||
     asyncSlice.designLoad.status === 'loading'
   if (busy) return 'processing'
-  if (workflowState === 'BROWSING' || workflowState === 'EDITING') return 'invalid'
+  if (workflowState === 'BROWSING' || workflowState === 'EDITING') return 'needs_name'
   return 'ready'
 }
 
@@ -51,6 +55,6 @@ export function deriveExportTriStatus(
   exportAsync: AsyncStatusState,
 ): TriStatus {
   if (exportAsync.status === 'loading') return 'processing'
-  if (workflowState !== 'EXPORT_READY') return 'invalid'
+  if (workflowState !== 'EXPORT_READY') return 'needs_name'
   return 'ready'
 }
