@@ -2513,6 +2513,7 @@ setManualUseTwoColors: (enabled) =>
         set((_state) => {
           const POPUP_W = 280
           const TOP_OFFSET = 80
+          const margin = 8
           const top =
             typeof window !== 'undefined'
               ? TOP_OFFSET
@@ -2521,9 +2522,16 @@ setManualUseTwoColors: (enabled) =>
             typeof window !== 'undefined'
               ? Math.round(window.innerWidth / 2 - POPUP_W / 2)
               : 100
+          const maxLeft =
+            typeof window !== 'undefined'
+              ? Math.max(margin, window.innerWidth - POPUP_W - margin)
+              : left
           return {
             manaPopupOpen: true,
-            manaPopupPosition: { top, left },
+            manaPopupPosition: {
+              top: typeof window !== 'undefined' ? Math.max(margin, Math.min(top, window.innerHeight - margin)) : top,
+              left: Math.min(maxLeft, Math.max(margin, left)),
+            },
           }
         }),
       closeManaPopup: () => set({ manaPopupOpen: false }),

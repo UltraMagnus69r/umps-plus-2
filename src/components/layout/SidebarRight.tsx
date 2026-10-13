@@ -114,6 +114,9 @@ export default function SidebarRight({ inspectorSegment }: SidebarRightProps) {
   const isAdvanced = embedded ? inspectorSegment === 'details' : uiMode === 'advanced'
   const showLookSections = !embedded || inspectorSegment === 'look'
   const showDetailsSections = !embedded || inspectorSegment === 'details'
+  const drillMode = embedded
+  const sectionMode = drillMode ? 'drill' : 'accordion'
+  const stackOccupied = drillMode && rightOpenSection != null
   const scrollFieldIntoView = useScrollFieldIntoView()
   const toggleRightSection = (id: RightSectionId) => {
     startTransition(() => {
@@ -375,7 +378,12 @@ const activeLayoutCapabilities = useMemo(
         ) : null}
 
 	        <div
-	          className="sidebar-content flex-1 min-h-0 overflow-y-auto"
+	          className={[
+	            'sidebar-content flex-1 min-h-0',
+	            drillMode ? 'inspector-drill-stack overflow-hidden' : 'overflow-y-auto',
+	          ]
+	            .filter(Boolean)
+	            .join(' ')}
 	          aria-label="Styling sections"
 	        >
 	          {(embedded || !collapsed) && (
@@ -387,6 +395,8 @@ const activeLayoutCapabilities = useMemo(
     icon={<LayoutTemplate className="h-4 w-4" />}
     open={rightOpenSection === 'layout'}
     onToggle={() => toggleRightSection('layout')}
+    mode={sectionMode}
+    stackOccupied={stackOccupied}
   >
     <div className="space-y-2" onFocusCapture={scrollFieldIntoView}>
       <LayoutThumbnailPicker
@@ -476,6 +486,8 @@ const activeLayoutCapabilities = useMemo(
     icon={<Wand2 className="h-4 w-4" />}
     open={rightOpenSection === 'identity'}
     onToggle={() => toggleRightSection('identity')}
+    mode={sectionMode}
+    stackOccupied={stackOccupied}
   >
     <div className="space-y-2">
       <SwitchRow
@@ -624,156 +636,144 @@ const activeLayoutCapabilities = useMemo(
             </div>
         </div>
       ) : null}
-      <div className="rounded-xl border border-neutral-200 dark:border-[var(--sb-border)]">
-        <button
-          type="button"
-          onClick={() => setInnerBorderOpen((v) => !v)}
-          aria-expanded={innerBorderOpen}
-          className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left ui-text-control outline-none ui-focus-ring-control hover:bg-neutral-100 dark:hover:bg-neutral-800"
-        >
-          <span className={UI_TEXT_LABEL_SEMIBOLD}>Inner Border</span>
-          <ChevronDown
-            className={`h-4 w-4 shrink-0 transition-transform ${innerBorderOpen ? 'rotate-180' : ''}`}
-            aria-hidden
+      <CollapsibleSection
+        title="Inner Border"
+        open={innerBorderOpen}
+        onToggle={() => {
+          setInnerBorderOpen((v) => !v)
+          if (!innerBorderOpen) setOuterBorderOpen(false)
+        }}
+        mode={sectionMode}
+        stackOccupied={drillMode && (innerBorderOpen || outerBorderOpen) && !innerBorderOpen}
+      >
+        <div className="space-y-2">
+          <SwitchRow
+            label="Inner Border - ON/OFF"
+            checked={innerBorderEnabled !== false}
+            onToggle={() => {
+              setField('innerBorderEnabled', !(innerBorderEnabled !== false))
+              commitState()
+            }}
+            ariaLabel="Inner border on/off"
           />
-        </button>
 
-        {innerBorderOpen ? (
-          <div className="space-y-2 border-t border-neutral-200 px-3 py-3 dark:border-[var(--sb-border)]">
-            <SwitchRow
-              label="Inner Border - ON/OFF"
-              checked={innerBorderEnabled !== false}
-              onToggle={() => {
-                setField('innerBorderEnabled', !(innerBorderEnabled !== false))
+          <LazyOuterBorderPicker
+            field="innerBorderBackground"
+            buttonLabel="Inner Border Background"
+            identityOption={{ value: 'identity', label: 'From Color Identity' }}
+          />
+
+          <FieldRow label="Card Frame Texture" layout="stacked">
+            <select
+              value={selectedTexture}
+              onChange={(e) => {
+                setField('selectedTexture', e.target.value)
                 commitState()
               }}
-              ariaLabel="Inner border on/off"
-            />
+              disabled={cardFrameTextureDisabled}
+              className="w-full h-10 rounded-xl border border-neutral-200 bg-white px-3 ui-text-control outline-none ui-focus-ring-control disabled:opacity-50 dark:border-[var(--sb-border)] dark:bg-[var(--sb-surface-soft)]"
+              aria-label="Card frame texture"
+            >
+              {TEXTURE_OPTIONS.map((t) => (
+                <option key={t.file || 'none'} value={t.file}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </FieldRow>
 
-            <LazyOuterBorderPicker
-              field="innerBorderBackground"
-              buttonLabel="Inner Border Background"
-              identityOption={{ value: 'identity', label: 'From Color Identity' }}
-            />
-
-            <FieldRow label="Card Frame Texture" layout="stacked">
-              <select
-                value={selectedTexture}
-                onChange={(e) => {
-                  setField('selectedTexture', e.target.value)
-                  commitState()
-                }}
-                disabled={cardFrameTextureDisabled}
-                className="w-full h-10 rounded-xl border border-neutral-200 bg-white px-3 ui-text-control outline-none ui-focus-ring-control disabled:opacity-50 dark:border-[var(--sb-border)] dark:bg-[var(--sb-surface-soft)]"
-                aria-label="Card frame texture"
-              >
-                {TEXTURE_OPTIONS.map((t) => (
-                  <option key={t.file || 'none'} value={t.file}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
+          {selectedTexture && !cardFrameTextureDisabled ? (
+            <FieldRow label="Card Frame Texture Opacity" layout="stacked">
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={typeof textureOpacity === 'number' ? textureOpacity : 1}
+                onChange={(e) => setField('textureOpacity', parseFloat(e.target.value))}
+                onMouseUp={commitState}
+                onTouchEnd={commitState}
+                className="w-full"
+                aria-label="Card frame texture opacity"
+              />
             </FieldRow>
+          ) : null}
+        </div>
+      </CollapsibleSection>
 
-            {selectedTexture && !cardFrameTextureDisabled ? (
-              <FieldRow label="Card Frame Texture Opacity" layout="stacked">
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={typeof textureOpacity === 'number' ? textureOpacity : 1}
-                  onChange={(e) => setField('textureOpacity', parseFloat(e.target.value))}
-                  onMouseUp={commitState}
-                  onTouchEnd={commitState}
-                  className="w-full"
-                  aria-label="Card frame texture opacity"
-                />
-              </FieldRow>
-            ) : null}
+      <CollapsibleSection
+        title="Outer Border"
+        open={outerBorderOpen}
+        onToggle={() => {
+          setOuterBorderOpen((v) => !v)
+          if (!outerBorderOpen) setInnerBorderOpen(false)
+        }}
+        mode={sectionMode}
+        stackOccupied={drillMode && (innerBorderOpen || outerBorderOpen) && !outerBorderOpen}
+      >
+        <div className="space-y-2">
+          <LazyOuterBorderPicker buttonLabel="Outer Border Background" />
+
+          <div className="rounded-xl border border-neutral-200 dark:border-[var(--sb-border)]">
+            <button
+              type="button"
+              disabled={!outerBorderFrameTextureApplicable}
+              onClick={() => setObfTextureOpen((v) => !v)}
+              aria-expanded={outerBorderFrameTextureApplicable && obfTextureOpen}
+              className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left ui-text-control outline-none ui-focus-ring-control enabled:hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-50 dark:enabled:hover:bg-neutral-800"
+              title={
+                outerBorderFrameTextureApplicable
+                  ? 'Overlay a frame texture on the Outer Border'
+                  : 'Available for Solid, M15, and Dual colors only'
+              }
+            >
+              <span>Outer Border Texture</span>
+              <ChevronDown
+                className={`h-4 w-4 shrink-0 transition-transform ${
+                  outerBorderFrameTextureApplicable && obfTextureOpen ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+
+            {outerBorderFrameTextureApplicable && obfTextureOpen && (
+              <div className="space-y-3 border-t border-neutral-200 px-3 py-3 dark:border-[var(--sb-border)]">
+                <FieldRow label="Texture" layout="stacked">
+                  <select
+                    value={outerBorderFrameTexture}
+                    onChange={(e) => {
+                      setField('outerBorderFrameTexture', e.target.value)
+                      commitState()
+                    }}
+                    className="w-full h-10 rounded-xl border border-neutral-200 bg-white px-3 ui-text-control outline-none ui-focus-ring-control dark:border-[var(--sb-border)] dark:bg-[var(--sb-surface-soft)]"
+                    aria-label="Outer border frame texture"
+                  >
+                    {TEXTURE_OPTIONS.map((t) => (
+                      <option key={`obf-${t.file || 'none'}`} value={t.file}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </select>
+                </FieldRow>
+
+                <FieldRow label="Opacity" layout="stacked">
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={typeof outerBorderFrameTextureOpacity === 'number' ? outerBorderFrameTextureOpacity : 1}
+                    onChange={(e) => setField('outerBorderFrameTextureOpacity', parseFloat(e.target.value))}
+                    onMouseUp={commitState}
+                    onTouchEnd={commitState}
+                    className="w-full"
+                    aria-label="Outer border frame texture opacity"
+                  />
+                </FieldRow>
+              </div>
+            )}
           </div>
-        ) : null}
-      </div>
-
-      <div className="rounded-xl border border-neutral-200 dark:border-[var(--sb-border)]">
-        <button
-          type="button"
-          onClick={() => setOuterBorderOpen((v) => !v)}
-          aria-expanded={outerBorderOpen}
-          className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left ui-text-control outline-none ui-focus-ring-control hover:bg-neutral-100 dark:hover:bg-neutral-800"
-        >
-          <span className={UI_TEXT_LABEL_SEMIBOLD}>Outer Border</span>
-          <ChevronDown
-            className={`h-4 w-4 shrink-0 transition-transform ${outerBorderOpen ? 'rotate-180' : ''}`}
-            aria-hidden
-          />
-        </button>
-
-        {outerBorderOpen ? (
-          <div className="space-y-2 border-t border-neutral-200 px-3 py-3 dark:border-[var(--sb-border)]">
-            <LazyOuterBorderPicker buttonLabel="Outer Border Background" />
-
-            <div className="rounded-xl border border-neutral-200 dark:border-[var(--sb-border)]">
-              <button
-                type="button"
-                disabled={!outerBorderFrameTextureApplicable}
-                onClick={() => setObfTextureOpen((v) => !v)}
-                aria-expanded={outerBorderFrameTextureApplicable && obfTextureOpen}
-                className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left ui-text-control outline-none ui-focus-ring-control enabled:hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-50 dark:enabled:hover:bg-neutral-800"
-                title={
-                  outerBorderFrameTextureApplicable
-                    ? 'Overlay a frame texture on the Outer Border'
-                    : 'Available for Solid, M15, and Dual colors only'
-                }
-              >
-                <span>Outer Border Texture</span>
-                <ChevronDown
-                  className={`h-4 w-4 shrink-0 transition-transform ${
-                    outerBorderFrameTextureApplicable && obfTextureOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-
-              {outerBorderFrameTextureApplicable && obfTextureOpen && (
-                <div className="space-y-3 border-t border-neutral-200 px-3 py-3 dark:border-[var(--sb-border)]">
-                  <FieldRow label="Texture" layout="stacked">
-                    <select
-                      value={outerBorderFrameTexture}
-                      onChange={(e) => {
-                        setField('outerBorderFrameTexture', e.target.value)
-                        commitState()
-                      }}
-                      className="w-full h-10 rounded-xl border border-neutral-200 bg-white px-3 ui-text-control outline-none ui-focus-ring-control dark:border-[var(--sb-border)] dark:bg-[var(--sb-surface-soft)]"
-                      aria-label="Outer border frame texture"
-                    >
-                      {TEXTURE_OPTIONS.map((t) => (
-                        <option key={`obf-${t.file || 'none'}`} value={t.file}>
-                          {t.label}
-                        </option>
-                      ))}
-                    </select>
-                  </FieldRow>
-
-                  <FieldRow label="Opacity" layout="stacked">
-                    <input
-                      type="range"
-                      min={0}
-                      max={1}
-                      step={0.01}
-                      value={typeof outerBorderFrameTextureOpacity === 'number' ? outerBorderFrameTextureOpacity : 1}
-                      onChange={(e) => setField('outerBorderFrameTextureOpacity', parseFloat(e.target.value))}
-                      onMouseUp={commitState}
-                      onTouchEnd={commitState}
-                      className="w-full"
-                      aria-label="Outer border frame texture opacity"
-                    />
-                  </FieldRow>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : null}
-      </div>
+        </div>
+      </CollapsibleSection>
     </div>
   </CollapsibleSection>
   </>
@@ -785,6 +785,8 @@ const activeLayoutCapabilities = useMemo(
     icon={<Blend className="h-4 w-4" aria-hidden />}
     open={rightOpenSection === 'panels'}
     onToggle={() => toggleRightSection('panels')}
+    mode={sectionMode}
+    stackOccupied={stackOccupied}
   >
     {rightOpenSection === 'panels' ? (
       <Suspense fallback={<p className={`${UI_TEXT_HELP_COMPACT} leading-snug`}>Loading panels…</p>}>
@@ -799,6 +801,8 @@ const activeLayoutCapabilities = useMemo(
     icon={<Settings2 className="h-4 w-4" />}
     open={rightOpenSection === 'settings'}
     onToggle={() => toggleRightSection('settings')}
+    mode={sectionMode}
+    stackOccupied={stackOccupied}
   >
     <div className="space-y-3">
       <div className="space-y-2">

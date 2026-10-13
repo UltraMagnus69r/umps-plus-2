@@ -233,6 +233,28 @@ function KonvaStage({
     .filter(Boolean)
     .join(' ')
 
+  const onStagePointerDownForPan = useCallback((e: Konva.KonvaEventObject<PointerEvent | MouseEvent>) => {
+    const target = e.target
+    const stage = target.getStage()
+    if (!stage) return
+    // Art placement owns drag when the art image (or its clip group) is hit.
+    let node: Konva.Node | null = target
+    while (node && node !== stage) {
+      if (node.name() === 'art-placement') return
+      node = node.getParent()
+    }
+    const evt = e.evt
+    window.dispatchEvent(
+      new CustomEvent('umps-canvas-pan-start', {
+        detail: {
+          clientX: 'clientX' in evt ? evt.clientX : 0,
+          clientY: 'clientY' in evt ? evt.clientY : 0,
+          pointerId: 'pointerId' in evt ? (evt as PointerEvent).pointerId : 1,
+        },
+      }),
+    )
+  }, [])
+
   const stageInner = (
     <Stage
       ref={stageRef}
@@ -241,6 +263,8 @@ function KonvaStage({
       scaleX={stageScaleX}
       scaleY={stageScaleY}
       pixelRatio={previewPixelRatio}
+      onMouseDown={onStagePointerDownForPan}
+      onTouchStart={onStagePointerDownForPan}
     >
         {/* Hidden + clone: printable proxy only (Module 4.1); editor overlays remain. */}
         {!hiddenCloneChrome && (

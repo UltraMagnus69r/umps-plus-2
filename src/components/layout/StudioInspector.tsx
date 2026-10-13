@@ -44,9 +44,13 @@ function StudioInspector({ segment, className = '', phone = false }: Props) {
           {segment === 'content' ? <SidebarLeft inspectorSegment="content" /> : null}
           {segment === 'look' ? <SidebarRight inspectorSegment="look" /> : null}
           {segment === 'details' ? (
-            <div className="flex h-full min-h-0 flex-col overflow-y-auto">
-              <SidebarLeft inspectorSegment="details" />
-              <SidebarRight inspectorSegment="details" />
+            <div className="flex h-full min-h-0 flex-col overflow-hidden">
+              <div className="min-h-0 flex-1 overflow-hidden border-b border-[var(--separator)]">
+                <SidebarLeft inspectorSegment="details" />
+              </div>
+              <div className="min-h-0 flex-1 overflow-hidden">
+                <SidebarRight inspectorSegment="details" />
+              </div>
             </div>
           ) : null}
         </div>

@@ -1,7 +1,7 @@
 /**
  * Phase 17.1 — lazy-loaded mana picker (image grid + manaData). Shell stays in `ManaSymbolPopup.tsx`.
  */
-import { useMemo, useState, useCallback, useEffect } from 'react'
+import { useMemo, useState, useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import { ChevronDown, ChevronUp, X } from 'lucide-react'
 import {
   UI_PANEL_BASE,
@@ -30,6 +30,7 @@ import {
 import { MANA_POPUP_PANEL_WIDTH } from '../../data/layoutConstants'
 import { scaleManaPipDisplaySizePx } from '../../authority/symbolAuthority'
 import { useCardStore } from '../../store/useCardStore'
+import { clampPopupPosition } from '../../utils/clampPopupPosition'
 
 const MOUNTAIN_RED = '#d3202a'
 const MANA_PICKER_PREVIEW_SIZE_PX = 28
@@ -66,9 +67,22 @@ export default function ManaSymbolPopupPanel() {
   const [dragging, setDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0, top: 0, left: 0 })
   const [syntaxOpen, setSyntaxOpen] = useState(false)
+  const panelRef = useRef<HTMLDivElement | null>(null)
 
   const manaPickerKeys = useMemo(() => buildManaPickerKeysForSet(manaSymbolSet), [manaSymbolSet])
   const manaSymbolMap = useMemo(() => getManaSymbolMap(manaSymbolSet), [manaSymbolSet])
+
+  const applyClampedPosition = useCallback(
+    (top: number, left: number) => {
+      const el = panelRef.current
+      const height = el?.offsetHeight ?? Math.min(480, typeof window !== 'undefined' ? window.innerHeight - 16 : 480)
+      const clamped = clampPopupPosition(top, left, MANA_POPUP_PANEL_WIDTH, height)
+      const cur = useCardStore.getState().manaPopupPosition
+      if (cur.top === clamped.top && cur.left === clamped.left) return
+      setManaPopupPosition(clamped.top, clamped.left)
+    },
+    [setManaPopupPosition],
+  )
 
   const handleManaSymbolSetChange = useCallback(
     (nextSet: ManaSymbolSetId) => {
@@ -92,10 +106,22 @@ export default function ManaSymbolPopupPanel() {
     [manaPopupPosition],
   )
 
+  useLayoutEffect(() => {
+    applyClampedPosition(manaPopupPosition.top, manaPopupPosition.left)
+    // Re-clamp when syntax expands or symbol set changes panel height.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only size-affecting deps
+  }, [syntaxOpen, manaSymbolSet, manaPickerKeys.length])
+
+  useEffect(() => {
+    const onResize = () => applyClampedPosition(manaPopupPosition.top, manaPopupPosition.left)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [applyClampedPosition, manaPopupPosition.top, manaPopupPosition.left])
+
   useEffect(() => {
     if (!dragging) return
     const onMove = (e: MouseEvent) => {
-      setManaPopupPosition(
+      applyClampedPosition(
         dragStart.top + e.clientY - dragStart.y,
         dragStart.left + e.clientX - dragStart.x,
       )
@@ -107,7 +133,7 @@ export default function ManaSymbolPopupPanel() {
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
     }
-  }, [dragging, dragStart, setManaPopupPosition])
+  }, [dragging, dragStart, applyClampedPosition])
 
   const handleInsert = useCallback(
     (token: string) => {
@@ -145,12 +171,16 @@ export default function ManaSymbolPopupPanel() {
 
   return (
     <div
-      className={`${UI_PANEL_OVERLAY} select-none`}
+      ref={panelRef}
+      className={`${UI_PANEL_OVERLAY} mana-symbol-popup select-none`}
       style={{
         position: 'fixed',
         top: manaPopupPosition.top,
         left: manaPopupPosition.left,
         width: MANA_POPUP_PANEL_WIDTH,
+        maxHeight: 'calc(100vh - 16px)',
+        display: 'flex',
+        flexDirection: 'column',
         cursor: dragging ? 'grabbing' : undefined,
       }}
       onMouseDown={(e) => e.stopPropagation()}
@@ -160,7 +190,7 @@ export default function ManaSymbolPopupPanel() {
       aria-label="Mana symbol picker"
     >
       <div
-        className={`${UI_PANEL_OVERLAY_HEADER} cursor-grab active:cursor-grabbing`}
+        className={`${UI_PANEL_OVERLAY_HEADER} cursor-grab active:cursor-grabbing shrink-0`}
         onMouseDown={handleDragStart}
       >
         <div className={UI_TEXT_SECTION_HEADER}>Insert Mana Symbol</div>
@@ -177,8 +207,8 @@ export default function ManaSymbolPopupPanel() {
         </button>
       </div>
 
-      <div className={`${UI_PANEL_OVERLAY_BODY} space-y-3`}>
-        <div className="flex flex-wrap items-center gap-2">
+      <div className={`${UI_PANEL_OVERLAY_BODY} flex min-h-0 flex-1 flex-col gap-3 overflow-hidden`}>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           <span className={UI_TEXT_HELP}>Insert into:</span>
           <div className={`flex ${UI_PANEL_BASE} ui-panel--pad-none overflow-hidden`}>
             <button
@@ -202,7 +232,7 @@ export default function ManaSymbolPopupPanel() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           <span className={UI_TEXT_HELP}>Symbol set:</span>
           <div className={`flex ${UI_PANEL_BASE} ui-panel--pad-none overflow-hidden`}>
             {MANA_SYMBOL_SET_IDS.map((setId) => (
@@ -221,7 +251,7 @@ export default function ManaSymbolPopupPanel() {
         </div>
 
         {getManaSymbolSetTokenPrefix(manaSymbolSet) && manaPickerKeys.length === 0 ? (
-          <p className={`${UI_TEXT_HELP_COMPACT} leading-snug`}>
+          <p className={`${UI_TEXT_HELP_COMPACT} shrink-0 leading-snug`}>
             {MANA_SYMBOL_SET_LABELS[manaSymbolSet]} symbols are not loaded yet. Add entries to{' '}
             <span className="ui-text-mono-value">
               {manaSymbolSet === 'alternate' ? 'manaDataAlternate.js' : 'manaDataCustom.js'}
@@ -230,73 +260,75 @@ export default function ManaSymbolPopupPanel() {
           </p>
         ) : null}
 
-        {(() => {
-          const byToken = new Map(manaPickerKeys.map((k) => [k.token.toUpperCase(), k]))
-          const quick = QUICK_MANA_TOKENS.map((t) => byToken.get(t)).filter(
-            (k): k is (typeof manaPickerKeys)[number] => !!k && !!manaSymbolMap[k.dataKey],
-          )
-          const quickSet = new Set(quick.map((k) => k.dataKey))
-          const rest = manaPickerKeys.filter((k) => !quickSet.has(k.dataKey))
-          const renderBtn = (token: string, dataKey: string) => {
-            const src = manaSymbolMap[dataKey]
-            if (!src) return null
-            return (
-              <button
-                key={`${manaSymbolSet}-${dataKey}`}
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => handleInsert(token)}
-                className={[
-                  'ui-focus-ring flex h-10 w-10 items-center justify-center rounded-lg border transition-colors duration-ui-standard ease-ui-out',
-                  'border-neutral-300 hover:bg-neutral-100 active:bg-neutral-200',
-                  'dark:border-neutral-700 dark:hover:bg-neutral-900 dark:active:bg-neutral-800',
-                ].join(' ')}
-                aria-label={`Insert {${formatManaTokenInnerForSet(manaSymbolSet, token)}} mana symbol`}
-                title={`Insert {${formatManaTokenInnerForSet(manaSymbolSet, token)}}`}
-              >
-                <img
-                  src={src}
-                  alt=""
-                  style={{
-                    width: scaleManaPipDisplaySizePx(MANA_PICKER_PREVIEW_SIZE_PX, manaSymbolSet),
-                    height: scaleManaPipDisplaySizePx(MANA_PICKER_PREVIEW_SIZE_PX, manaSymbolSet),
-                  }}
-                  draggable={false}
-                  loading="lazy"
-                  decoding="async"
-                />
-              </button>
+        <div className="mana-symbol-popup__pips min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-0.5">
+          {(() => {
+            const byToken = new Map(manaPickerKeys.map((k) => [k.token.toUpperCase(), k]))
+            const quick = QUICK_MANA_TOKENS.map((t) => byToken.get(t)).filter(
+              (k): k is (typeof manaPickerKeys)[number] => !!k && !!manaSymbolMap[k.dataKey],
             )
-          }
-          return (
-            <>
-              {quick.length > 0 ? (
-                <div className="space-y-1">
-                  <div className={UI_TEXT_HELP_COMPACT}>Quick picks</div>
-                  <div className="flex flex-wrap gap-2">
-                    {quick.map((k) => renderBtn(k.token, k.dataKey))}
+            const quickSet = new Set(quick.map((k) => k.dataKey))
+            const rest = manaPickerKeys.filter((k) => !quickSet.has(k.dataKey))
+            const renderBtn = (token: string, dataKey: string) => {
+              const src = manaSymbolMap[dataKey]
+              if (!src) return null
+              return (
+                <button
+                  key={`${manaSymbolSet}-${dataKey}`}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => handleInsert(token)}
+                  className={[
+                    'ui-focus-ring flex h-10 w-10 items-center justify-center rounded-lg border transition-colors duration-ui-standard ease-ui-out',
+                    'border-neutral-300 hover:bg-neutral-100 active:bg-neutral-200',
+                    'dark:border-neutral-700 dark:hover:bg-neutral-900 dark:active:bg-neutral-800',
+                  ].join(' ')}
+                  aria-label={`Insert {${formatManaTokenInnerForSet(manaSymbolSet, token)}} mana symbol`}
+                  title={`Insert {${formatManaTokenInnerForSet(manaSymbolSet, token)}}`}
+                >
+                  <img
+                    src={src}
+                    alt=""
+                    style={{
+                      width: scaleManaPipDisplaySizePx(MANA_PICKER_PREVIEW_SIZE_PX, manaSymbolSet),
+                      height: scaleManaPipDisplaySizePx(MANA_PICKER_PREVIEW_SIZE_PX, manaSymbolSet),
+                    }}
+                    draggable={false}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </button>
+              )
+            }
+            return (
+              <>
+                {quick.length > 0 ? (
+                  <div className="space-y-1">
+                    <div className={UI_TEXT_HELP_COMPACT}>Quick picks</div>
+                    <div className="flex flex-wrap gap-2">
+                      {quick.map((k) => renderBtn(k.token, k.dataKey))}
+                    </div>
                   </div>
+                ) : null}
+                <div className="flex flex-wrap gap-2">
+                  {rest.map((k) => renderBtn(k.token, k.dataKey))}
                 </div>
-              ) : null}
-              <div className="flex flex-wrap gap-2">
-                {rest.map((k) => renderBtn(k.token, k.dataKey))}
-              </div>
-            </>
-          )
-        })()}
+              </>
+            )
+          })()}
+        </div>
 
         <button
           type="button"
           onMouseDown={(e) => e.preventDefault()}
           onClick={closeManaPopup}
-          className={`ui-focus-ring h-10 w-full rounded-xl ${UI_TEXT_INVERSE_STRONG} transition-opacity duration-ui-standard ease-ui-out hover:opacity-90`}
+          className={`ui-focus-ring h-10 w-full shrink-0 rounded-xl ${UI_TEXT_INVERSE_STRONG} transition-opacity duration-ui-standard ease-ui-out hover:opacity-90`}
           style={{ backgroundColor: MOUNTAIN_RED }}
           aria-label="Close mana symbol picker"
         >
           Close
         </button>
 
-        <div className={`w-full ${UI_PANEL_BASE} ui-panel--pad-none overflow-hidden`}>
+        <div className={`w-full shrink-0 ${UI_PANEL_BASE} ui-panel--pad-none overflow-hidden`}>
           <button
             type="button"
             className={`ui-focus-ring flex w-full items-center justify-between px-3 py-2 ${UI_TEXT_SECTION_HEADER} transition-[background-color,color] duration-ui-standard ease-ui-out`}

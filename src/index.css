@@ -2202,6 +2202,152 @@ body,
   }
 }
 
+.studio-canvas-pan-surface {
+  touch-action: none;
+}
+
+.studio-canvas-chrome {
+  z-index: 8;
+}
+
+/* Inspector drill-in: menu rows + full-panel takeover (nested covers parent). */
+.inspector-drill-stack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-height: 100%;
+  padding: 0.35rem 0.45rem 0.75rem;
+}
+
+.inspector-drill-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius-control, 12px);
+  border: 1px solid var(--separator, var(--border-subtle));
+  background: color-mix(in srgb, #fff 82%, var(--surface-inset, #f3f4f6));
+  text-align: left;
+  transition: background-color var(--dur-fast, 120ms) var(--ease-out, ease);
+}
+
+.inspector-drill-row:hover {
+  background: color-mix(in srgb, #fff 70%, var(--accent-soft, #e8eef8));
+}
+
+.inspector-drill-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  border-radius: var(--radius-control, 12px);
+  border: 1px solid var(--separator, var(--border-subtle));
+  background: color-mix(in srgb, #fff 92%, var(--surface-inset, #f3f4f6));
+  overflow: hidden;
+  animation: studio-inspector-fade var(--dur-med, 180ms) var(--ease-out, ease);
+}
+
+.inspector-drill-panel .inspector-drill-panel {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: 0;
+  border: 0;
+}
+
+.inspector-drill-panel__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: none;
+  padding: 0.55rem 0.65rem 0.45rem;
+  border-bottom: 1px solid var(--separator, var(--border-subtle));
+  background: color-mix(in srgb, #fff 70%, var(--surface-inset, #f3f4f6));
+}
+
+.inspector-drill-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  width: fit-content;
+  min-height: 1.75rem;
+  padding: 0.15rem 0.35rem 0.15rem 0.1rem;
+  border-radius: 8px;
+  color: var(--accent-ink, #1d4ed8);
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.inspector-drill-back:hover {
+  background: color-mix(in srgb, var(--accent-soft, #e8eef8) 70%, transparent);
+}
+
+.inspector-drill-panel__title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.inspector-drill-panel__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.65rem 0.7rem 0.85rem;
+}
+
+/* Preview flip (front ↔ Magic card back). */
+.studio-card-flip {
+  height: 100%;
+  width: 100%;
+  perspective: 1400px;
+}
+
+.studio-card-flip__inner {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  transform-style: preserve-3d;
+  transition: transform 560ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.studio-card-flip.is-flipped .studio-card-flip__inner {
+  transform: rotateY(180deg);
+}
+
+.studio-card-flip__face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.studio-card-flip__face--back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotateY(180deg);
+  pointer-events: none;
+}
+
+.studio-card-back-img {
+  max-height: 100%;
+  max-width: min(100%, 28rem);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 4.5% / 3.5%;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+  user-select: none;
+}
+
 .studio-inspector {
   display: flex;
   flex-direction: column;

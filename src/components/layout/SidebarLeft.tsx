@@ -207,6 +207,10 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
   const isAdvanced = embedded ? inspectorSegment === 'details' : uiMode === 'advanced'
   const showContentSections = !embedded || inspectorSegment === 'content'
   const showDetailsSections = !embedded || inspectorSegment === 'details'
+  /** Studio inspector: drill-in panels instead of nested accordion scroll. */
+  const drillMode = embedded
+  const sectionMode = drillMode ? 'drill' : 'accordion'
+  const stackOccupied = drillMode && leftOpenSection != null
   const [openFontPanel, setOpenFontPanel] = useState<LeftFontPanelKey | null>(null)
   const [metadataFontOpen, setMetadataFontOpen] = useState(false)
   const [cardImageUrl, setCardImageUrl] = useState('')
@@ -475,8 +479,21 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
         ) : null}
 
       {(embedded || !collapsed) && (
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          <div className="sidebar-content min-h-full">
+        <div
+          className={
+            drillMode
+              ? 'flex min-h-0 flex-1 flex-col overflow-hidden'
+              : 'flex-1 min-h-0 overflow-y-auto'
+          }
+        >
+          <div
+            className={[
+              'sidebar-content min-h-full',
+              drillMode ? 'inspector-drill-stack' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          >
             {showContentSections ? (
             <>
             <CollapsibleSection
@@ -484,7 +501,9 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
                 icon={<CloudDownload size={16} className="text-neutral-500 dark:text-neutral-400" />}
                 open={leftOpenSection === 'import-sync'}
                 onToggle={() => toggleLeftSection('import-sync')}
-              >
+              mode={sectionMode}
+              stackOccupied={stackOccupied}
+            >
               {leftOpenSection === 'import-sync' ? (
                 <Suspense fallback={<p className="text-xs text-neutral-500">Loading Scryfall…</p>}>
                   <ScryfallImportSection
@@ -501,6 +520,8 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
               icon={<Type size={16} className="text-neutral-500 dark:text-neutral-400" />}
               open={leftOpenSection === 'core'}
               onToggle={() => toggleLeftSection('core')}
+              mode={sectionMode}
+              stackOccupied={stackOccupied}
             >
               {validationHints.coreBrowsingHint ? (
                 <ValidationInline>{validationHints.coreBrowsingHint}</ValidationInline>
@@ -807,6 +828,8 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
               icon={<ImageIcon size={16} className="text-neutral-500 dark:text-neutral-400" />}
               open={leftOpenSection === 'art'}
               onToggle={() => toggleLeftSection('art')}
+              mode={sectionMode}
+              stackOccupied={stackOccupied}
             >
               <div className="space-y-1">
                 <label className={LABEL_CLASS}>Art Upload</label>
@@ -959,6 +982,8 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
               icon={<BookOpen size={16} className="text-neutral-500 dark:text-neutral-400" />}
               open={leftOpenSection === 'collector'}
               onToggle={() => toggleLeftSection('collector')}
+              mode={sectionMode}
+              stackOccupied={stackOccupied}
             >
               <FieldRow label="Set Code" layout="stacked">
                 <input
@@ -1053,7 +1078,9 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
                 icon={<ALargeSmall size={16} className="text-neutral-500 dark:text-neutral-400" />}
                 open={metadataFontOpen}
                 onToggle={() => setMetadataFontOpen((v) => !v)}
-              >
+              mode={sectionMode}
+              stackOccupied={false}
+            >
                 {metadataFontOpen ? (
                   <Suspense fallback={<p className="text-xs text-neutral-500">Loading fonts…</p>}>
                     <FontMenu typographyKey="metadataTypography" legend="Footer metadata typography" />
@@ -1071,13 +1098,17 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
               icon={<ALargeSmall size={16} className="text-neutral-500 dark:text-neutral-400" />}
               open={leftOpenSection === 'font-styling'}
               onToggle={() => toggleLeftSection('font-styling')}
+              mode={sectionMode}
+              stackOccupied={stackOccupied}
             >
               <CollapsibleSection
                 title="Card name"
                 icon={<ALargeSmall size={16} className="text-neutral-500 dark:text-neutral-400" />}
                 open={openFontPanel === 'name-font'}
                 onToggle={() => toggleFontPanel('name-font')}
-              >
+              mode={sectionMode}
+              stackOccupied={drillMode && openFontPanel != null}
+            >
                 {openFontPanel === 'name-font' ? (
                   <Suspense fallback={<p className="text-xs text-neutral-500">Loading fonts…</p>}>
                     <FontMenu typographyKey="nameTypography" legend="Card name typography" />
@@ -1089,7 +1120,9 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
                 icon={<ALargeSmall size={16} className="text-neutral-500 dark:text-neutral-400" />}
                 open={openFontPanel === 'type-font'}
                 onToggle={() => toggleFontPanel('type-font')}
-              >
+              mode={sectionMode}
+              stackOccupied={drillMode && openFontPanel != null}
+            >
                 {openFontPanel === 'type-font' ? (
                   <Suspense fallback={<p className="text-xs text-neutral-500">Loading fonts…</p>}>
                     <FontMenu typographyKey="typeTypography" legend="Type line typography" />
@@ -1102,7 +1135,9 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
                   icon={<ALargeSmall size={16} className="text-neutral-500 dark:text-neutral-400" />}
                   open={openFontPanel === 'rules-font'}
                   onToggle={() => toggleFontPanel('rules-font')}
-                >
+              mode={sectionMode}
+              stackOccupied={drillMode && openFontPanel != null}
+            >
                   {openFontPanel === 'rules-font' ? (
                     <Suspense fallback={<p className="text-xs text-neutral-500">Loading fonts…</p>}>
                       <FontMenu typographyKey="rulesTypography" legend="Rules text typography" />
@@ -1116,7 +1151,9 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
                   icon={<ALargeSmall size={16} className="text-neutral-500 dark:text-neutral-400" />}
                   open={openFontPanel === 'flavor-font'}
                   onToggle={() => toggleFontPanel('flavor-font')}
-                >
+              mode={sectionMode}
+              stackOccupied={drillMode && openFontPanel != null}
+            >
                   {openFontPanel === 'flavor-font' ? (
                     <Suspense fallback={<p className="text-xs text-neutral-500">Loading fonts…</p>}>
                       <FontMenu typographyKey="flavorTypography" legend="Flavor text typography" />
@@ -1130,7 +1167,9 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
                   icon={<ALargeSmall size={16} className="text-neutral-500 dark:text-neutral-400" />}
                   open={openFontPanel === 'pt-font'}
                   onToggle={() => toggleFontPanel('pt-font')}
-                >
+              mode={sectionMode}
+              stackOccupied={drillMode && openFontPanel != null}
+            >
                   {openFontPanel === 'pt-font' ? (
                     <Suspense fallback={<p className="text-xs text-neutral-500">Loading fonts…</p>}>
                       <FontMenu typographyKey="ptTypography" legend="Power / toughness typography" />
