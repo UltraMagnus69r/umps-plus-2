@@ -17,11 +17,16 @@ export type StudioFlowStep = {
   label: string
   short: string
   segment: InspectorSegment | 'download'
-  /** Persisted left/right open section when navigating via the strip. */
+  /**
+   * Associated left/right section for this step (used when the user drills in via a
+   * menu row, and for inference). Step-strip clicks do **not** auto-open these.
+   */
   leftOpen?: string
   rightOpen?: string
   nextHint: string
 }
+
+const FLOW_STEP_STORAGE_KEY = 'umps-studio-flow-step'
 
 /** Guided path; free nav between Content / Look / Details remains available. */
 export const STUDIO_FLOW_STEPS: StudioFlowStep[] = [
@@ -107,15 +112,70 @@ export const STUDIO_FLOW_STEPS: StudioFlowStep[] = [
   },
 ]
 
+function isStudioFlowStepId(v: string): v is StudioFlowStepId {
+  return STUDIO_FLOW_STEPS.some((s) => s.id === v)
+}
+
+export function readStoredStudioFlowStepId(): StudioFlowStepId | null {
+  try {
+    const raw = window.localStorage.getItem(FLOW_STEP_STORAGE_KEY)
+    if (raw != null && isStudioFlowStepId(raw)) return raw
+  } catch {
+    /* private mode */
+  }
+  return null
+}
+
+function isMenuLevel(leftOpen: string | null, rightOpen: string | null): boolean {
+  const leftClosed = leftOpen == null || leftOpen === 'none'
+  const rightClosed = rightOpen == null || rightOpen === 'none'
+  return leftClosed && rightClosed
+}
+
 export function inferStudioFlowStep(args: {
   segment: InspectorSegment
   leftOpen: string | null
   rightOpen: string | null
   cardEmpty: boolean
+  /** When the strip selected a step and the sidebar is still at menu level. */
+  preferredStepId?: StudioFlowStepId | null
 }): StudioFlowStep {
-  const { segment, leftOpen, rightOpen, cardEmpty } = args
+  const { segment, leftOpen, rightOpen, cardEmpty, preferredStepId } = args
+
+  // Drill-in wins: highlight follows the open menu row.
+  if (!isMenuLevel(leftOpen, rightOpen)) {
+    if (segment === 'look') {
+      if (rightOpen === 'identity' || rightOpen === 'panels') return STUDIO_FLOW_STEPS[3]
+      return STUDIO_FLOW_STEPS[1]
+    }
+    if (segment === 'details') return STUDIO_FLOW_STEPS[7]
+    if (segment === 'content') {
+      switch (leftOpen) {
+        case 'core':
+          return STUDIO_FLOW_STEPS[2]
+        case 'type':
+          return STUDIO_FLOW_STEPS[4]
+        case 'art':
+          return STUDIO_FLOW_STEPS[5]
+        case 'text':
+        case 'rules':
+        case 'flavor':
+          return STUDIO_FLOW_STEPS[6]
+        case 'import-sync':
+          return STUDIO_FLOW_STEPS[0]
+        default:
+          return STUDIO_FLOW_STEPS[2]
+      }
+    }
+  }
+
+  // Menu level: keep the strip chip the user last chose (same segment).
+  if (preferredStepId) {
+    const preferred = STUDIO_FLOW_STEPS.find((s) => s.id === preferredStepId)
+    if (preferred && preferred.segment === segment) return preferred
+  }
+
   if (segment === 'look') {
-    if (rightOpen === 'identity' || rightOpen === 'panels') return STUDIO_FLOW_STEPS[3]
     return STUDIO_FLOW_STEPS[1]
   }
   if (
@@ -127,39 +187,20 @@ export function inferStudioFlowStep(args: {
   }
   if (segment === 'details') return STUDIO_FLOW_STEPS[7]
   if (segment === 'content') {
-    switch (leftOpen) {
-      case 'core':
-        return STUDIO_FLOW_STEPS[2]
-      case 'type':
-        return STUDIO_FLOW_STEPS[4]
-      case 'art':
-        return STUDIO_FLOW_STEPS[5]
-      case 'text':
-      case 'rules':
-      case 'flavor':
-        return STUDIO_FLOW_STEPS[6]
-      case 'import-sync':
-        return STUDIO_FLOW_STEPS[0]
-      default:
-        return STUDIO_FLOW_STEPS[2]
-    }
+    return STUDIO_FLOW_STEPS[2]
   }
   return STUDIO_FLOW_STEPS[0]
 }
 
+/**
+ * Step-strip navigation: switch segment context and clear drill-in so the
+ * sidebar shows the collapsed menu list. Does not open a submenu.
+ */
 export function applyStudioFlowStep(step: StudioFlowStep) {
   try {
-    if (step.leftOpen) window.localStorage.setItem('umps-left-open-section', step.leftOpen)
-    if (step.rightOpen) window.localStorage.setItem('umps-right-open-section', step.rightOpen)
-    if (step.segment === 'look') {
-      window.localStorage.setItem('umps-left-open-section', 'none')
-    }
-    if (step.segment === 'content' && step.leftOpen) {
-      window.localStorage.setItem('umps-right-open-section', 'none')
-    }
-    if (step.segment === 'details') {
-      window.localStorage.setItem('umps-right-open-section', 'none')
-    }
+    window.localStorage.setItem(FLOW_STEP_STORAGE_KEY, step.id)
+    window.localStorage.setItem('umps-left-open-section', 'none')
+    window.localStorage.setItem('umps-right-open-section', 'none')
   } catch {
     /* private mode */
   }

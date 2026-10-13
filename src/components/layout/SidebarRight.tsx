@@ -105,7 +105,7 @@ export default function SidebarRight({ inspectorSegment }: SidebarRightProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [rightOpenStored, setRightOpenStored] = usePersistedUiState<RightOpenStored>(
     'umps-right-open-section',
-    'layout',
+    'none',
     isRightOpenStored,
   )
   const rightOpenSection: RightSectionId | null = rightOpenStored === 'none' ? null : rightOpenStored
@@ -333,10 +333,6 @@ const activeLayoutCapabilities = useMemo(
   }, [workspaceInitEpoch])
 
   useEffect(() => {
-    if (inspectorSegment === 'look' && (rightOpenStored === 'settings' || rightOpenStored === 'none')) {
-      // Guided path: Look lands on Frame (family + variant). Panels stay under Colors.
-      setRightOpenStored('layout')
-    }
     // Details: keep a flat menu of rows (panels live under Look → Colors).
     if (
       inspectorSegment === 'details' &&
@@ -352,12 +348,9 @@ const activeLayoutCapabilities = useMemo(
       setRightOpenStored('layout')
       queueMicrotask(() => window.dispatchEvent(new CustomEvent('umps-inspector-section')))
     }
-    const onFlowStep = (ev: Event) => {
-      const step = (ev as CustomEvent<{ rightOpen?: string; segment?: string }>).detail
-      if (!step?.rightOpen) return
-      if (inspectorSegment === 'look' || inspectorSegment === 'details' || !inspectorSegment) {
-        if (isRightOpenStored(step.rightOpen)) setRightOpenStored(step.rightOpen)
-      }
+    // Step strip: collapse to menu — drill-in only via menu rows.
+    const onFlowStep = () => {
+      setRightOpenStored('none')
     }
     window.addEventListener('umps-open-look-frame', onLookFrame)
     window.addEventListener('umps-flow-step', onFlowStep)

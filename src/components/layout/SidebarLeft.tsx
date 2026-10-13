@@ -326,8 +326,8 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
       setLeftOpenStored('core')
     }
     if (inspectorSegment === 'details' && leftOpenStored === 'font-styling') {
-      // Typography moved to Content field controls — avoid orphan Details drill.
-      setLeftOpenStored('collector')
+      // Typography moved to Content field controls — stay at Details menu.
+      setLeftOpenStored('none')
     }
     if (
       inspectorSegment === 'details' &&
@@ -349,12 +349,9 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
       setLeftOpenStored('import-sync')
       queueMicrotask(() => window.dispatchEvent(new CustomEvent('umps-inspector-section')))
     }
-    const onFlowStep = (ev: Event) => {
-      const step = (ev as CustomEvent<{ leftOpen?: string; segment?: string }>).detail
-      if (!step?.leftOpen) return
-      if (inspectorSegment === 'content' || inspectorSegment === 'details' || !inspectorSegment) {
-        if (isLeftOpenStored(step.leftOpen)) setLeftOpenStored(step.leftOpen)
-      }
+    // Step strip: collapse to menu — drill-in only via menu rows.
+    const onFlowStep = () => {
+      setLeftOpenStored('none')
     }
     window.addEventListener('umps-open-import', openImport)
     window.addEventListener('umps-flow-step', onFlowStep)
