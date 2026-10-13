@@ -28,6 +28,10 @@ import {
   Image as ImageIcon,
   BookOpen,
   CloudDownload,
+  FileText,
+  Quote,
+  BadgeInfo,
+  Plus,
 } from 'lucide-react'
 import { shallow } from 'zustand/shallow'
 import { getWorkflowDerivationSnapshot, useCardStore } from '../../store/useCardStore'
@@ -87,7 +91,15 @@ const TEXTAREA_CLASS =
   `sidebar-textarea ${UI_FOCUS_RING_CONTROL} w-full resize-none px-3 py-2 text-sm outline-none [direction:ltr]`
 
 /** Phase 10.3 correction — one top-level section open at a time (left sidebar). */
-type LeftSectionKey = 'import-sync' | 'core' | 'collector' | 'font-styling' | 'art'
+type LeftSectionKey =
+  | 'import-sync'
+  | 'core'
+  | 'type'
+  | 'rules'
+  | 'flavor'
+  | 'collector'
+  | 'font-styling'
+  | 'art'
 /** Face font sub-panels: at most one open inside Font Styling. */
 type LeftFontPanelKey = 'name-font' | 'type-font' | 'rules-font' | 'flavor-font' | 'pt-font'
 
@@ -98,16 +110,18 @@ function ManaSymbolAssistantIcon({ target }: { target: 'manaCost' | 'rulesText' 
     <div className="relative shrink-0">
       <button
         type="button"
-        className="sidebar-icon-btn ui-focus-ring flex h-8 items-center gap-1 rounded-lg px-2"
+        className="studio-mana-cta ui-focus-ring"
         aria-label="Open mana picker"
-        title="Pick mana symbols"
+        title="Pick mana symbols for this field"
+        data-mana-picker-entry={target}
         onClick={() => {
           setManaPopupTarget(target)
           openManaPopup()
         }}
       >
-        <Sparkles size={14} className="text-[var(--sb-accent)]" />
-        <span className="text-[11px] font-semibold text-[var(--sb-accent)]">Mana</span>
+        <Plus size={14} aria-hidden />
+        <Sparkles size={14} aria-hidden />
+        <span>+ Mana</span>
       </button>
     </div>
   )
@@ -179,6 +193,9 @@ function isLeftOpenStored(v: string): v is LeftOpenStored {
     v === 'none' ||
     v === 'import-sync' ||
     v === 'core' ||
+    v === 'type' ||
+    v === 'rules' ||
+    v === 'flavor' ||
     v === 'collector' ||
     v === 'font-styling' ||
     v === 'art'
@@ -222,6 +239,14 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
         const next = current === key ? null : key
         if (next !== 'font-styling') setOpenFontPanel(null)
         if (next !== 'collector') setMetadataFontOpen(false)
+        if (next && inspectorSegment === 'details') {
+          try {
+            window.localStorage.setItem('umps-right-open-section', 'none')
+          } catch {
+            /* private mode */
+          }
+        }
+        queueMicrotask(() => window.dispatchEvent(new CustomEvent('umps-inspector-section')))
         return next ?? 'none'
       })
     })
@@ -299,11 +324,22 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
   }, [workspaceInitEpoch])
 
   useEffect(() => {
-    if (inspectorSegment === 'content' && (leftOpenStored === 'collector' || leftOpenStored === 'font-styling')) {
+    if (
+      inspectorSegment === 'content' &&
+      (leftOpenStored === 'collector' || leftOpenStored === 'font-styling')
+    ) {
       setLeftOpenStored('core')
     }
-    if (inspectorSegment === 'details' && (leftOpenStored === 'core' || leftOpenStored === 'art' || leftOpenStored === 'import-sync' || leftOpenStored === 'none')) {
-      setLeftOpenStored('collector')
+    if (
+      inspectorSegment === 'details' &&
+      (leftOpenStored === 'core' ||
+        leftOpenStored === 'type' ||
+        leftOpenStored === 'rules' ||
+        leftOpenStored === 'flavor' ||
+        leftOpenStored === 'art' ||
+        leftOpenStored === 'import-sync')
+    ) {
+      setLeftOpenStored('none')
     }
   }, [inspectorSegment])
 
@@ -311,9 +347,21 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
     const openImport = () => {
       if (inspectorSegment && inspectorSegment !== 'content') return
       setLeftOpenStored('import-sync')
+      queueMicrotask(() => window.dispatchEvent(new CustomEvent('umps-inspector-section')))
+    }
+    const onFlowStep = (ev: Event) => {
+      const step = (ev as CustomEvent<{ leftOpen?: string; segment?: string }>).detail
+      if (!step?.leftOpen) return
+      if (inspectorSegment === 'content' || inspectorSegment === 'details' || !inspectorSegment) {
+        if (isLeftOpenStored(step.leftOpen)) setLeftOpenStored(step.leftOpen)
+      }
     }
     window.addEventListener('umps-open-import', openImport)
-    return () => window.removeEventListener('umps-open-import', openImport)
+    window.addEventListener('umps-flow-step', onFlowStep)
+    return () => {
+      window.removeEventListener('umps-open-import', openImport)
+      window.removeEventListener('umps-flow-step', onFlowStep)
+    }
   }, [inspectorSegment, setLeftOpenStored])
 
   // Phase 3.5 – Mana Symbol Picker UI coordination (popup from field sparkles; register focus for after insert)
@@ -418,7 +466,9 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
         data-phone-surface={embedded ? undefined : 'data'}
         className={
           embedded
-            ? `h-full min-h-0 min-w-0 w-full flex flex-col overflow-x-hidden ${asideWidthClass}`
+            ? inspectorSegment === 'details'
+              ? `min-h-0 min-w-0 w-full flex flex-col overflow-x-hidden ${asideWidthClass}`
+              : `h-full min-h-0 min-w-0 w-full flex flex-col overflow-x-hidden ${asideWidthClass}`
             : `${SHELL_CLASS} ${asideWidthClass} order-2 max-h-[min(40vh,22rem)] lg:order-none lg:max-h-none`
         }
         dir="ltr"
@@ -482,13 +532,15 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
         <div
           className={
             drillMode
-              ? 'flex min-h-0 flex-1 flex-col overflow-hidden'
+              ? inspectorSegment === 'details' && !stackOccupied
+                ? 'flex min-h-0 flex-col'
+                : 'flex min-h-0 flex-1 flex-col overflow-hidden'
               : 'flex-1 min-h-0 overflow-y-auto'
           }
         >
           <div
             className={[
-              'sidebar-content min-h-full',
+              drillMode && inspectorSegment === 'details' ? 'sidebar-content' : 'sidebar-content min-h-full',
               drillMode ? 'inspector-drill-stack' : '',
             ]
               .filter(Boolean)
@@ -516,7 +568,7 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
               </CollapsibleSection>
 
             <CollapsibleSection
-              title="Identity"
+              title="Name & Mana"
               icon={<Type size={16} className="text-neutral-500 dark:text-neutral-400" />}
               open={leftOpenSection === 'core'}
               onToggle={() => toggleLeftSection('core')}
@@ -648,48 +700,99 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
                     ) : null}
                   </div>
                   <div className="space-y-1 py-3">
-                <div className="flex items-center gap-2">
-                  <label className={LABEL_CLASS}>Mana Cost</label>
-                  <ManaSymbolAssistantIcon target="manaCost" />
-                </div>
-                <div className="min-w-0">
-                  <input
-                    {...manaField}
-                    ref={(node) => {
-                      manaCostRef.current = node
-                      manaField.ref.current = node
-                    }}
-                    onFocus={(e) => {
-                      scrollFieldIntoView(e)
-                      setActiveInputId('manaCost')
-                      queueSelectionSyncToStore(e.currentTarget)
-                    }}
-                    onMouseUp={(e) => {
-                      manaField.onMouseUp(e)
-                      pushSelectionToStoreIfAvailable(e.currentTarget)
-                    }}
-                    onClick={(e) => {
-                      manaField.onClick(e)
-                      pushSelectionToStoreIfAvailable(e.currentTarget)
-                    }}
-                    onKeyUp={(e) => {
-                      manaField.onKeyUp(e)
-                      pushSelectionToStoreIfAvailable(e.currentTarget)
-                    }}
-                    onSelect={(e) => {
-                      manaField.onSelect(e)
-                      pushSelectionToStoreIfAvailable(e.currentTarget)
-                    }}
-                    onBlur={() => {
-                      setActiveInputId(null)
-                      commitState()
-                    }}
-                    className={INPUT_CLASS}
-                    placeholder="e.g., {R}"
-                  />
-                </div>
-              </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className={LABEL_CLASS}>Mana Cost</label>
+                      <ManaSymbolAssistantIcon target="manaCost" />
+                    </div>
+                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                      Use <strong>+ Mana</strong> to insert symbols into the mana cost.
+                    </p>
+                    <div className="min-w-0">
+                      <input
+                        {...manaField}
+                        ref={(node) => {
+                          manaCostRef.current = node
+                          manaField.ref.current = node
+                        }}
+                        onFocus={(e) => {
+                          scrollFieldIntoView(e)
+                          setActiveInputId('manaCost')
+                          queueSelectionSyncToStore(e.currentTarget)
+                        }}
+                        onMouseUp={(e) => {
+                          manaField.onMouseUp(e)
+                          pushSelectionToStoreIfAvailable(e.currentTarget)
+                        }}
+                        onClick={(e) => {
+                          manaField.onClick(e)
+                          pushSelectionToStoreIfAvailable(e.currentTarget)
+                        }}
+                        onKeyUp={(e) => {
+                          manaField.onKeyUp(e)
+                          pushSelectionToStoreIfAvailable(e.currentTarget)
+                        }}
+                        onSelect={(e) => {
+                          manaField.onSelect(e)
+                          pushSelectionToStoreIfAvailable(e.currentTarget)
+                        }}
+                        onBlur={() => {
+                          setActiveInputId(null)
+                          commitState()
+                        }}
+                        className={INPUT_CLASS}
+                        placeholder="e.g., {R}"
+                      />
+                    </div>
+                  </div>
 
+                  {shouldShowPowerToughnessControls(pdInput) ? (
+                    <>
+                      <div className="space-y-2">
+                        <div className="grid w-full max-w-full grid-cols-1 gap-2 sm:grid-cols-2">
+                          <FieldRow label="Power" layout="stacked">
+                            <input
+                              {...powerField}
+                              onBlur={commitState}
+                              className={INPUT_CLASS}
+                              placeholder="e.g., 3"
+                            />
+                          </FieldRow>
+                          <FieldRow label="Toughness" layout="stacked">
+                            <input
+                              {...toughnessField}
+                              onBlur={commitState}
+                              className={INPUT_CLASS}
+                              placeholder="e.g., 2"
+                            />
+                          </FieldRow>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <SwitchRow
+                          label="Show Power/Toughness Box"
+                          checked={!!showPowerToughness}
+                          onToggle={() => {
+                            setField('showPowerToughness', !showPowerToughness)
+                            commitState()
+                          }}
+                          ariaLabel="Show power toughness box"
+                        />
+                      </div>
+                    </>
+                  ) : null}
+                </>
+              )}
+            </CollapsibleSection>
+
+            <CollapsibleSection
+              title="Type & Set symbol"
+              icon={<BadgeInfo size={16} className="text-neutral-500 dark:text-neutral-400" />}
+              open={leftOpenSection === 'type'}
+              onToggle={() => toggleLeftSection('type')}
+              mode={sectionMode}
+              stackOccupied={stackOccupied}
+            >
               <FieldRow label="Type Line" layout="stacked">
                 <div className="space-y-2">
                   <input
@@ -710,121 +813,68 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
                 </div>
               </FieldRow>
 
-              {shouldShowPlaneswalkerCoreInputs(pdInput) ? (
-                <PlaneswalkerCoreInputs
-                  startingLoyalty={startingLoyalty}
-                  planeswalkerStaticText={planeswalkerStaticText}
-                  planeswalkerAbilityCount={planeswalkerAbilityCount}
-                  planeswalkerAbilities={planeswalkerAbilities}
-                  flavorText={flavorText}
-                  showFlavorTextOnCard={showFlavorTextOnCard}
-                  setField={setField}
-                  commitState={commitState}
+              <div className="space-y-2 pt-2">
+                <div className={LABEL_CLASS}>Expansion Symbol Upload</div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="ui-focus-ring block w-full text-sm text-neutral-900 dark:text-neutral-100 file:mr-3 file:rounded-xl file:border-0 file:bg-neutral-900 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-neutral-800 dark:file:bg-white dark:file:text-black dark:hover:file:bg-neutral-100"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null
+                    if (!file) return
+                    setAsyncStatus('setIconUpload', 'loading')
+                    const reader = new FileReader()
+                    reader.onerror = () => {
+                      setAsyncStatus('setIconUpload', 'error', 'Failed to load expansion symbol')
+                      setTimeout(() => setAsyncStatus('setIconUpload', 'idle'), 2000)
+                    }
+                    reader.onload = () => {
+                      const base64 = String(reader.result ?? '')
+                      if (!base64) {
+                        setAsyncStatus('setIconUpload', 'error', 'Unsupported image format')
+                        setTimeout(() => setAsyncStatus('setIconUpload', 'idle'), 2000)
+                        return
+                      }
+                      setField('setIconImage', base64)
+                      commitState()
+                      setAsyncStatus('setIconUpload', 'success')
+                      setTimeout(() => setAsyncStatus('setIconUpload', 'idle'), 2000)
+                    }
+                    reader.readAsDataURL(file)
+                  }}
                 />
-              ) : null}
-
-              {shouldShowRulesTextEditor(pdInput) ? (
-                <>
-                  <div className="space-y-1 py-3">
-                    <div className="flex items-center gap-2">
-                      <label className={LABEL_CLASS}>Rules Text</label>
-                      <ManaSymbolAssistantIcon target="rulesText" />
-                    </div>
-                    <div className="min-w-0 space-y-2">
-                      <textarea
-                        {...rulesField}
-                        ref={(node) => {
-                          rulesTextRef.current = node
-                          rulesField.ref.current = node
-                        }}
-                        onFocus={(e) => {
-                          scrollFieldIntoView(e)
-                          setActiveInputId('rulesText')
-                          queueSelectionSyncToStore(e.currentTarget)
-                        }}
-                        onMouseUp={(e) => {
-                          rulesField.onMouseUp(e)
-                          pushSelectionToStoreIfAvailable(e.currentTarget)
-                        }}
-                        onClick={(e) => {
-                          rulesField.onClick(e)
-                          pushSelectionToStoreIfAvailable(e.currentTarget)
-                        }}
-                        onKeyUp={(e) => {
-                          rulesField.onKeyUp(e)
-                          pushSelectionToStoreIfAvailable(e.currentTarget)
-                        }}
-                        onSelect={(e) => {
-                          rulesField.onSelect(e)
-                          pushSelectionToStoreIfAvailable(e.currentTarget)
-                        }}
-                        onBlur={() => {
-                          setActiveInputId(null)
-                          commitState()
-                        }}
-                        className={`${TEXTAREA_CLASS} h-28`}
-                        placeholder="Card rules text..."
-                      />
-                    </div>
+                {asyncSetIconUpload.status === 'loading' && (
+                  <div className={UI_INLINE_STATUS_LOADING}>
+                    <span className={UI_ASYNC_SPINNER_XS} aria-hidden />
+                    Loading…
                   </div>
+                )}
+                {asyncSetIconUpload.status === 'success' && (
+                  <div className={UI_INLINE_STATUS_SUCCESS}>Expansion symbol updated</div>
+                )}
+                {asyncSetIconUpload.status === 'error' && asyncSetIconUpload.message && (
+                  <div className="text-xs text-red-600 dark:text-red-400">{asyncSetIconUpload.message}</div>
+                )}
 
-                  {shouldShowFlavorTextField(pdInput) ? (
-                    <FieldRow label="Flavor Text" layout="stacked">
-                      <div className="space-y-2">
-                        <textarea
-                          {...flavorField}
-                          onBlur={commitState}
-                          className={`${TEXTAREA_CLASS} h-20`}
-                          placeholder="Flavor text..."
-                        />
-                      </div>
-                    </FieldRow>
-                  ) : null}
-                </>
-              ) : null}
-
-              {shouldShowPowerToughnessControls(pdInput) ? (
-                <>
-                  <div className="space-y-2">
-                    <div className="grid w-full max-w-full grid-cols-1 gap-2 sm:grid-cols-2">
-                      <FieldRow label="Power" layout="stacked">
-                        <input
-                          {...powerField}
-                          onBlur={commitState}
-                          className={INPUT_CLASS}
-                          placeholder="e.g., 3"
-                        />
-                      </FieldRow>
-                      <FieldRow label="Toughness" layout="stacked">
-                        <input
-                          {...toughnessField}
-                          onBlur={commitState}
-                          className={INPUT_CLASS}
-                          placeholder="e.g., 2"
-                        />
-                      </FieldRow>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <SwitchRow
-                      label="Show Power/Toughness Box"
-                      checked={!!showPowerToughness}
-                      onToggle={() => {
-                        setField('showPowerToughness', !showPowerToughness)
-                        commitState()
-                      }}
-                      ariaLabel="Show power toughness box"
-                    />
-                  </div>
-                </>
-              ) : null}
-                </>
-              )}
+                <div className="space-y-1">
+                  <label className={LABEL_CLASS}>Expansion Symbol - Size (PX)</label>
+                  <input
+                    type="range"
+                    min={40}
+                    max={220}
+                    step={1}
+                    value={iconScale ?? 135}
+                    onChange={(e) => setField('iconScale', Number(e.target.value))}
+                    onMouseUp={commitState}
+                    onTouchEnd={commitState}
+                    className="w-full"
+                  />
+                </div>
+              </div>
             </CollapsibleSection>
 
             <CollapsibleSection
-              title="Art"
+              title="Artwork"
               icon={<ImageIcon size={16} className="text-neutral-500 dark:text-neutral-400" />}
               open={leftOpenSection === 'art'}
               onToggle={() => toggleLeftSection('art')}
@@ -913,72 +963,113 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
                   </div>
                 </FieldRow>
               ) : null}
+            </CollapsibleSection>
 
-              <div className="space-y-2">
-                <div className={LABEL_CLASS}>Expansion Symbol Upload</div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="ui-focus-ring block w-full text-sm text-neutral-900 dark:text-neutral-100 file:mr-3 file:rounded-xl file:border-0 file:bg-neutral-900 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-neutral-800 dark:file:bg-white dark:file:text-black dark:hover:file:bg-neutral-100"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] ?? null
-                    if (!file) return
-                    setAsyncStatus('setIconUpload', 'loading')
-                    const reader = new FileReader()
-                    reader.onerror = () => {
-                      setAsyncStatus('setIconUpload', 'error', 'Failed to load expansion symbol')
-                      setTimeout(() => setAsyncStatus('setIconUpload', 'idle'), 2000)
-                    }
-                    reader.onload = () => {
-                      const base64 = String(reader.result ?? '')
-                      if (!base64) {
-                        setAsyncStatus('setIconUpload', 'error', 'Unsupported image format')
-                        setTimeout(() => setAsyncStatus('setIconUpload', 'idle'), 2000)
-                        return
-                      }
-                      setField('setIconImage', base64)
-                      commitState()
-                      setAsyncStatus('setIconUpload', 'success')
-                      setTimeout(() => setAsyncStatus('setIconUpload', 'idle'), 2000)
-                    }
-                    reader.readAsDataURL(file)
-                  }}
+            <CollapsibleSection
+              title="Rules"
+              icon={<FileText size={16} className="text-neutral-500 dark:text-neutral-400" />}
+              open={leftOpenSection === 'rules'}
+              onToggle={() => toggleLeftSection('rules')}
+              mode={sectionMode}
+              stackOccupied={stackOccupied}
+            >
+              {shouldShowPlaneswalkerCoreInputs(pdInput) ? (
+                <PlaneswalkerCoreInputs
+                  startingLoyalty={startingLoyalty}
+                  planeswalkerStaticText={planeswalkerStaticText}
+                  planeswalkerAbilityCount={planeswalkerAbilityCount}
+                  planeswalkerAbilities={planeswalkerAbilities}
+                  flavorText={flavorText}
+                  showFlavorTextOnCard={showFlavorTextOnCard}
+                  setField={setField}
+                  commitState={commitState}
                 />
-                {asyncSetIconUpload.status === 'loading' && (
-                  <div className={UI_INLINE_STATUS_LOADING}>
-                    <span className={UI_ASYNC_SPINNER_XS} aria-hidden />
-                    Loading…
-                  </div>
-                )}
-                {asyncSetIconUpload.status === 'success' && (
-                  <div className={UI_INLINE_STATUS_SUCCESS}>Expansion symbol updated</div>
-                )}
-                {asyncSetIconUpload.status === 'error' && asyncSetIconUpload.message && (
-                  <div className="text-xs text-red-600 dark:text-red-400">{asyncSetIconUpload.message}</div>
-                )}
+              ) : null}
 
-                <div className="space-y-1">
-                  <label className={LABEL_CLASS}>Expansion Symbol - Size (PX)</label>
-                  <input
-                    type="range"
-                    min={40}
-                    max={220}
-                    step={1}
-                    value={iconScale ?? 135}
-                    onChange={(e) => setField('iconScale', Number(e.target.value))}
-                    onMouseUp={commitState}
-                    onTouchEnd={commitState}
-                    className="w-full"
-                  />
+              {shouldShowRulesTextEditor(pdInput) ? (
+                <div className="space-y-1 py-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className={LABEL_CLASS}>Rules Text</label>
+                    <ManaSymbolAssistantIcon target="rulesText" />
+                  </div>
+                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                    Use <strong>+ Mana</strong> (and tap symbols in the picker) inside rules text.
+                  </p>
+                  <div className="min-w-0 space-y-2">
+                    <textarea
+                      {...rulesField}
+                      ref={(node) => {
+                        rulesTextRef.current = node
+                        rulesField.ref.current = node
+                      }}
+                      onFocus={(e) => {
+                        scrollFieldIntoView(e)
+                        setActiveInputId('rulesText')
+                        queueSelectionSyncToStore(e.currentTarget)
+                      }}
+                      onMouseUp={(e) => {
+                        rulesField.onMouseUp(e)
+                        pushSelectionToStoreIfAvailable(e.currentTarget)
+                      }}
+                      onClick={(e) => {
+                        rulesField.onClick(e)
+                        pushSelectionToStoreIfAvailable(e.currentTarget)
+                      }}
+                      onKeyUp={(e) => {
+                        rulesField.onKeyUp(e)
+                        pushSelectionToStoreIfAvailable(e.currentTarget)
+                      }}
+                      onSelect={(e) => {
+                        rulesField.onSelect(e)
+                        pushSelectionToStoreIfAvailable(e.currentTarget)
+                      }}
+                      onBlur={() => {
+                        setActiveInputId(null)
+                        commitState()
+                      }}
+                      className={`${TEXTAREA_CLASS} h-28`}
+                      placeholder="Card rules text..."
+                    />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                  Rules text is hidden for this layout.
+                </p>
+              )}
+            </CollapsibleSection>
+
+            <CollapsibleSection
+              title="Flavor"
+              icon={<Quote size={16} className="text-neutral-500 dark:text-neutral-400" />}
+              open={leftOpenSection === 'flavor'}
+              onToggle={() => toggleLeftSection('flavor')}
+              mode={sectionMode}
+              stackOccupied={stackOccupied}
+            >
+              {shouldShowFlavorTextField(pdInput) ? (
+                <FieldRow label="Flavor Text" layout="stacked">
+                  <div className="space-y-2">
+                    <textarea
+                      {...flavorField}
+                      onBlur={commitState}
+                      className={`${TEXTAREA_CLASS} h-20`}
+                      placeholder="Flavor text..."
+                    />
+                  </div>
+                </FieldRow>
+              ) : (
+                <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                  Flavor text is not shown for this layout.
+                </p>
+              )}
             </CollapsibleSection>
             </>
             ) : null}
 
             {isAdvanced && showDetailsSections ? (
             <CollapsibleSection
-              title="Collector"
+              title="Collector / Copy"
               icon={<BookOpen size={16} className="text-neutral-500 dark:text-neutral-400" />}
               open={leftOpenSection === 'collector'}
               onToggle={() => toggleLeftSection('collector')}
@@ -1094,7 +1185,7 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
 
             {isAdvanced && showDetailsSections ? (
             <CollapsibleSection
-              title="Text"
+              title="Typography"
               icon={<ALargeSmall size={16} className="text-neutral-500 dark:text-neutral-400" />}
               open={leftOpenSection === 'font-styling'}
               onToggle={() => toggleLeftSection('font-styling')}
