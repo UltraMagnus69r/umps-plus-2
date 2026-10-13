@@ -208,13 +208,16 @@ function StudioCanvas({ onRequestSegment, onRequestImport }: Props) {
 
   const startBlank = useCallback(() => {
     resetCard()
+    // Land on Look at the collapsed menu (Frame / Colors / Panels). Do not
+    // auto-drill Frame — step strip / menu rows own drill-in.
     try {
-      window.localStorage.setItem('umps-right-open-section', 'layout')
+      window.localStorage.setItem('umps-right-open-section', 'none')
       window.localStorage.setItem('umps-left-open-section', 'none')
+      window.localStorage.setItem('umps-studio-flow-step', 'frame')
     } catch {
       /* private mode */
     }
-    window.dispatchEvent(new CustomEvent('umps-open-look-frame'))
+    window.dispatchEvent(new CustomEvent('umps-flow-step', { detail: { menuLevel: true } }))
     onRequestSegment('look')
   }, [onRequestSegment, resetCard])
 

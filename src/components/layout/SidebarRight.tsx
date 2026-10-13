@@ -334,6 +334,7 @@ const activeLayoutCapabilities = useMemo(
 
   useEffect(() => {
     // Details: keep a flat menu of rows (panels live under Look → Colors).
+    // Look must not auto-open Frame here — step strip / TopBar clear to menu instead.
     if (
       inspectorSegment === 'details' &&
       (rightOpenStored === 'layout' || rightOpenStored === 'identity' || rightOpenStored === 'panels')
@@ -343,22 +344,15 @@ const activeLayoutCapabilities = useMemo(
   }, [inspectorSegment])
 
   useEffect(() => {
-    const onLookFrame = () => {
-      if (inspectorSegment && inspectorSegment !== 'look') return
-      setRightOpenStored('layout')
-      queueMicrotask(() => window.dispatchEvent(new CustomEvent('umps-inspector-section')))
-    }
-    // Step strip: collapse to menu — drill-in only via menu rows.
+    // Step strip / segment switch: collapse to menu — drill-in only via menu rows.
     const onFlowStep = () => {
       setRightOpenStored('none')
     }
-    window.addEventListener('umps-open-look-frame', onLookFrame)
     window.addEventListener('umps-flow-step', onFlowStep)
     return () => {
-      window.removeEventListener('umps-open-look-frame', onLookFrame)
       window.removeEventListener('umps-flow-step', onFlowStep)
     }
-  }, [inspectorSegment, setRightOpenStored])
+  }, [setRightOpenStored])
 
   const shellClass = embedded
     ? inspectorSegment === 'details'
