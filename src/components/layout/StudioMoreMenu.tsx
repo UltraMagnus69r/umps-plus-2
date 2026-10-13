@@ -159,13 +159,16 @@ export default function StudioMoreMenu({ onOpenDownload }: Props) {
             Proxy Printer
           </button>
           <div className="my-1 h-px bg-[var(--separator)]" />
+          <div className="px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.04em] text-[var(--text-tertiary)]">
+            Save · Load · Print
+          </div>
           <button type="button" role="menuitem" className={itemClass} onClick={() => { resetCard(); setOpen(false) }}>
             <Plus className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
             New card
           </button>
           <button type="button" role="menuitem" className={itemClass} onClick={handleSave}>
             <FileJson2 className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
-            Save design
+            Save design (JSON)
           </button>
           <input
             type="file"
@@ -216,10 +219,10 @@ export default function StudioMoreMenu({ onOpenDownload }: Props) {
             ) : (
               <FolderOpen className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
             )}
-            Load design
+            Load design (JSON)
           </button>
           <div className="mt-1 px-2.5 py-1.5 text-[0.65rem] leading-snug text-[var(--text-tertiary)]">
-            ⌘Z / Ctrl+Z undo · ⌘⇧Z redo
+            Download (top) · Send to Printer / Proxy Printer above · ⌘Z undo
           </div>
         </div>
       ) : null}

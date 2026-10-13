@@ -123,6 +123,14 @@ export default function SidebarRight({ inspectorSegment }: SidebarRightProps) {
       setRightOpenStored((cur) => {
         const current = cur === 'none' ? null : cur
         const next = current === id ? null : id
+        if (next && inspectorSegment === 'details') {
+          try {
+            window.localStorage.setItem('umps-left-open-section', 'none')
+          } catch {
+            /* private mode */
+          }
+        }
+        queueMicrotask(() => window.dispatchEvent(new CustomEvent('umps-inspector-section')))
         return next ?? 'none'
       })
     })
@@ -326,13 +334,37 @@ const activeLayoutCapabilities = useMemo(
     if (inspectorSegment === 'look' && (rightOpenStored === 'panels' || rightOpenStored === 'settings')) {
       setRightOpenStored('layout')
     }
-    if (inspectorSegment === 'details' && (rightOpenStored === 'layout' || rightOpenStored === 'identity' || rightOpenStored === 'none')) {
-      setRightOpenStored('settings')
+    // Details: keep a flat menu of rows (do not auto-drill into Settings).
+    if (inspectorSegment === 'details' && (rightOpenStored === 'layout' || rightOpenStored === 'identity')) {
+      setRightOpenStored('none')
     }
   }, [inspectorSegment])
 
+  useEffect(() => {
+    const onLookFrame = () => {
+      if (inspectorSegment && inspectorSegment !== 'look') return
+      setRightOpenStored('layout')
+      queueMicrotask(() => window.dispatchEvent(new CustomEvent('umps-inspector-section')))
+    }
+    const onFlowStep = (ev: Event) => {
+      const step = (ev as CustomEvent<{ rightOpen?: string; segment?: string }>).detail
+      if (!step?.rightOpen) return
+      if (inspectorSegment === 'look' || inspectorSegment === 'details' || !inspectorSegment) {
+        if (isRightOpenStored(step.rightOpen)) setRightOpenStored(step.rightOpen)
+      }
+    }
+    window.addEventListener('umps-open-look-frame', onLookFrame)
+    window.addEventListener('umps-flow-step', onFlowStep)
+    return () => {
+      window.removeEventListener('umps-open-look-frame', onLookFrame)
+      window.removeEventListener('umps-flow-step', onFlowStep)
+    }
+  }, [inspectorSegment, setRightOpenStored])
+
   const shellClass = embedded
-    ? `h-full min-h-0 min-w-0 w-full flex flex-col overflow-x-hidden`
+    ? inspectorSegment === 'details'
+      ? `min-h-0 min-w-0 w-full flex flex-col overflow-x-hidden`
+      : `h-full min-h-0 min-w-0 w-full flex flex-col overflow-x-hidden`
     : `sidebar-shell h-full min-h-0 min-w-0 w-full max-w-none flex flex-col flex-none overflow-x-hidden lg:shrink-[2] lg:max-w-[320px] ${asideWidthClass} order-3 max-h-[min(40vh,22rem)] lg:order-none lg:max-h-none`
 
   return (
@@ -379,8 +411,12 @@ const activeLayoutCapabilities = useMemo(
 
 	        <div
 	          className={[
-	            'sidebar-content flex-1 min-h-0',
-	            drillMode ? 'inspector-drill-stack overflow-hidden' : 'overflow-y-auto',
+	            inspectorSegment === 'details' ? 'sidebar-content min-h-0' : 'sidebar-content flex-1 min-h-0',
+	            drillMode
+	              ? inspectorSegment === 'details'
+	                ? 'inspector-drill-stack'
+	                : 'inspector-drill-stack overflow-hidden'
+	              : 'overflow-y-auto',
 	          ]
 	            .filter(Boolean)
 	            .join(' ')}
@@ -797,7 +833,7 @@ const activeLayoutCapabilities = useMemo(
   ) : null}
   {showDetailsSections || !embedded ? (
   <CollapsibleSection
-    title="Settings"
+    title="Guides / Settings"
     icon={<Settings2 className="h-4 w-4" />}
     open={rightOpenSection === 'settings'}
     onToggle={() => toggleRightSection('settings')}

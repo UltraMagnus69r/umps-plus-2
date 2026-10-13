@@ -2210,6 +2210,150 @@ body,
   z-index: 8;
 }
 
+/* Details: single vertical stack of drill rows (no 50/50 flex gap). */
+.studio-details-stack {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.studio-details-stack > aside {
+  height: auto;
+  min-height: 0;
+  flex: none;
+}
+
+.studio-details-stack .inspector-drill-stack {
+  min-height: 0;
+  height: auto;
+  flex: none;
+}
+
+.studio-details-stack .sidebar-content {
+  overflow: visible;
+}
+
+.studio-details-stack.is-drilled {
+  overflow: hidden;
+}
+
+.studio-details-stack.is-drilled > aside {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.studio-details-stack.is-drilled .inspector-drill-stack {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.studio-step-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.55rem;
+}
+
+.studio-step-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  min-height: 1.55rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--separator, var(--border-subtle));
+  background: color-mix(in srgb, #fff 78%, var(--surface-inset, #f3f4f6));
+  color: var(--text-secondary);
+  font-size: 0.625rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.studio-step-chip__n {
+  opacity: 0.65;
+}
+
+.studio-step-chip.is-active {
+  border-color: color-mix(in srgb, var(--accent-ink, #1d4ed8) 35%, var(--separator));
+  background: color-mix(in srgb, var(--accent-soft, #e8eef8) 80%, #fff);
+  color: var(--accent-ink, #1d4ed8);
+}
+
+.studio-step-hint {
+  margin-top: 0.4rem;
+  font-size: 0.6875rem;
+  line-height: 1.35;
+  color: var(--text-tertiary);
+}
+
+.studio-preview-zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.15rem;
+  border-radius: var(--radius-control, 12px);
+  border: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, #fff 82%, var(--surface-inset));
+}
+
+.studio-preview-zoom__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  min-width: 2rem;
+  min-height: 2rem;
+  border-radius: 10px;
+  color: var(--text-secondary);
+}
+
+.studio-preview-zoom__btn:hover:not(:disabled) {
+  background: var(--surface-inset);
+  color: var(--text-primary);
+}
+
+.studio-preview-zoom__btn:disabled {
+  opacity: 0.35;
+}
+
+.studio-preview-zoom__value {
+  min-width: 2.6rem;
+  text-align: center;
+  font-size: 0.6875rem;
+  font-weight: 650;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.studio-mana-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.1rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-control, 12px);
+  border: 1px solid color-mix(in srgb, var(--accent-ink, #1d4ed8) 28%, var(--border-subtle));
+  background: color-mix(in srgb, var(--accent-soft, #e8eef8) 72%, #fff);
+  color: var(--accent-ink, #1d4ed8);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.studio-mana-cta:hover {
+  background: color-mix(in srgb, var(--accent-soft, #e8eef8) 88%, #fff);
+}
+
 /* Inspector drill-in: menu rows + full-panel takeover (nested covers parent). */
 .inspector-drill-stack {
   position: relative;
@@ -2303,38 +2447,32 @@ body,
   padding: 0.65rem 0.7rem 0.85rem;
 }
 
-/* Preview flip (front ↔ Magic card back). */
-.studio-card-flip {
-  height: 100%;
-  width: 100%;
-  perspective: 1400px;
+/* Preview flip overlay (Konva stays in normal flow — no preserve-3d blanking). */
+.studio-card-front--hidden {
+  visibility: hidden;
+  pointer-events: none;
 }
 
-.studio-card-flip__inner {
-  position: relative;
-  height: 100%;
-  width: 100%;
-  transform-style: preserve-3d;
-  transition: transform 560ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.studio-card-flip.is-flipped .studio-card-flip__inner {
-  transform: rotateY(180deg);
-}
-
-.studio-card-flip__face {
+.studio-card-back-overlay {
   position: absolute;
   inset: 0;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-
-.studio-card-flip__face--back {
+  z-index: 4;
   display: flex;
   align-items: center;
   justify-content: center;
-  transform: rotateY(180deg);
   pointer-events: none;
+  animation: studio-card-back-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes studio-card-back-in {
+  from {
+    opacity: 0.4;
+    transform: rotateY(-18deg) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: rotateY(0) scale(1);
+  }
 }
 
 .studio-card-back-img {
