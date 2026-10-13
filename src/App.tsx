@@ -121,7 +121,7 @@ export default function App() {
           />
           <div className="studio-workspace relative flex min-h-0 w-full flex-1 overflow-hidden lg:flex-row">
             <StudioCanvas onRequestSegment={setSegment} onRequestImport={onRequestImport} />
-            <StudioInspector segment={segment} className="hidden lg:flex" />
+            <StudioInspector segment={segment} className="hidden lg:flex lg:order-last" />
           </div>
           <div className="studio-phone-dock lg:hidden">
             <StudioInspector segment={segment} phone />

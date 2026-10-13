@@ -56,7 +56,7 @@ function StudioCanvas({ onRequestSegment, onRequestImport }: Props) {
   }, [])
 
   return (
-    <main className="studio-canvas-stage order-1 flex min-h-0 min-w-0 flex-1 flex-col" data-phone-surface="card">
+    <main className="studio-canvas-stage flex min-h-0 min-w-0 flex-1 flex-col" data-phone-surface="card">
       {showTip ? (
         <div className="studio-onboarding-tip" role="status">
           <div className="font-semibold text-[var(--text-primary)]">Studio flow</div>
