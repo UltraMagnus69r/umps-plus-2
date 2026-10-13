@@ -94,6 +94,22 @@ export function usePrintFeatureState() {
     setFrontCards((prev) => [...prev, ...nextBatch])
   }
 
+  const addFrontBlob = useCallback((blob: Blob, name: string) => {
+    const fileName = name.endsWith('.png') ? name : `${name}.png`
+    const id = `studio-${fileName}-${blob.size}-${Date.now()}`
+    const url = URL.createObjectURL(blob)
+    const image = new Image()
+    image.onload = () => {
+      const widthPx = image.naturalWidth
+      const heightPx = image.naturalHeight
+      setFrontCards((current) =>
+        current.map((card) => (card.id === id ? { ...card, widthPx, heightPx } : card)),
+      )
+    }
+    image.src = url
+    setFrontCards((prev) => [...prev, { id, name: fileName, url, widthPx: 0, heightPx: 0 }])
+  }, [])
+
   const removeFrontCard = (cardId: string) => {
     setFrontCards((prev) => {
       const target = prev.find((card) => card.id === cardId)
@@ -127,6 +143,7 @@ export function usePrintFeatureState() {
     activeSheetIndex,
     setActiveSheetIndex,
     addFrontFiles,
+    addFrontBlob,
     removeFrontCard,
     clearFronts,
     setCustomBackFromFiles,

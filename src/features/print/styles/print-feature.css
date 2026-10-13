@@ -19,56 +19,165 @@
   --ui-radius-lg: 14px;
   --ui-radius-full: 9999px;
 
-  --ui-elevation-1: 0 1px 2px rgba(60, 64, 67, 0.12);
-  --ui-elevation-2: 0 4px 12px rgba(60, 64, 67, 0.1);
-  --ui-elevation-3: 0 10px 24px rgba(60, 64, 67, 0.12);
+  --ui-elevation-1: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --ui-elevation-2: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.06);
+  --ui-elevation-3: 0 12px 32px rgba(0, 0, 0, 0.08);
 
-  --ui-bg: #f0f0e8;
+  --ui-bg: #f5f6f8;
   --ui-surface: #ffffff;
-  --ui-surface-soft: #f3f5f7;
+  --ui-surface-soft: #eef0f3;
   --ui-surface-elevated: #ffffff;
-  --ui-border: #d1d5db;
-  --ui-border-hairline: color-mix(in srgb, var(--ui-border) 32%, transparent);
-  --ui-text-strong: #1f2937;
-  --ui-text: #374151;
-  --ui-text-muted: #5f6368;
-  --ui-accent: #4285f4;
-  --ui-accent-hover: #1a73e8;
-  --ui-accent-active: #0f9d58;
+  --ui-border: rgba(60, 60, 67, 0.12);
+  --ui-border-hairline: rgba(60, 60, 67, 0.08);
+  --ui-text-strong: #1c1c1e;
+  --ui-text: #1c1c1e;
+  --ui-text-muted: #636366;
+  --ui-accent: #2f6f6a;
+  --ui-accent-hover: #1a4542;
+  --ui-accent-active: #2d6a4f;
   --ui-on-accent: #ffffff;
 
-  --gg-blue: #4285f4;
-  --gg-red: #db4437;
-  --gg-yellow: #f4b400;
-  --gg-green: #0f9d58;
-  --gg-core-blue: #1a73e8;
+  --gg-blue: #2f6f6a;
+  --gg-red: #a85a52;
+  --gg-yellow: #9a8a4a;
+  --gg-green: #2d6a4f;
+  --gg-core-blue: #1a4542;
 
-  --ui-shadow-soft: 0 1px 2px rgba(60, 64, 67, 0.15), 0 4px 10px rgba(60, 64, 67, 0.1);
-  --ui-shadow-pressable: 0 1px 0 rgba(255, 255, 255, 0.45) inset, 0 1px 2px rgba(60, 64, 67, 0.16);
-  --ui-glow-soft: color-mix(in srgb, var(--gg-core-blue) 20%, transparent);
+  --ui-shadow-soft: var(--ui-elevation-2);
+  --ui-shadow-pressable: 0 1px 0 rgba(255, 255, 255, 0.55) inset, 0 1px 2px rgba(0, 0, 0, 0.06);
+  --ui-glow-soft: color-mix(in srgb, var(--ui-accent) 16%, transparent);
   --ui-focus-ring: 0 0 0 2px color-mix(in srgb, var(--ui-accent) 28%, transparent);
 
   --ui-success: var(--gg-green);
   --ui-success-surface: color-mix(in srgb, var(--gg-green) 10%, var(--ui-surface));
-  --ui-warn: #b06000;
+  --ui-warn: #b08900;
   --ui-warn-surface: color-mix(in srgb, var(--gg-yellow) 12%, var(--ui-surface));
-  --ui-danger: #b3261e;
+  --ui-danger: #c0392b;
   --ui-danger-surface: color-mix(in srgb, var(--gg-red) 8%, var(--ui-surface));
 
-  --persistent-footer-icon-front: var(--gg-blue);
+  --persistent-footer-icon-front: var(--ui-accent);
   --persistent-footer-icon-back: var(--gg-green);
-  --persistent-footer-icon-pdf: #4f46e5;
+  --persistent-footer-icon-pdf: var(--ui-accent-hover);
 
   margin: 0;
-  font-family: Inter, 'Segoe UI', Roboto, system-ui, sans-serif;
+  font-family: "SF Pro Text", "Segoe UI Variable", "Geist", "IBM Plex Sans", system-ui, sans-serif;
   color: var(--ui-text);
   background:
-    radial-gradient(760px 380px at 82% -8%, color-mix(in srgb, var(--gg-core-blue) 18%, transparent), transparent 72%),
-    radial-gradient(620px 320px at 16% -4%, color-mix(in srgb, var(--gg-yellow) 14%, transparent), transparent 72%),
-    linear-gradient(180deg, #ffffff 0%, var(--ui-bg) 100%);
+    radial-gradient(900px 420px at 78% -12%, color-mix(in srgb, var(--ui-accent) 10%, transparent), transparent 70%),
+    radial-gradient(720px 380px at 12% 0%, color-mix(in srgb, #94a3b8 14%, transparent), transparent 68%),
+    linear-gradient(180deg, #fbfbfc 0%, var(--ui-bg) 48%, #eef0f3 100%);
   min-height: 100vh;
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
+}
+
+.print-feature-root .print-studio-chrome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--ui-border-hairline);
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(16px) saturate(1.15);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.print-feature-root .print-studio-chrome__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--ui-border);
+  background: color-mix(in srgb, #fff 86%, var(--ui-surface-soft));
+  color: var(--ui-text-strong);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.print-feature-root .print-studio-chrome__brand {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ui-text-muted);
+}
+
+.print-feature-root .print-studio-chrome__heading {
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--ui-text-strong);
+}
+
+.print-feature-root .print-studio-chrome__meta {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--ui-text-muted);
+}
+
+.print-feature-root .hero-header--quiet h1 {
+  display: none;
+}
+
+.print-feature-root .print-readiness-chip {
+  display: inline-flex;
+  margin-top: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--ui-border);
+  background: color-mix(in srgb, #fff 80%, var(--ui-surface-soft));
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ui-accent-hover);
+}
+
+.print-feature-root .print-loading-skeleton {
+  max-width: 1260px;
+  margin: 0 auto;
+  padding: 28px 24px;
+  display: grid;
+  gap: 16px;
+}
+
+.print-feature-root .print-loading-skeleton__chrome {
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(90deg, #e8eaed, #f5f6f8, #e8eaed);
+  background-size: 200% 100%;
+  animation: print-skel 1.2s ease-in-out infinite;
+}
+
+.print-feature-root .print-loading-skeleton__sheets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.print-feature-root .print-loading-skeleton__sheet {
+  aspect-ratio: 8.5 / 11;
+  border-radius: 16px;
+  border: 1px solid var(--ui-border);
+  background: linear-gradient(90deg, #e8eaed, #f5f6f8, #e8eaed);
+  background-size: 200% 100%;
+  animation: print-skel 1.2s ease-in-out infinite;
+}
+
+@keyframes print-skel {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+@media (max-width: 800px) {
+  .print-feature-root .print-loading-skeleton__sheets {
+    grid-template-columns: 1fr;
+  }
 }
 
 .print-feature-root,

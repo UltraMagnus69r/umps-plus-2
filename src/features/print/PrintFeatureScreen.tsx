@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import { PrintPersistentFooter } from './components/PrintPersistentFooter'
 import { PrintSheetPreview } from './components/PrintSheetPreview'
 import { PrintUploadPanel } from './components/PrintUploadPanel'
@@ -7,6 +8,7 @@ import { CONSTRAINT_COPY } from '../../authority/constraintFeedbackAuthority'
 import { letterSheetLayoutFacts, printBuiltinBacks } from './authority/printFeatureAuthority'
 import { exportPrintFullSetPdf, exportPrintFullSetPng } from './export/printSheetExport'
 import { usePrintFeatureState } from './state/usePrintFeatureState'
+import { takePendingStudioCard } from './pendingStudioCard'
 
 export function PrintFeatureScreen() {
   const navigate = useNavigate()
@@ -26,12 +28,18 @@ export function PrintFeatureScreen() {
     activeSheetIndex,
     setActiveSheetIndex,
     addFrontFiles,
+    addFrontBlob,
     removeFrontCard,
     clearFronts,
     setCustomBackFromFiles,
     clearCustomBack,
     selectBuiltinBack,
   } = usePrintFeatureState()
+
+  useEffect(() => {
+    const pending = takePendingStudioCard()
+    if (pending) addFrontBlob(pending.blob, pending.name)
+  }, [addFrontBlob])
 
   const [includeBleedInExport, setIncludeBleedInExport] = useState(true)
   const [exporting, setExporting] = useState(false)
@@ -89,55 +97,44 @@ export function PrintFeatureScreen() {
     return 'Yes'
   }, [layout.uploadedCount, backAssetLoaded])
 
+  const readinessChip =
+    layout.uploadedCount === 0
+      ? 'Add fronts to begin'
+      : !backAssetLoaded
+        ? 'Loading card back…'
+        : `${layout.uploadedCount} card${layout.uploadedCount === 1 ? '' : 's'} · ${layout.totalSheets} sheet${layout.totalSheets === 1 ? '' : 's'} · Ready`
+
   return (
     <>
+      <header className="print-studio-chrome">
+        <button
+          type="button"
+          className="print-studio-chrome__back"
+          onClick={() => navigate('/')}
+          aria-label="Back to Studio"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden />
+          <span>Studio</span>
+        </button>
+        <div className="print-studio-chrome__title">
+          <div className="print-studio-chrome__brand">UMPS</div>
+          <div className="print-studio-chrome__heading">Proxy Printer</div>
+        </div>
+        <div className="print-studio-chrome__meta">
+          Sheet {activeSheetIndex + 1}/{layout.totalSheets} · {letterSheetLayoutFacts.gridLabel} · 600 DPI
+        </div>
+      </header>
       <main className="printer-screen printer-screen--with-footer">
-        <header className="hero-header">
-          <h1>Proxy Printer</h1>
+        <header className="hero-header hero-header--quiet">
           <p>
-            US Letter · {letterSheetLayoutFacts.gridLabel} · 600 DPI. Upload fronts, then print fronts
-            and backs.
+            Letter {letterSheetLayoutFacts.gridLabel} imposition. Sheets are the hero — upload fronts,
+            confirm a back, export PDF or PNG.
+          </p>
+          <p className="print-readiness-chip" aria-live="polite">
+            {readinessChip}
+            {readyToPrintLabel === 'Yes' ? ' · Print at 100%' : ''}
           </p>
         </header>
-
-        <section className="panel print-checklist" aria-label="Print checklist">
-          <h2>Before you print</h2>
-          <ol className="print-checklist__list">
-            <li className={layout.uploadedCount > 0 ? 'is-done' : undefined}>
-              Upload card fronts ({layout.uploadedCount > 0 ? 'done' : 'needed'})
-            </li>
-            <li className={backAssetLoaded ? 'is-done' : undefined}>
-              Confirm a card back is ready ({backAssetLoaded ? 'ready' : 'loading'})
-            </li>
-            <li>
-              Export PDF or 600 DPI PNG sheets from the footer ({letterSheetLayoutFacts.gridLabel},{' '}
-              {letterSheetLayoutFacts.cardsPerSheet} per sheet)
-            </li>
-            <li title={CONSTRAINT_COPY.printAt100Percent}>
-              In the print dialog: Actual size / 100% — not Fit to page
-            </li>
-          </ol>
-          <p className="panel-subtitle">{CONSTRAINT_COPY.printAt100Percent}</p>
-        </section>
-
-        <section className="stats-row stats-row-simple">
-          <div className="stat-card stat-card-primary">
-            <span>Cards Added</span>
-            <strong>{layout.uploadedCount}</strong>
-          </div>
-          <div className="stat-card stat-card-primary">
-            <span>{letterSheetLayoutFacts.gridLabel}</span>
-            <strong>{letterSheetLayoutFacts.cardsPerSheet}/sheet</strong>
-          </div>
-          <div className="stat-card stat-card-primary">
-            <span>Sheets Ready</span>
-            <strong>{layout.totalSheets}</strong>
-          </div>
-          <div className="stat-card stat-card-primary">
-            <span>Ready to Print</span>
-            <strong>{readyToPrintLabel}</strong>
-          </div>
-        </section>
 
         <section className="workspace-grid">
           <PrintUploadPanel

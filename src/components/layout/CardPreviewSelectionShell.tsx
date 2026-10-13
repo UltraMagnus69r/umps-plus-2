@@ -8,7 +8,12 @@ import { useCardStore } from '../../store/useCardStore'
 import KonvaStage from '../renderer/KonvaStage'
 import { requestArtZoomStep } from '../renderer/layers/ArtLayer'
 
-function CardPreviewSelectionShell() {
+type CardPreviewSelectionShellProps = {
+  /** When true, empty-state copy is owned by StudioCanvas. */
+  hideInlineGuidance?: boolean
+}
+
+function CardPreviewSelectionShell({ hideInlineGuidance = false }: CardPreviewSelectionShellProps) {
   const { openQuickView, showPreviewGuidance } = useCardStore(
     (s) => {
       const cd = s.cardData
@@ -51,7 +56,7 @@ function CardPreviewSelectionShell() {
           +
         </button>
       </div>
-      {showPreviewGuidance ? (
+      {showPreviewGuidance && !hideInlineGuidance ? (
         <p
           className={`pointer-events-none absolute bottom-ui4 left-1/2 z-[12] max-w-[min(20rem,88vw)] -translate-x-1/2 px-ui2 text-center ${UI_GUIDANCE_INLINE}`}
         >

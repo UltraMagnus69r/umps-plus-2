@@ -185,7 +185,15 @@ function isLeftOpenStored(v: string): v is LeftOpenStored {
   )
 }
 
-export default function SidebarLeft() {
+export type SidebarLeftInspectorSegment = 'content' | 'details'
+
+type SidebarLeftProps = {
+  /** When set, renders as inspector content (no rail chrome / Simple-Advanced). */
+  inspectorSegment?: SidebarLeftInspectorSegment
+}
+
+export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
+  const embedded = inspectorSegment != null
   const [collapsed, setCollapsed] = useState(false)
   const [leftOpenStored, setLeftOpenStored] = usePersistedUiState<LeftOpenStored>(
     'umps-left-open-section',
@@ -195,7 +203,10 @@ export default function SidebarLeft() {
   const leftOpenSection: LeftSectionKey | null = leftOpenStored === 'none' ? null : leftOpenStored
   const [uiMode, setUiMode] = useUiComplexityMode()
   const scrollFieldIntoView = useScrollFieldIntoView()
-  const isAdvanced = uiMode === 'advanced'
+  /** Details segment always shows collector/typography; Content never does (D1). */
+  const isAdvanced = embedded ? inspectorSegment === 'details' : uiMode === 'advanced'
+  const showContentSections = !embedded || inspectorSegment === 'content'
+  const showDetailsSections = !embedded || inspectorSegment === 'details'
   const [openFontPanel, setOpenFontPanel] = useState<LeftFontPanelKey | null>(null)
   const [metadataFontOpen, setMetadataFontOpen] = useState(false)
   const [cardImageUrl, setCardImageUrl] = useState('')
@@ -282,6 +293,24 @@ export default function SidebarLeft() {
     setMetadataFontOpen(false)
     setCardImageUrl('')
   }, [workspaceInitEpoch])
+
+  useEffect(() => {
+    if (inspectorSegment === 'content' && (leftOpenStored === 'collector' || leftOpenStored === 'font-styling')) {
+      setLeftOpenStored('core')
+    }
+    if (inspectorSegment === 'details' && (leftOpenStored === 'core' || leftOpenStored === 'art' || leftOpenStored === 'import-sync' || leftOpenStored === 'none')) {
+      setLeftOpenStored('collector')
+    }
+  }, [inspectorSegment])
+
+  useEffect(() => {
+    const openImport = () => {
+      if (inspectorSegment && inspectorSegment !== 'content') return
+      setLeftOpenStored('import-sync')
+    }
+    window.addEventListener('umps-open-import', openImport)
+    return () => window.removeEventListener('umps-open-import', openImport)
+  }, [inspectorSegment, setLeftOpenStored])
 
   // Phase 3.5 – Mana Symbol Picker UI coordination (popup from field sparkles; register focus for after insert)
   const setActiveInputId = useCardStore((s) => s.setActiveInputId)
@@ -373,15 +402,31 @@ export default function SidebarLeft() {
     return () => setRegisterManaInputFocus(null)
   }, [setRegisterManaInputFocus])
 
-  const asideWidthClass = collapsed ? 'lg:w-14' : 'lg:w-[304px]'
+  const asideWidthClass = embedded
+    ? 'w-full max-w-none lg:max-w-none'
+    : collapsed
+      ? 'lg:w-14'
+      : 'lg:w-[304px]'
 
   return (
     <>
       <aside
-        data-phone-surface="data"
-        className={`${SHELL_CLASS} ${asideWidthClass} order-2 max-h-[min(40vh,22rem)] lg:order-none lg:max-h-none`}
+        data-phone-surface={embedded ? undefined : 'data'}
+        className={
+          embedded
+            ? `h-full min-h-0 min-w-0 w-full flex flex-col overflow-x-hidden ${asideWidthClass}`
+            : `${SHELL_CLASS} ${asideWidthClass} order-2 max-h-[min(40vh,22rem)] lg:order-none lg:max-h-none`
+        }
         dir="ltr"
+        aria-label={
+          inspectorSegment === 'content'
+            ? 'Content inspector'
+            : inspectorSegment === 'details'
+              ? 'Details inspector'
+              : 'Card data'
+        }
       >
+        {!embedded ? (
         <div className={HEADER_CLASS}>
           <div className="flex min-w-0 items-center gap-2">
             <Wand2 size={16} className="sidebar-header-icon shrink-0" />
@@ -427,10 +472,13 @@ export default function SidebarLeft() {
             {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
         </div>
+        ) : null}
 
-      {!collapsed && (
+      {(embedded || !collapsed) && (
         <div className="flex-1 min-h-0 overflow-y-auto">
           <div className="sidebar-content min-h-full">
+            {showContentSections ? (
+            <>
             <CollapsibleSection
                 title="Import & Sync"
                 icon={<CloudDownload size={16} className="text-neutral-500 dark:text-neutral-400" />}
@@ -902,8 +950,10 @@ export default function SidebarLeft() {
                 </div>
               </div>
             </CollapsibleSection>
+            </>
+            ) : null}
 
-            {isAdvanced ? (
+            {isAdvanced && showDetailsSections ? (
             <CollapsibleSection
               title="Collector"
               icon={<BookOpen size={16} className="text-neutral-500 dark:text-neutral-400" />}
@@ -1015,7 +1065,7 @@ export default function SidebarLeft() {
             </CollapsibleSection>
             ) : null}
 
-            {isAdvanced ? (
+            {isAdvanced && showDetailsSections ? (
             <CollapsibleSection
               title="Text"
               icon={<ALargeSmall size={16} className="text-neutral-500 dark:text-neutral-400" />}

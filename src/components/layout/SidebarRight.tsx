@@ -93,7 +93,15 @@ const IdentitySwirlPreviewBar = memo(function IdentitySwirlPreviewBar({ stops }:
 
 const AdvancedPanelsSection = lazy(() => import('./AdvancedPanelsSection'))
 
-export default function SidebarRight() {
+export type SidebarRightInspectorSegment = 'look' | 'details'
+
+type SidebarRightProps = {
+  /** When set, renders as inspector content (no rail chrome). */
+  inspectorSegment?: SidebarRightInspectorSegment
+}
+
+export default function SidebarRight({ inspectorSegment }: SidebarRightProps) {
+  const embedded = inspectorSegment != null
   const [collapsed, setCollapsed] = useState(false)
   const [rightOpenStored, setRightOpenStored] = usePersistedUiState<RightOpenStored>(
     'umps-right-open-section',
@@ -102,7 +110,10 @@ export default function SidebarRight() {
   )
   const rightOpenSection: RightSectionId | null = rightOpenStored === 'none' ? null : rightOpenStored
   const [uiMode] = useUiComplexityMode()
-  const isAdvanced = uiMode === 'advanced'
+  /** Look = frame/colors; Details = panels + guides (replaces Advanced). */
+  const isAdvanced = embedded ? inspectorSegment === 'details' : uiMode === 'advanced'
+  const showLookSections = !embedded || inspectorSegment === 'look'
+  const showDetailsSections = !embedded || inspectorSegment === 'details'
   const scrollFieldIntoView = useScrollFieldIntoView()
   const toggleRightSection = (id: RightSectionId) => {
     startTransition(() => {
@@ -264,7 +275,7 @@ const activeLayoutCapabilities = useMemo(
     [resolvedIdentity],
   )
 
-  const asideWidthClass = collapsed ? 'lg:w-14' : 'lg:w-[304px]'
+  const asideWidthClass = embedded ? '' : collapsed ? 'lg:w-14' : 'lg:w-[304px]'
 
   const manualColorPreview = useMemo(() => {
     if (colorBlendDirection === 'swirl') return 'transparent'
@@ -308,13 +319,33 @@ const activeLayoutCapabilities = useMemo(
     setRightOpenStored('none')
   }, [workspaceInitEpoch])
 
+  useEffect(() => {
+    if (inspectorSegment === 'look' && (rightOpenStored === 'panels' || rightOpenStored === 'settings')) {
+      setRightOpenStored('layout')
+    }
+    if (inspectorSegment === 'details' && (rightOpenStored === 'layout' || rightOpenStored === 'identity' || rightOpenStored === 'none')) {
+      setRightOpenStored('settings')
+    }
+  }, [inspectorSegment])
+
+  const shellClass = embedded
+    ? `h-full min-h-0 min-w-0 w-full flex flex-col overflow-x-hidden`
+    : `sidebar-shell h-full min-h-0 min-w-0 w-full max-w-none flex flex-col flex-none overflow-x-hidden lg:shrink-[2] lg:max-w-[320px] ${asideWidthClass} order-3 max-h-[min(40vh,22rem)] lg:order-none lg:max-h-none`
+
   return (
     <aside
-      data-phone-surface="style"
-      className={`sidebar-shell h-full min-h-0 min-w-0 w-full max-w-none flex flex-col flex-none overflow-x-hidden lg:shrink-[2] lg:max-w-[320px] ${asideWidthClass} order-3 max-h-[min(40vh,22rem)] lg:order-none lg:max-h-none`}
-      aria-label="Right sidebar"
+      data-phone-surface={embedded ? undefined : 'style'}
+      className={shellClass}
+      aria-label={
+        inspectorSegment === 'look'
+          ? 'Look inspector'
+          : inspectorSegment === 'details'
+            ? 'Details styling'
+            : 'Right sidebar'
+      }
     >
       <div className="h-full min-h-0 flex flex-col">
+        {!embedded ? (
         <div className="sidebar-header flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
             <div className="sidebar-header-badge h-9 w-9 rounded-xl flex items-center justify-center">
@@ -341,13 +372,16 @@ const activeLayoutCapabilities = useMemo(
             {collapsed ? <ChevronLeft className="h-4 w-4" aria-hidden /> : <ChevronRight className="h-4 w-4" aria-hidden />}
           </button>
         </div>
+        ) : null}
 
 	        <div
 	          className="sidebar-content flex-1 min-h-0 overflow-y-auto"
 	          aria-label="Styling sections"
 	        >
-	          {!collapsed && (
+	          {(embedded || !collapsed) && (
             <>
+  {showLookSections ? (
+  <>
   <CollapsibleSection
     title="Frame"
     icon={<LayoutTemplate className="h-4 w-4" />}
@@ -742,8 +776,10 @@ const activeLayoutCapabilities = useMemo(
       </div>
     </div>
   </CollapsibleSection>
+  </>
+  ) : null}
 
-  {isAdvanced ? (
+  {isAdvanced && showDetailsSections ? (
   <CollapsibleSection
     title="Panels"
     icon={<Blend className="h-4 w-4" aria-hidden />}
@@ -757,6 +793,7 @@ const activeLayoutCapabilities = useMemo(
     ) : null}
   </CollapsibleSection>
   ) : null}
+  {showDetailsSections || !embedded ? (
   <CollapsibleSection
     title="Settings"
     icon={<Settings2 className="h-4 w-4" />}
@@ -797,7 +834,7 @@ const activeLayoutCapabilities = useMemo(
           ariaLabel="Show trim guide"
         />
         <ConstraintHint>{CONSTRAINT_COPY.printGuideTrim}</ConstraintHint>
-        {isAdvanced ? (
+        {isAdvanced || embedded ? (
           <>
             <SwitchRow
               label="Show safe zone"
@@ -814,6 +851,7 @@ const activeLayoutCapabilities = useMemo(
       </div>
     </div>
   </CollapsibleSection>
+  ) : null}
 </>
 	          )}
 	        </div>
