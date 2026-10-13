@@ -110,10 +110,11 @@ export default function SidebarRight({ inspectorSegment }: SidebarRightProps) {
   )
   const rightOpenSection: RightSectionId | null = rightOpenStored === 'none' ? null : rightOpenStored
   const [uiMode] = useUiComplexityMode()
-  /** Look = frame/colors; Details = panels + guides (replaces Advanced). */
+  /** Look = frame/colors/panels; Details = guides (replaces Advanced). */
   const isAdvanced = embedded ? inspectorSegment === 'details' : uiMode === 'advanced'
   const showLookSections = !embedded || inspectorSegment === 'look'
   const showDetailsSections = !embedded || inspectorSegment === 'details'
+  const showPanelsSection = !embedded || inspectorSegment === 'look'
   const drillMode = embedded
   const sectionMode = drillMode ? 'drill' : 'accordion'
   const stackOccupied = drillMode && rightOpenSection != null
@@ -332,12 +333,15 @@ const activeLayoutCapabilities = useMemo(
   }, [workspaceInitEpoch])
 
   useEffect(() => {
-    if (inspectorSegment === 'look' && (rightOpenStored === 'panels' || rightOpenStored === 'settings' || rightOpenStored === 'none')) {
-      // Guided path: Look lands on Frame (family + variant).
+    if (inspectorSegment === 'look' && (rightOpenStored === 'settings' || rightOpenStored === 'none')) {
+      // Guided path: Look lands on Frame (family + variant). Panels stay under Colors.
       setRightOpenStored('layout')
     }
-    // Details: keep a flat menu of rows (do not auto-drill into Settings).
-    if (inspectorSegment === 'details' && (rightOpenStored === 'layout' || rightOpenStored === 'identity')) {
+    // Details: keep a flat menu of rows (panels live under Look → Colors).
+    if (
+      inspectorSegment === 'details' &&
+      (rightOpenStored === 'layout' || rightOpenStored === 'identity' || rightOpenStored === 'panels')
+    ) {
       setRightOpenStored('none')
     }
   }, [inspectorSegment])
@@ -839,7 +843,7 @@ const activeLayoutCapabilities = useMemo(
   </>
   ) : null}
 
-  {isAdvanced && showDetailsSections ? (
+  {showPanelsSection ? (
   <CollapsibleSection
     title="Panels"
     icon={<Blend className="h-4 w-4" aria-hidden />}

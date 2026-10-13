@@ -254,35 +254,40 @@ function StudioCanvas({ onRequestSegment, onRequestImport }: Props) {
             Keep Konva OUT of preserve-3d / backface-visibility — those collapse the canvas
             into a blank gray pane after flip in Chromium. Front stays in normal flow; back overlays.
           */}
-          <div
-            key={settleKey}
-            className="studio-card-settle relative h-full w-full min-h-0 will-change-transform"
-            style={{
-              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-              transformOrigin: 'center center',
-            }}
-          >
+          {/*
+            Settle animation must NOT share a transform with pan/zoom — CSS
+            animation-fill-mode:both would override the inline translate/scale.
+          */}
+          <div key={settleKey} className="studio-card-settle relative h-full w-full min-h-0">
             <div
-              className={[
-                'relative h-full w-full min-h-0',
-                flipped ? 'studio-card-front--hidden' : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              aria-hidden={flipped}
+              className="relative h-full w-full min-h-0 will-change-transform"
+              style={{
+                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                transformOrigin: 'center center',
+              }}
             >
-              <CardPreviewSelectionShell hideInlineGuidance />
-            </div>
-            {flipped ? (
-              <div className="studio-card-back-overlay" aria-hidden={false}>
-                <img
-                  src={CARD_BACK_SRC}
-                  alt="Card back"
-                  className="studio-card-back-img"
-                  draggable={false}
-                />
+              <div
+                className={[
+                  'relative h-full w-full min-h-0',
+                  flipped ? 'studio-card-front--hidden' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                aria-hidden={flipped}
+              >
+                <CardPreviewSelectionShell hideInlineGuidance />
               </div>
-            ) : null}
+              {flipped ? (
+                <div className="studio-card-back-overlay" aria-hidden={false}>
+                  <img
+                    src={CARD_BACK_SRC}
+                    alt="Card back"
+                    className="studio-card-back-img"
+                    draggable={false}
+                  />
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
 

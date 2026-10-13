@@ -106,12 +106,12 @@ function StudioInspector({
     segment === 'details' &&
     leftOpen != null &&
     leftOpen !== 'none' &&
-    (leftOpen === 'collector' || leftOpen === 'font-styling')
+    leftOpen === 'collector'
   const rightDrilled =
     segment === 'details' &&
     rightOpen != null &&
     rightOpen !== 'none' &&
-    (rightOpen === 'panels' || rightOpen === 'settings')
+    rightOpen === 'settings'
 
   return (
     <aside
@@ -136,8 +136,8 @@ function StudioInspector({
                 {segment === 'content'
                   ? 'Name & mana → type → art → rules & flavor'
                   : segment === 'look'
-                    ? 'Frame first, then colors & materials'
-                    : 'Collector, typography, panels, guides'}
+                    ? 'Frame first, then colors, panels & materials'
+                    : 'Collector info and guides'}
               </div>
             </div>
           </div>

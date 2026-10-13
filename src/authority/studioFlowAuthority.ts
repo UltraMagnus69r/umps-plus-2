@@ -83,7 +83,7 @@ export const STUDIO_FLOW_STEPS: StudioFlowStep[] = [
     id: 'text',
     n: 7,
     label: 'Rules & Flavor',
-    short: 'Text',
+    short: 'Rules Text',
     segment: 'content',
     leftOpen: 'text',
     nextHint: 'Next: Details → Collector',
@@ -115,7 +115,7 @@ export function inferStudioFlowStep(args: {
 }): StudioFlowStep {
   const { segment, leftOpen, rightOpen, cardEmpty } = args
   if (segment === 'look') {
-    if (rightOpen === 'identity') return STUDIO_FLOW_STEPS[3]
+    if (rightOpen === 'identity' || rightOpen === 'panels') return STUDIO_FLOW_STEPS[3]
     return STUDIO_FLOW_STEPS[1]
   }
   if (

@@ -1,5 +1,5 @@
 /**
- * Custom font-family listbox with live card preview on hover (see typographyFontPreview in store).
+ * Custom font-family listbox with live card preview on hover (typographyFontPreview in store).
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -69,13 +69,28 @@ export default function FontFamilyPicker({
     const el = buttonRef.current
     if (!el) return
     const r = el.getBoundingClientRect()
-    const spaceBelow = window.innerHeight - r.bottom - 8
-    const spaceAbove = r.top - 8
-    const openUp = spaceBelow < 320 && spaceAbove > spaceBelow
+    const margin = 8
+    const width = Math.min(Math.max(r.width, 240), window.innerWidth - margin * 2)
+    let left = r.left
+    if (left + width > window.innerWidth - margin) left = window.innerWidth - margin - width
+    if (left < margin) left = margin
+    const spaceBelow = window.innerHeight - r.bottom - margin
+    const spaceAbove = r.top - margin
+    const openUp = spaceBelow < 280 && spaceAbove > spaceBelow
     setPos(
       openUp
-        ? { left: r.left, width: r.width, bottom: window.innerHeight - r.top + 4, maxHeight: spaceAbove }
-        : { left: r.left, width: r.width, top: r.bottom + 4, maxHeight: spaceBelow },
+        ? {
+            left,
+            width,
+            bottom: window.innerHeight - r.top + 4,
+            maxHeight: Math.max(160, spaceAbove),
+          }
+        : {
+            left,
+            width,
+            top: r.bottom + 4,
+            maxHeight: Math.max(160, spaceBelow),
+          },
     )
   }, [])
 
@@ -250,10 +265,6 @@ export default function FontFamilyPicker({
                   )
                 })
               )}
-            </div>
-
-            <div className="shrink-0 border-t border-[var(--ui-color-border)] px-2 py-1 text-[11px] text-[var(--ui-color-text-muted)]">
-              {filteredOptions.length} font{filteredOptions.length === 1 ? '' : 's'} — hover to preview on card
             </div>
           </div>,
           (typeof document !== 'undefined' && document.querySelector('[data-app-theme]')) || document.body,

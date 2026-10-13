@@ -315,6 +315,9 @@ function TextIconsLayer() {
   const copyrightY = layout.copyrightY
 
   const preModernFaceText = supportsPreModernFooterLayout
+  /** Standard/Land: honor Content font/weight controls. Spell keeps locked pre-modern face fonts. */
+  const honorCreativeFaceTypography =
+    activeLayout.family === 'standard' || activeLayout.family === 'land'
 
   /** Matches set-symbol slot sizing (uploaded icon + Scryfall layer). */
   const iconBoxS = resolveSetSymbolBoxPx(iconScale) * (supportsPreModernFaceLayout ? SPELL_PRE_MODERN_SET_SYMBOL_SCALE : 1)
@@ -624,10 +627,10 @@ function TextIconsLayer() {
 
   const nameFace = useMemo(
     () =>
-      preModernFaceText
+      preModernFaceText && !honorCreativeFaceTypography
         ? { fontStack: getPreModernFaceFontStack(), fontStyle: PRE_MODERN_FACE_FONT_STYLE }
         : resolveTypographyFontFace(effectiveNameFontKey, nameTypography.weight),
-    [preModernFaceText, effectiveNameFontKey, nameTypography.weight],
+    [preModernFaceText, honorCreativeFaceTypography, effectiveNameFontKey, nameTypography.weight],
   )
   const nameStack = nameFace.fontStack
   const nameFontStyle = nameFace.fontStyle
@@ -654,10 +657,10 @@ function TextIconsLayer() {
 
   const typeFace = useMemo(
     () =>
-      preModernFaceText
+      preModernFaceText && !honorCreativeFaceTypography
         ? { fontStack: getPreModernFaceFontStack(), fontStyle: PRE_MODERN_FACE_FONT_STYLE }
         : resolveTypographyFontFace(effectiveTypeFontKey, typeTypography.weight),
-    [preModernFaceText, effectiveTypeFontKey, typeTypography.weight],
+    [preModernFaceText, honorCreativeFaceTypography, effectiveTypeFontKey, typeTypography.weight],
   )
   const typeStack = typeFace.fontStack
   const typeFontStyle = typeFace.fontStyle
@@ -899,10 +902,11 @@ function TextIconsLayer() {
   const preModernFooter = useMemo(() => {
     if (!supportsPreModernFooterLayout) return null
     const lineHeight = Math.round(metadataFontSize * 1.08)
-    const artistLine = String(artist ?? '').trim()
-    const copyrightText = resolveCardCopyright(copyright)
+    const setCode = String(set ?? '').trim().toUpperCase()
     const collector = String(collector_number ?? '').trim()
-    const copyrightLine = collector ? `${copyrightText} ${collector}`.trim() : copyrightText
+    const lang = String(language ?? '').trim().toUpperCase() || 'EN'
+    const artistLine = String(artist ?? '').trim()
+    const copyrightLine = resolveCardCopyright(copyright)
     const rarityLetter = rarity ? rarity.charAt(0).toUpperCase() : ''
     const rarityFill =
       rarity === 'common'
@@ -914,53 +918,51 @@ function TextIconsLayer() {
             : rarity === 'mythic'
               ? '#E85D04'
               : '#FFFFFF'
-    const hasArtist = artistLine.length > 0
-    const hasRarity = rarityLetter.length > 0
+    const collectorPrefix = [setCode, collector].some(Boolean)
+      ? `${setCode || ''} / ${collector || ''}`.replace(/\s+/g, ' ').trim()
+      : ''
+    const collectorLine = `${collectorPrefix}${rarityLetter ? (collectorPrefix ? ' ' : '') + rarityLetter : ''}`.trim()
+    const langArtistLine = `${lang}${artistLine ? ` • ${artistLine}` : ''}`.trim()
+    const hasCollector = collectorLine.length > 0
+    const hasLangArtist = langArtistLine.length > 0
     const hasCopyright = copyrightLine.length > 0
-    const hasLine1 = hasArtist || hasRarity
-    const rowCount = (hasLine1 ? 1 : 0) + (hasCopyright ? 1 : 0)
+    const rowCount = (hasCollector ? 1 : 0) + (hasLangArtist ? 1 : 0) + (hasCopyright ? 1 : 0)
     if (rowCount === 0) return null
-    const blockHeight = rowCount * lineHeight + (rowCount > 1 ? PRE_MODERN_FOOTER_LINE_GAP_PX : 0)
+    const gap = PRE_MODERN_FOOTER_LINE_GAP_PX
+    const blockHeight = rowCount * lineHeight + Math.max(0, rowCount - 1) * gap
     const collectorBandTop = rulesBoxBottom
     const collectorBandHeight = Math.max(1, innerBorderBottom - collectorBandTop)
-    const blockTop = collectorBandTop + Math.round((collectorBandHeight - blockHeight) / 2)
-    const line1Y = blockTop
-    const copyrightLineY =
-      hasLine1 && hasCopyright ? blockTop + lineHeight + PRE_MODERN_FOOTER_LINE_GAP_PX : blockTop
-    const artistWidth = hasArtist
-      ? measureTextWidth(artistLine, metadataStack, metadataFontStyle, metadataFontSize)
-      : 0
-    const rarityGap = hasArtist && hasRarity ? 6 : 0
-    const rarityWidth = hasRarity
-      ? measureTextWidth(rarityLetter, metadataStack, metadataFontStyle, metadataFontSize)
-      : 0
-    const line1Width = artistWidth + rarityGap + rarityWidth
-    const line1StartX = metadataRect.x + Math.round((metadataRect.width - line1Width) / 2)
+    let y = collectorBandTop + Math.round((collectorBandHeight - blockHeight) / 2)
+    const collectorY = hasCollector ? y : null
+    if (hasCollector) y += lineHeight + gap
+    const langArtistY = hasLangArtist ? y : null
+    if (hasLangArtist) y += lineHeight + gap
+    const copyrightLineY = hasCopyright ? y : null
     return {
-      artistLine,
+      collectorLine,
+      langArtistLine,
       copyrightLine,
       rarityLetter,
       rarityFill,
-      hasArtist,
-      hasRarity,
+      hasCollector,
+      hasLangArtist,
       hasCopyright,
-      line1Y,
-      artistX: line1StartX,
-      rarityX: line1StartX + artistWidth + rarityGap,
+      collectorY,
+      langArtistY,
       copyrightLineY,
       metaX: metadataRect.x,
       metaW: metadataRect.width,
+      collectorPrefix,
     }
   }, [
     supportsPreModernFooterLayout,
+    set,
+    collector_number,
+    language,
     artist,
     copyright,
-    collector_number,
     rarity,
     metadataFontSize,
-    metadataStack,
-    metadataFontStyle,
-    measureTextWidth,
     metadataRect.x,
     metadataRect.width,
     rulesBoxBottom,
@@ -1544,7 +1546,11 @@ function TextIconsLayer() {
 
       {supportsMetadataStrip && !supportsPreModernFooterLayout &&
         (() => {
-        const metaPrefix = [set, collector_number].some(Boolean) ? `${set || ''} / ${collector_number || ''}`.replace(/\s+/g, ' ').trim() : ''
+        const setCode = String(set ?? '').trim().toUpperCase()
+        const collector = String(collector_number ?? '').trim()
+        const metaPrefix = [setCode, collector].some(Boolean)
+          ? `${setCode || ''} / ${collector || ''}`.replace(/\s+/g, ' ').trim()
+          : ''
         const rarityLetter = rarity ? rarity.charAt(0).toUpperCase() : ''
         const metaPrefixWithSpace = metaPrefix + (rarityLetter ? ' ' : '')
         const rarityFill =
@@ -1603,59 +1609,98 @@ function TextIconsLayer() {
           listening={false}
         />
       )}
-      {supportsPreModernFooterLayout && preModernFooter && (preModernFooter.hasArtist || preModernFooter.hasRarity) ? (
+      {supportsPreModernFooterLayout && preModernFooter ? (
         <>
-          {preModernFooter.hasArtist ? (
+          {preModernFooter.hasCollector && preModernFooter.collectorY != null ? (
+            <>
+              <Text
+                key={`pre-modern-footer-collector-${metadataFill}`}
+                text={preModernFooter.collectorPrefix + (preModernFooter.rarityLetter ? ' ' : '')}
+                x={preModernFooter.metaX}
+                y={preModernFooter.collectorY}
+                width={preModernFooter.metaW}
+                fontFamily={metadataStack}
+                fontStyle={metadataFontStyle}
+                fontSize={metadataFontSize}
+                fill={metadataFill}
+                align="center"
+                opacity={1}
+                letterSpacing={-0.2}
+                listening={false}
+              />
+              {preModernFooter.rarityLetter ? (
+                <Text
+                  text={preModernFooter.rarityLetter}
+                  x={
+                    preModernFooter.metaX +
+                    Math.round(
+                      (preModernFooter.metaW -
+                        measureTextWidth(
+                          preModernFooter.collectorLine,
+                          metadataStack,
+                          metadataFontStyle,
+                          metadataFontSize,
+                        )) /
+                        2,
+                    ) +
+                    measureTextWidth(
+                      preModernFooter.collectorPrefix + (preModernFooter.collectorPrefix ? ' ' : ''),
+                      metadataStack,
+                      metadataFontStyle,
+                      metadataFontSize,
+                    )
+                  }
+                  y={preModernFooter.collectorY}
+                  fontFamily={metadataStack}
+                  fontStyle={metadataFontStyle}
+                  fontSize={metadataFontSize}
+                  fill={preModernFooter.rarityFill}
+                  opacity={1}
+                  letterSpacing={-0.2}
+                  listening={false}
+                />
+              ) : null}
+            </>
+          ) : null}
+          {preModernFooter.hasLangArtist && preModernFooter.langArtistY != null ? (
             <Text
-              key={`pre-modern-footer-artist-${metadataFill}`}
-              text={preModernFooter.artistLine}
-              x={preModernFooter.artistX}
-              y={preModernFooter.line1Y}
+              key={`pre-modern-footer-lang-artist-${metadataFill}`}
+              text={preModernFooter.langArtistLine}
+              x={preModernFooter.metaX}
+              y={preModernFooter.langArtistY}
+              width={preModernFooter.metaW}
               fontFamily={metadataStack}
               fontStyle={metadataFontStyle}
               fontSize={metadataFontSize}
               fill={metadataFill}
+              align="center"
               opacity={1}
               letterSpacing={-0.2}
               listening={false}
             />
           ) : null}
-          {preModernFooter.hasRarity ? (
+          {preModernFooter.hasCopyright && preModernFooter.copyrightLineY != null ? (
             <Text
-              text={preModernFooter.rarityLetter}
-              x={preModernFooter.rarityX}
-              y={preModernFooter.line1Y}
+              key={`pre-modern-footer-copyright-${metadataFill}`}
+              text={preModernFooter.copyrightLine}
+              x={preModernFooter.metaX}
+              y={preModernFooter.copyrightLineY}
+              width={preModernFooter.metaW}
               fontFamily={metadataStack}
               fontStyle={metadataFontStyle}
               fontSize={metadataFontSize}
-              fill={preModernFooter.rarityFill}
+              fill={metadataFill}
+              align="center"
               opacity={1}
               letterSpacing={-0.2}
               listening={false}
             />
           ) : null}
         </>
-      ) : null}
-      {supportsPreModernFooterLayout && preModernFooter?.hasCopyright ? (
-        <Text
-          key={`pre-modern-footer-copyright-${metadataFill}`}
-          text={preModernFooter.copyrightLine}
-          x={preModernFooter.metaX}
-          y={preModernFooter.copyrightLineY}
-          width={preModernFooter.metaW}
-          fontFamily={metadataStack}
-          fontStyle={metadataFontStyle}
-          fontSize={metadataFontSize}
-          fill={metadataFill}
-          align="center"
-          opacity={1}
-          letterSpacing={-0.2}
-          listening={false}
-        />
       ) : !supportsPreModernFooterLayout ? (
         <>
       <Text
-        text={`${language || 'EN'} • ${artist || ''}`.trim()}
+        text={`${String(language || 'EN').toUpperCase()} • ${artist || ''}`.trim()}
         x={metadataLeftX}
         y={metadataBaseline2 - metadataFontSize + collectorDataYAdjust}
         width={typeW}

@@ -2,6 +2,7 @@
  * Module 5.1 — per-field Creative Suite font controls (single face region).
  * Authority: options and clamps from typographyAuthority only.
  */
+import ColorSwatchPopover from './ColorSwatchPopover'
 import FontFamilyPicker from './FontFamilyPicker'
 import { UI_FOCUS_RING_CONTROL, UI_INTERACTIVE_TILE } from '../../authority/panelSurfaceAuthority'
 import {
@@ -87,12 +88,10 @@ export default function FontMenu({ typographyKey, legend, compact = false }: Pro
         </div>
         <div className="space-y-ui1">
           <label className={`block ${UI_TEXT_LABEL_COMPACT}`}>Color</label>
-          <input
-            type="color"
-            className="h-[var(--ui-control-height-sm)] w-full cursor-pointer rounded-[var(--ui-radius-xl)] border border-[var(--ui-color-border)] bg-[var(--ui-color-surface-elevated)] p-ui1"
-            value={/^#([0-9a-f]{6})$/i.test(typo.color) ? typo.color : '#111111'}
-            onChange={(e) => patch({ color: e.target.value, colorManual: true })}
-            aria-label={`${legend} text color`}
+          <ColorSwatchPopover
+            value={typo.color}
+            onChange={(color) => patch({ color, colorManual: true })}
+            ariaLabel={`${legend} text color`}
           />
         </div>
       </div>
@@ -129,12 +128,10 @@ export default function FontMenu({ typographyKey, legend, compact = false }: Pro
         </div>
         <div className="space-y-ui1">
           <label className={`block ${UI_TEXT_LABEL_COMPACT}`}>Color</label>
-          <input
-            type="color"
-            className="h-[var(--ui-control-height-sm)] w-full cursor-pointer rounded-[var(--ui-radius-xl)] border border-[var(--ui-color-border)] bg-[var(--ui-color-surface-elevated)] p-ui1"
-            value={/^#([0-9a-f]{6})$/i.test(typo.color) ? typo.color : '#111111'}
-            onChange={(e) => patch({ color: e.target.value, colorManual: true })}
-            aria-label={`${legend} text color`}
+          <ColorSwatchPopover
+            value={typo.color}
+            onChange={(color) => patch({ color, colorManual: true })}
+            ariaLabel={`${legend} text color`}
           />
         </div>
         <div className="space-y-ui1 sm:col-span-2">
