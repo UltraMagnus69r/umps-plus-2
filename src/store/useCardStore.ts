@@ -200,7 +200,7 @@ export interface CardData {
   // Inner Border (frame mat) — Surface FX controls (doc 04 group D).
   /** Whether the generated Inner Border mat is drawn. */
   innerBorderEnabled: boolean
-  /** Inner Border opacity, 0–1. (Control removed from UI; kept for saved-card compatibility.) */
+  /** Inner Border opacity, 0–1. */
   innerBorderOpacity: number
   /**
    * Inner Border background source. 'identity' = fill from Color Identity (auto/manual);

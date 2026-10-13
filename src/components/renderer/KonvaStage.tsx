@@ -233,7 +233,7 @@ function KonvaStage({
     .filter(Boolean)
     .join(' ')
 
-  const onStagePointerDownForPan = useCallback((e: Konva.KonvaEventObject<PointerEvent | MouseEvent | TouchEvent>) => {
+  const onStagePointerDownForPan = useCallback((e: Konva.KonvaEventObject<PointerEvent>) => {
     const target = e.target
     const stage = target.getStage()
     if (!stage) return
@@ -244,13 +244,13 @@ function KonvaStage({
       node = node.getParent()
     }
     const evt = e.evt
-    const touch = 'touches' in evt ? evt.touches[0] : null
+    if (typeof evt.button === 'number' && evt.button !== 0) return
     window.dispatchEvent(
       new CustomEvent('umps-canvas-pan-start', {
         detail: {
-          clientX: touch ? touch.clientX : 'clientX' in evt ? evt.clientX : 0,
-          clientY: touch ? touch.clientY : 'clientY' in evt ? evt.clientY : 0,
-          pointerId: 'pointerId' in evt ? (evt as PointerEvent).pointerId : 1,
+          clientX: evt.clientX,
+          clientY: evt.clientY,
+          pointerId: evt.pointerId,
         },
       }),
     )
@@ -264,8 +264,7 @@ function KonvaStage({
       scaleX={stageScaleX}
       scaleY={stageScaleY}
       pixelRatio={previewPixelRatio}
-      onMouseDown={onStagePointerDownForPan}
-      onTouchStart={onStagePointerDownForPan}
+      onPointerDown={onStagePointerDownForPan}
     >
         {/* Hidden + clone: printable proxy only (Module 4.1); editor overlays remain. */}
         {!hiddenCloneChrome && (

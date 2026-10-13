@@ -134,7 +134,7 @@ function StudioInspector({
               </div>
               <div className="truncate text-[0.6875rem] text-[var(--text-tertiary)]">
                 {segment === 'content'
-                  ? 'Name & mana → type → art → rules → flavor'
+                  ? 'Name & mana → type → art → rules & flavor'
                   : segment === 'look'
                     ? 'Frame first, then colors & materials'
                     : 'Collector, typography, panels, guides'}
