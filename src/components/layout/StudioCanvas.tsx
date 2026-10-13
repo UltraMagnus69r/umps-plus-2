@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
-import { CloudDownload, Minus, Plus, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react'
+import { CloudDownload, Minus, Plus, RotateCcw } from 'lucide-react'
 import { WORKING_PREVIEW_FOCUS_ID } from '../../data/layoutConstants'
 import {
   isCardEffectivelyEmptyForGuidance,
@@ -329,8 +329,7 @@ function StudioCanvas({ onRequestSegment, onRequestImport }: Props) {
                   disabled={zoom <= PREVIEW_ZOOM_MIN + 0.001}
                   onClick={() => bumpZoom(-PREVIEW_ZOOM_STEP)}
                 >
-                  <ZoomOut className="h-3.5 w-3.5" />
-                  <Minus className="h-3 w-3 opacity-70" aria-hidden />
+                  <Minus className="h-3.5 w-3.5" />
                 </button>
                 <span className="studio-preview-zoom__value" aria-live="polite">
                   {Math.round(zoom * 100)}%
@@ -343,8 +342,7 @@ function StudioCanvas({ onRequestSegment, onRequestImport }: Props) {
                   disabled={zoom >= PREVIEW_ZOOM_MAX - 0.001}
                   onClick={() => bumpZoom(PREVIEW_ZOOM_STEP)}
                 >
-                  <ZoomIn className="h-3.5 w-3.5" />
-                  <Plus className="h-3 w-3 opacity-70" aria-hidden />
+                  <Plus className="h-3.5 w-3.5" />
                 </button>
               </div>
               <button
