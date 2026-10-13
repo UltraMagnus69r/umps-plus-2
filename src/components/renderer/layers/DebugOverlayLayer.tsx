@@ -151,8 +151,8 @@ function DebugOverlayLayer() {
             y={bleedY}
             width={bleedW}
             height={bleedH}
-            stroke="red"
-            strokeWidth={2}
+            stroke="#ff2d2d"
+            strokeWidth={3}
             dash={GUIDE_DASH}
           />
         )}
@@ -163,8 +163,8 @@ function DebugOverlayLayer() {
             y={trimY}
             width={trimW}
             height={trimH}
-            stroke="red"
-            strokeWidth={2}
+            stroke="#ff7a18"
+            strokeWidth={3}
             dash={GUIDE_DASH}
           />
         )}

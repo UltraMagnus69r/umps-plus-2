@@ -19,7 +19,6 @@ import type {
   ReactEventHandler,
 } from 'react'
 import {
-  ALargeSmall,
   ChevronLeft,
   ChevronRight,
   Sparkles,
@@ -63,13 +62,11 @@ import { resolveWorkflowValidationHints } from '../../authority/validationFeedba
 import {
   isLandFullArtReducedCore,
   shouldShowFlavorTextField,
-  shouldShowFlavorTypographySubsection,
   shouldShowLandPanelArtSelector,
   shouldShowPlaneswalkerCoreInputs,
   shouldShowPowerToughnessControls,
   shouldShowPtTypographySubsection,
   shouldShowRulesTextEditor,
-  shouldShowRulesTypographySubsection,
   shouldShowSecondaryNameFields,
 } from '../../authority/progressiveDisclosureAuthority'
 import PlaneswalkerCoreInputs from './PlaneswalkerCoreInputs'
@@ -98,9 +95,6 @@ type LeftSectionKey =
   | 'collector'
   | 'font-styling'
   | 'art'
-/** Face font sub-panels: at most one open inside Font Styling. */
-type LeftFontPanelKey = 'name-font' | 'type-font' | 'rules-font' | 'flavor-font' | 'pt-font'
-
 function ManaSymbolAssistantIcon({ target }: { target: 'manaCost' | 'rulesText' }) {
   const openManaPopup = useCardStore((s) => s.openManaPopup)
   const setManaPopupTarget = useCardStore((s) => s.setManaPopupTarget)
@@ -232,7 +226,7 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
   }, [leftOpenStored, setLeftOpenStored])
   const [uiMode, setUiMode] = useUiComplexityMode()
   const scrollFieldIntoView = useScrollFieldIntoView()
-  /** Details segment always shows collector/typography; Content never does (D1). */
+  /** Details segment shows collector; Content never does (D1). Per-field typography lives on Content. */
   const isAdvanced = embedded ? inspectorSegment === 'details' : uiMode === 'advanced'
   const showContentSections = !embedded || inspectorSegment === 'content'
   const showDetailsSections = !embedded || inspectorSegment === 'details'
@@ -240,8 +234,6 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
   const drillMode = embedded
   const sectionMode = drillMode ? 'drill' : 'accordion'
   const stackOccupied = drillMode && leftOpenSection != null
-  const [openFontPanel, setOpenFontPanel] = useState<LeftFontPanelKey | null>(null)
-  const [metadataFontOpen, setMetadataFontOpen] = useState(false)
   const [cardImageUrl, setCardImageUrl] = useState('')
 
   const toggleLeftSection = (key: LeftSectionKey) => {
@@ -249,8 +241,6 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
       setLeftOpenStored((cur) => {
         const current = cur === 'none' ? null : cur
         const next = current === key ? null : key
-        if (next !== 'font-styling') setOpenFontPanel(null)
-        if (next !== 'collector') setMetadataFontOpen(false)
         if (next && inspectorSegment === 'details') {
           try {
             window.localStorage.setItem('umps-right-open-section', 'none')
@@ -261,11 +251,6 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
         queueMicrotask(() => window.dispatchEvent(new CustomEvent('umps-inspector-section')))
         return next ?? 'none'
       })
-    })
-  }
-  const toggleFontPanel = (key: LeftFontPanelKey) => {
-    startTransition(() => {
-      setOpenFontPanel((cur) => (cur === key ? null : key))
     })
   }
 
@@ -330,8 +315,6 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
   useEffect(() => {
     if (workspaceInitEpoch === 0) return
     setLeftOpenStored('none')
-    setOpenFontPanel(null)
-    setMetadataFontOpen(false)
     setCardImageUrl('')
   }, [workspaceInitEpoch])
 
@@ -341,6 +324,10 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
       (leftOpenStored === 'collector' || leftOpenStored === 'font-styling')
     ) {
       setLeftOpenStored('core')
+    }
+    if (inspectorSegment === 'details' && leftOpenStored === 'font-styling') {
+      // Typography moved to Content field controls — avoid orphan Details drill.
+      setLeftOpenStored('collector')
     }
     if (
       inspectorSegment === 'details' &&
@@ -1126,6 +1113,23 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
                   placeholder="e.g., 0256"
                 />
               </FieldRow>
+              <FieldRow label="Language" layout="stacked">
+                <input
+                  value={localLanguage}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setLocalLanguage(v)
+                    setField('language', v)
+                  }}
+                  onBlur={() => commitState()}
+                  className={INPUT_CLASS}
+                  placeholder="EN"
+                  aria-describedby="collector-language-help"
+                />
+                <p id="collector-language-help" className="mt-1 text-[0.6875rem] leading-snug text-[var(--text-tertiary)]">
+                  Card language line on the collector strip (localization code such as EN, JP, DE).
+                </p>
+              </FieldRow>
               <FieldRow label="Rarity" layout="stacked">
                 <select
                   value={rarity}
@@ -1149,19 +1153,6 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
                   ariaLabel="Hologram"
                 />
               </div>
-              <FieldRow label="Language" layout="stacked">
-                <input
-                  value={localLanguage}
-                  onChange={(e) => {
-                    const v = e.target.value
-                    setLocalLanguage(v)
-                    setField('language', v)
-                  }}
-                  onBlur={() => commitState()}
-                  className={INPUT_CLASS}
-                  placeholder="EN"
-                />
-              </FieldRow>
               <FieldRow label="Artist Name" layout="stacked">
                 <input
                   value={artistLocal}
@@ -1188,115 +1179,11 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
                   placeholder={DEFAULT_CARD_COPYRIGHT}
                 />
               </FieldRow>
-              <div className="space-y-2 pt-1">
+              <div className="space-y-2 pb-4 pt-1">
                 <Suspense fallback={null}>
                   <FontMenu typographyKey="metadataTypography" legend="Footer metadata typography" compact />
                 </Suspense>
               </div>
-              <CollapsibleSection
-                title="Footer Metadata Font"
-                icon={<ALargeSmall size={16} className="text-neutral-500 dark:text-neutral-400" />}
-                open={metadataFontOpen}
-                onToggle={() => setMetadataFontOpen((v) => !v)}
-              mode={sectionMode}
-              stackOccupied={false}
-            >
-                {metadataFontOpen ? (
-                  <Suspense fallback={<p className="text-xs text-neutral-500">Loading fonts…</p>}>
-                    <FontMenu typographyKey="metadataTypography" legend="Footer metadata typography" />
-                  </Suspense>
-                ) : null}
-              </CollapsibleSection>
-
-
-            </CollapsibleSection>
-            ) : null}
-
-            {isAdvanced && showDetailsSections ? (
-            <CollapsibleSection
-              title="Typography"
-              icon={<ALargeSmall size={16} className="text-neutral-500 dark:text-neutral-400" />}
-              open={leftOpenSection === 'font-styling'}
-              onToggle={() => toggleLeftSection('font-styling')}
-              mode={sectionMode}
-              stackOccupied={stackOccupied}
-            >
-              <CollapsibleSection
-                title="Card name"
-                icon={<ALargeSmall size={16} className="text-neutral-500 dark:text-neutral-400" />}
-                open={openFontPanel === 'name-font'}
-                onToggle={() => toggleFontPanel('name-font')}
-              mode={sectionMode}
-              stackOccupied={drillMode && openFontPanel != null}
-            >
-                {openFontPanel === 'name-font' ? (
-                  <Suspense fallback={<p className="text-xs text-neutral-500">Loading fonts…</p>}>
-                    <FontMenu typographyKey="nameTypography" legend="Card name typography" />
-                  </Suspense>
-                ) : null}
-              </CollapsibleSection>
-              <CollapsibleSection
-                title="Type line"
-                icon={<ALargeSmall size={16} className="text-neutral-500 dark:text-neutral-400" />}
-                open={openFontPanel === 'type-font'}
-                onToggle={() => toggleFontPanel('type-font')}
-              mode={sectionMode}
-              stackOccupied={drillMode && openFontPanel != null}
-            >
-                {openFontPanel === 'type-font' ? (
-                  <Suspense fallback={<p className="text-xs text-neutral-500">Loading fonts…</p>}>
-                    <FontMenu typographyKey="typeTypography" legend="Type line typography" />
-                  </Suspense>
-                ) : null}
-              </CollapsibleSection>
-              {shouldShowRulesTypographySubsection(pdInput) ? (
-                <CollapsibleSection
-                  title="Rules text"
-                  icon={<ALargeSmall size={16} className="text-neutral-500 dark:text-neutral-400" />}
-                  open={openFontPanel === 'rules-font'}
-                  onToggle={() => toggleFontPanel('rules-font')}
-              mode={sectionMode}
-              stackOccupied={drillMode && openFontPanel != null}
-            >
-                  {openFontPanel === 'rules-font' ? (
-                    <Suspense fallback={<p className="text-xs text-neutral-500">Loading fonts…</p>}>
-                      <FontMenu typographyKey="rulesTypography" legend="Rules text typography" />
-                    </Suspense>
-                  ) : null}
-                </CollapsibleSection>
-              ) : null}
-              {shouldShowFlavorTypographySubsection(pdInput) ? (
-                <CollapsibleSection
-                  title="Flavor text"
-                  icon={<ALargeSmall size={16} className="text-neutral-500 dark:text-neutral-400" />}
-                  open={openFontPanel === 'flavor-font'}
-                  onToggle={() => toggleFontPanel('flavor-font')}
-              mode={sectionMode}
-              stackOccupied={drillMode && openFontPanel != null}
-            >
-                  {openFontPanel === 'flavor-font' ? (
-                    <Suspense fallback={<p className="text-xs text-neutral-500">Loading fonts…</p>}>
-                      <FontMenu typographyKey="flavorTypography" legend="Flavor text typography" />
-                    </Suspense>
-                  ) : null}
-                </CollapsibleSection>
-              ) : null}
-              {shouldShowPtTypographySubsection(activeLayoutCapabilities) ? (
-                <CollapsibleSection
-                  title="Power / toughness"
-                  icon={<ALargeSmall size={16} className="text-neutral-500 dark:text-neutral-400" />}
-                  open={openFontPanel === 'pt-font'}
-                  onToggle={() => toggleFontPanel('pt-font')}
-              mode={sectionMode}
-              stackOccupied={drillMode && openFontPanel != null}
-            >
-                  {openFontPanel === 'pt-font' ? (
-                    <Suspense fallback={<p className="text-xs text-neutral-500">Loading fonts…</p>}>
-                      <FontMenu typographyKey="ptTypography" legend="Power / toughness typography" />
-                    </Suspense>
-                  ) : null}
-                </CollapsibleSection>
-              ) : null}
             </CollapsibleSection>
             ) : null}
 
