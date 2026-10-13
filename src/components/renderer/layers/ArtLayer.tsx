@@ -200,6 +200,7 @@ function ArtLayer() {
           }}
         >
           <Image
+            name="art-placement"
             image={artImg}
             imageSmoothingEnabled={true}
             scaleX={scale}
