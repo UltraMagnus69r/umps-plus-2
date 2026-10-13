@@ -3,8 +3,10 @@ import type { InspectorSegment } from '../../hooks/useInspectorSegment'
 import {
   applyStudioFlowStep,
   inferStudioFlowStep,
+  readStoredStudioFlowStepId,
   STUDIO_FLOW_STEPS,
   type StudioFlowStep,
+  type StudioFlowStepId,
 } from '../../authority/studioFlowAuthority'
 import {
   isCardEffectivelyEmptyForGuidance,
@@ -54,14 +56,23 @@ function StudioInspector({
 
   const [leftOpen, setLeftOpen] = useState<string | null>(() => readStored('umps-left-open-section'))
   const [rightOpen, setRightOpen] = useState<string | null>(() => readStored('umps-right-open-section'))
+  const [preferredStepId, setPreferredStepId] = useState<StudioFlowStepId | null>(
+    () => readStoredStudioFlowStepId(),
+  )
 
   useEffect(() => {
     const sync = () => {
       setLeftOpen(readStored('umps-left-open-section'))
       setRightOpen(readStored('umps-right-open-section'))
+      setPreferredStepId(readStoredStudioFlowStepId())
     }
     const onStorage = (e: StorageEvent) => {
-      if (e.key === 'umps-left-open-section' || e.key === 'umps-right-open-section' || e.key == null) {
+      if (
+        e.key === 'umps-left-open-section' ||
+        e.key === 'umps-right-open-section' ||
+        e.key === 'umps-studio-flow-step' ||
+        e.key == null
+      ) {
         sync()
       }
     }
@@ -81,18 +92,43 @@ function StudioInspector({
     }
   }, [])
 
+  const leftOpenNorm = leftOpen === 'none' ? null : leftOpen
+  const rightOpenNorm = rightOpen === 'none' ? null : rightOpen
+
+  // When the user drills in via a menu row, keep the strip chip in sync for later menu returns.
+  useEffect(() => {
+    if (leftOpenNorm == null && rightOpenNorm == null) return
+    const drilled = inferStudioFlowStep({
+      segment,
+      leftOpen: leftOpenNorm,
+      rightOpen: rightOpenNorm,
+      cardEmpty,
+      preferredStepId: null,
+    })
+    if (drilled.id === preferredStepId) return
+    try {
+      window.localStorage.setItem('umps-studio-flow-step', drilled.id)
+    } catch {
+      /* private mode */
+    }
+    setPreferredStepId(drilled.id)
+  }, [segment, leftOpenNorm, rightOpenNorm, cardEmpty, preferredStepId])
+
   const currentStep = inferStudioFlowStep({
     segment,
-    leftOpen: leftOpen === 'none' ? null : leftOpen,
-    rightOpen: rightOpen === 'none' ? null : rightOpen,
+    leftOpen: leftOpenNorm,
+    rightOpen: rightOpenNorm,
     cardEmpty,
+    preferredStepId,
   })
 
   const goStep = useCallback(
     (step: StudioFlowStep) => {
+      // Strip selects segment + highlights the chip; stay at collapsed menu (no auto drill-in).
       applyStudioFlowStep(step)
-      setLeftOpen(step.leftOpen ?? readStored('umps-left-open-section'))
-      setRightOpen(step.rightOpen ?? readStored('umps-right-open-section'))
+      setLeftOpen('none')
+      setRightOpen('none')
+      setPreferredStepId(step.id)
       if (step.segment === 'download') {
         onOpenDownload?.()
         return
