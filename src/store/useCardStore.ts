@@ -30,6 +30,7 @@ import {
   type ExportPresetId,
 } from '../authority/exportPresetAuthority'
 import {
+  createDebouncedLocalStorage,
   normalizePersistedColorBlendDirection,
   normalizePersistedManualColorCount,
   normalizePersistedManualColorKey,
@@ -1290,6 +1291,33 @@ function computeWorkflowStateForStore(state: CardStoreState): WorkflowState {
   return deriveWorkflowStatePure(getWorkflowDerivationSnapshot(state))
 }
 
+function workflowDerivationInputsEqual(a: WorkflowDerivationInput, b: WorkflowDerivationInput): boolean {
+  return (
+    a.isBrowsingBaseline === b.isBrowsingBaseline &&
+    a.name === b.name &&
+    a.typeLine === b.typeLine &&
+    a.fontsLoaded === b.fontsLoaded &&
+    a.stageExporter === b.stageExporter &&
+    a.currentLayout === b.currentLayout &&
+    a.clonedCardImage === b.clonedCardImage
+  )
+}
+
+/** True when only name/typeLine identity text changed (common while typing those fields). */
+function onlyWorkflowIdentityTextChanged(prev: WorkflowDerivationInput, next: WorkflowDerivationInput): boolean {
+  return (
+    prev.isBrowsingBaseline === next.isBrowsingBaseline &&
+    prev.fontsLoaded === next.fontsLoaded &&
+    prev.stageExporter === next.stageExporter &&
+    prev.currentLayout === next.currentLayout &&
+    prev.clonedCardImage === next.clonedCardImage &&
+    (prev.name !== next.name || prev.typeLine !== next.typeLine)
+  )
+}
+
+const WORKFLOW_THROTTLE_MS = 200
+const debouncedPersistStorage = createDebouncedLocalStorage()
+
 export const useCardStore = create<CardStoreState>()(
   persist(
     (setBase, get) => {
@@ -1297,6 +1325,23 @@ export const useCardStore = create<CardStoreState>()(
         if (!import.meta.env.DEV || prev === next) return
         // eslint-disable-next-line no-console
         console.debug(`[workflowState] ${String(prev)} → ${next}`)
+      }
+
+      let workflowThrottleTimer: ReturnType<typeof setTimeout> | null = null
+
+      const flushWorkflowState = () => {
+        workflowThrottleTimer = null
+        const state = get()
+        const workflowState = computeWorkflowStateForStore(state)
+        if (workflowState === state.workflowState) return
+        logWorkflowTransition(state.workflowState, workflowState)
+        // Bypass the wrapping `set` so we don't re-enter throttle logic.
+        setBase({ workflowState })
+      }
+
+      const scheduleThrottledWorkflow = () => {
+        if (workflowThrottleTimer != null) return
+        workflowThrottleTimer = setTimeout(flushWorkflowState, WORKFLOW_THROTTLE_MS)
       }
 
       const set: typeof setBase = (partial, replace) => {
@@ -1314,11 +1359,29 @@ export const useCardStore = create<CardStoreState>()(
             const patch = partial(state)
             if (patch === state) return state
             const merged = { ...state, ...patch } as CardStoreState
+            const prevSnap = getWorkflowDerivationSnapshot(state)
+            const nextSnap = getWorkflowDerivationSnapshot(merged)
+            if (workflowDerivationInputsEqual(prevSnap, nextSnap)) {
+              return patch
+            }
+            if (onlyWorkflowIdentityTextChanged(prevSnap, nextSnap)) {
+              scheduleThrottledWorkflow()
+              return patch
+            }
             const workflowState = computeWorkflowStateForStore(merged)
             logWorkflowTransition(state.workflowState, workflowState)
             return { ...patch, workflowState }
           }
           const merged = { ...state, ...partial } as CardStoreState
+          const prevSnap = getWorkflowDerivationSnapshot(state)
+          const nextSnap = getWorkflowDerivationSnapshot(merged)
+          if (workflowDerivationInputsEqual(prevSnap, nextSnap)) {
+            return partial
+          }
+          if (onlyWorkflowIdentityTextChanged(prevSnap, nextSnap)) {
+            scheduleThrottledWorkflow()
+            return partial
+          }
           const workflowState = computeWorkflowStateForStore(merged)
           logWorkflowTransition(state.workflowState, workflowState)
           return { ...partial, workflowState }
@@ -2491,6 +2554,8 @@ setManualUseTwoColors: (enabled) =>
             designDirty: true,
           }
         })
+        // Undo commits on blur — flush any pending debounced persist write.
+        debouncedPersistStorage.flush()
       },
 
       markDesignSaved: () => set({ designDirty: false }),
@@ -2613,24 +2678,7 @@ setManualUseTwoColors: (enabled) =>
     {
       name: 'um-proxy-showcase-store',
       version: 1,
-      storage: createJSONStorage(() => ({
-        getItem: (name) => {
-          try { return window.localStorage.getItem(name) }
-          catch { return null }
-        },
-        setItem: (name, value) => {
-          try {
-            window.localStorage.setItem(name, value)
-          } catch (e: any) {
-            // Quota exceeded or storage blocked; attempt to recover by clearing our key.
-            try { window.localStorage.removeItem(name) } catch {}
-            try { window.localStorage.setItem(name, value) } catch {}
-          }
-        },
-        removeItem: (name) => {
-          try { window.localStorage.removeItem(name) } catch {}
-        },
-      })),
+      storage: createJSONStorage(() => debouncedPersistStorage),
       migrate: (persistedState) => {
         const ps = persistedState as { schemaVersion?: number } | null | undefined
         if (ps != null && typeof ps === 'object' && ps.schemaVersion === PERSIST_SCHEMA_VERSION) return persistedState as any

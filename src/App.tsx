@@ -43,19 +43,25 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false
+    const fontsApi = (document as Document & { fonts?: FontFaceSet }).fonts
 
     async function loadRequiredFonts() {
       try {
-        await Promise.allSettled(
-          CORE_FONT_SPECS.map((d) => (document as Document & { fonts: FontFaceSet }).fonts.load(d)),
-        )
-        await (document as Document & { fonts: FontFaceSet }).fonts.ready
-        const coreOk = CORE_FONT_SPECS.every((d) =>
-          (document as Document & { fonts: FontFaceSet }).fonts.check(d),
-        )
-        if (!cancelled && coreOk) setFontsLoaded(true)
+        // Soft gate: load the five core faces only — do not wait on full document fonts.ready
+        // (catalog faces load on demand). Cap wait so chrome is usable on slow networks.
+        const coreLoad = fontsApi
+          ? Promise.allSettled(CORE_FONT_SPECS.map((d) => fontsApi.load(d)))
+          : Promise.resolve([])
+        await Promise.race([
+          coreLoad.then(() => undefined),
+          new Promise<void>((resolve) => window.setTimeout(resolve, 900)),
+        ])
+        if (cancelled) return
+        // With font-display: swap, allow the editor through even if a core face is still settling.
+        setFontsLoaded(true)
+        await coreLoad
       } catch {
-        // Strict: do not enable Layer 4 on failure.
+        if (!cancelled) setFontsLoaded(true)
       }
       if (cancelled) return
       // Only load faces the current card already uses — not the full catalog.
@@ -109,7 +115,10 @@ export default function App() {
     <div data-app-theme="googled">
       <div className="app-frame app-frame-viewport overflow-hidden relative text-[var(--sb-text-strong)]">
         {!fontsLoaded ? (
-          <div className="absolute inset-0 z-[var(--ui-z-font-blocking)] flex items-center justify-center bg-black/20">
+          <div
+            className="pointer-events-none absolute inset-0 z-[var(--ui-z-font-blocking)] flex items-center justify-center bg-black/10"
+            aria-live="polite"
+          >
             <div className={`${UI_PANEL_OVERLAY} ui-panel--pad-lg ${UI_TEXT_SECTION_HEADER}`}>Loading Fonts...</div>
           </div>
         ) : null}

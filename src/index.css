@@ -80,7 +80,7 @@ html, body, #root {
   src: url("/fonts/Gill%20Sans%20Condensed%20Bold.otf") format("opentype");
   font-weight: 700;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -128,7 +128,7 @@ html, body, #root {
   src: url("/fonts/Matrix%20Bold.ttf") format("truetype");
   font-weight: 700;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -216,7 +216,7 @@ html, body, #root {
   src: url("/fonts/PlantinMTProRg.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -224,7 +224,7 @@ html, body, #root {
   src: url("/fonts/PlantinMTProRgIt.woff2") format("woff2");
   font-weight: 400;
   font-style: italic;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -280,7 +280,7 @@ html, body, #root {
   src: url("/fonts/beleren-b.ttf") format("truetype");
   font-weight: 700;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -344,7 +344,7 @@ html, body, #root {
   src: url("/fonts/matrix-b.ttf") format("truetype");
   font-weight: 700;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -360,7 +360,7 @@ html, body, #root {
   src: url("/fonts/mplantin-i.ttf") format("truetype");
   font-weight: 400;
   font-style: italic;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -376,7 +376,7 @@ html, body, #root {
   src: url("/fonts/mplantin.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
