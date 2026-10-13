@@ -7,8 +7,7 @@ export type StudioFlowStepId =
   | 'colors'
   | 'type'
   | 'art'
-  | 'rules'
-  | 'flavor'
+  | 'text'
   | 'details'
   | 'save'
 
@@ -24,7 +23,7 @@ export type StudioFlowStep = {
   nextHint: string
 }
 
-/** Guided 1–10 path; free nav between Content / Look / Details remains available. */
+/** Guided path; free nav between Content / Look / Details remains available. */
 export const STUDIO_FLOW_STEPS: StudioFlowStep[] = [
   {
     id: 'start',
@@ -78,29 +77,20 @@ export const STUDIO_FLOW_STEPS: StudioFlowStep[] = [
     short: 'Art',
     segment: 'content',
     leftOpen: 'art',
-    nextHint: 'Next: Content → Rules',
+    nextHint: 'Next: Content → Rules & Flavor',
   },
   {
-    id: 'rules',
+    id: 'text',
     n: 7,
-    label: 'Rules',
-    short: 'Rules',
+    label: 'Rules & Flavor',
+    short: 'Text',
     segment: 'content',
-    leftOpen: 'rules',
-    nextHint: 'Next: Content → Flavor',
-  },
-  {
-    id: 'flavor',
-    n: 8,
-    label: 'Flavor',
-    short: 'Flavor',
-    segment: 'content',
-    leftOpen: 'flavor',
+    leftOpen: 'text',
     nextHint: 'Next: Details → Collector',
   },
   {
     id: 'details',
-    n: 9,
+    n: 8,
     label: 'Details',
     short: 'Details',
     segment: 'details',
@@ -109,7 +99,7 @@ export const STUDIO_FLOW_STEPS: StudioFlowStep[] = [
   },
   {
     id: 'save',
-    n: 10,
+    n: 9,
     label: 'Save',
     short: 'Save',
     segment: 'download',
@@ -135,7 +125,7 @@ export function inferStudioFlowStep(args: {
   ) {
     return STUDIO_FLOW_STEPS[0]
   }
-  if (segment === 'details') return STUDIO_FLOW_STEPS[8]
+  if (segment === 'details') return STUDIO_FLOW_STEPS[7]
   if (segment === 'content') {
     switch (leftOpen) {
       case 'core':
@@ -144,10 +134,10 @@ export function inferStudioFlowStep(args: {
         return STUDIO_FLOW_STEPS[4]
       case 'art':
         return STUDIO_FLOW_STEPS[5]
+      case 'text':
       case 'rules':
-        return STUDIO_FLOW_STEPS[6]
       case 'flavor':
-        return STUDIO_FLOW_STEPS[7]
+        return STUDIO_FLOW_STEPS[6]
       case 'import-sync':
         return STUDIO_FLOW_STEPS[0]
       default:

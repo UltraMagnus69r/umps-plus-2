@@ -7,6 +7,7 @@ import {
   OUTER_BORDER_IDENTITY_TAGS,
   OUTER_BORDER_SECTIONS,
   getOuterBorderSectionsByIds,
+  outerBorderPngUrl,
   type ColorTag,
 } from '../../data/outerBorderOptions'
 import {
@@ -120,18 +121,27 @@ export default function OuterBorderPicker({
     maxHeight: number
   } | null>(null)
 
-  // Position the portal panel relative to the trigger, flipping upward near the viewport bottom.
+  // Large popover: min ~380px wide, tall scroll area — not clipped to the narrow drill trigger.
   const updatePos = useCallback(() => {
     const el = buttonRef.current
     if (!el) return
     const r = el.getBoundingClientRect()
-    const spaceBelow = window.innerHeight - r.bottom - 8
-    const spaceAbove = r.top - 8
-    const openUp = spaceBelow < 360 && spaceAbove > spaceBelow
+    const margin = 12
+    const minW = 380
+    const maxW = Math.min(560, window.innerWidth - margin * 2)
+    const width = Math.max(minW, Math.min(maxW, Math.max(r.width, 420)))
+    let left = r.left
+    if (left + width > window.innerWidth - margin) left = Math.max(margin, window.innerWidth - margin - width)
+    if (left < margin) left = margin
+    const spaceBelow = window.innerHeight - r.bottom - margin
+    const spaceAbove = r.top - margin
+    const preferredH = Math.min(560, Math.floor(window.innerHeight * 0.72))
+    const openUp = spaceBelow < 320 && spaceAbove > spaceBelow
+    const maxHeight = Math.max(280, Math.min(preferredH, openUp ? spaceAbove : spaceBelow))
     setPos(
       openUp
-        ? { left: r.left, width: r.width, bottom: window.innerHeight - r.top + 4, maxHeight: spaceAbove }
-        : { left: r.left, width: r.width, top: r.bottom + 4, maxHeight: spaceBelow },
+        ? { left, width, bottom: window.innerHeight - r.top + 4, maxHeight }
+        : { left, width, top: r.bottom + 4, maxHeight },
     )
   }, [])
 
@@ -263,7 +273,18 @@ export default function OuterBorderPicker({
         aria-haspopup="listbox"
         aria-expanded={panelVisible}
       >
-        <span className="truncate">{buttonLabel ?? currentLabel}</span>
+        <span className="min-w-0 truncate text-left">
+          {buttonLabel ? (
+            <>
+              <span className="block truncate">{buttonLabel}</span>
+              <span className="block truncate text-[11px] font-normal text-neutral-500 dark:text-neutral-400">
+                {currentLabel}
+              </span>
+            </>
+          ) : (
+            currentLabel
+          )}
+        </span>
         <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${panelVisible ? 'rotate-180' : ''}`} />
       </button>
 
@@ -369,8 +390,8 @@ export default function OuterBorderPicker({
             )}
           </div>
 
-          {/* Results (scroll) */}
-          <div className="min-h-0 flex-1 overflow-auto p-1" onMouseLeave={() => setPreview(null)}>
+          {/* Results (scroll) — large grid for border art */}
+          <div className="min-h-0 flex-1 overflow-auto p-2" onMouseLeave={() => setPreview(null)}>
             {identityOption && (
               <button
                 type="button"
@@ -379,7 +400,7 @@ export default function OuterBorderPicker({
                 onMouseEnter={() => setPreview(identityOption.value)}
                 onFocus={() => setPreview(identityOption.value)}
                 onClick={() => handlePick(identityOption.value)}
-                className={`mb-1 block w-full truncate rounded-lg border border-neutral-200 px-2 py-1.5 text-left ui-text-control text-neutral-800 hover:bg-neutral-100 dark:border-[var(--sb-border)] dark:text-neutral-100 dark:hover:bg-neutral-800 ${
+                className={`mb-2 block w-full truncate rounded-lg border border-neutral-200 px-3 py-2 text-left ui-text-control text-neutral-800 hover:bg-neutral-100 dark:border-[var(--sb-border)] dark:text-neutral-100 dark:hover:bg-neutral-800 ${
                   value === identityOption.value ? 'bg-neutral-100 font-semibold dark:bg-neutral-800' : ''
                 }`}
               >
@@ -390,29 +411,51 @@ export default function OuterBorderPicker({
               <div className="px-2 py-6 text-center ui-text-control text-neutral-400">No matches</div>
             ) : (
               filteredSections.map((section) => (
-                <div key={section.id} className="mb-1">
-                  <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                <div key={section.id} className="mb-3">
+                  <div className="px-1 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
                     {section.label}
                   </div>
-                  {section.items.map((it) => {
-                    const selected = it.value === value
-                    return (
-                      <button
-                        key={it.value}
-                        type="button"
-                        role="option"
-                        aria-selected={selected}
-                        onMouseEnter={() => setPreview(it.value)}
-                        onFocus={() => setPreview(it.value)}
-                        onClick={() => handlePick(it.value)}
-                        className={`block w-full truncate rounded-lg px-2 py-1.5 text-left ui-text-control text-neutral-800 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-800 ${
-                          selected ? 'bg-neutral-100 font-semibold dark:bg-neutral-800' : ''
-                        }`}
-                      >
-                        {it.label}
-                      </button>
-                    )
-                  })}
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {section.items.map((it) => {
+                      const selected = it.value === value
+                      const thumb = outerBorderPngUrl(it.value)
+                      return (
+                        <button
+                          key={it.value}
+                          type="button"
+                          role="option"
+                          aria-selected={selected}
+                          onMouseEnter={() => setPreview(it.value)}
+                          onFocus={() => setPreview(it.value)}
+                          onClick={() => handlePick(it.value)}
+                          className={`flex flex-col overflow-hidden rounded-lg border text-left transition-colors ${
+                            selected
+                              ? 'border-neutral-900 bg-neutral-100 ring-2 ring-neutral-500 dark:border-neutral-100 dark:bg-neutral-800 dark:ring-neutral-400'
+                              : 'border-neutral-200 bg-white hover:bg-neutral-50 dark:border-[var(--sb-border)] dark:bg-[var(--sb-surface)] dark:hover:bg-neutral-800'
+                          }`}
+                        >
+                          <div className="aspect-[5/7] w-full bg-neutral-100 dark:bg-neutral-900">
+                            {thumb ? (
+                              <img
+                                src={thumb}
+                                alt=""
+                                className="h-full w-full object-cover"
+                                loading="lazy"
+                                draggable={false}
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center px-2 text-center text-[11px] text-neutral-500">
+                                {it.label}
+                              </div>
+                            )}
+                          </div>
+                          <span className="truncate px-2 py-1.5 text-[11px] font-medium text-neutral-800 dark:text-neutral-100">
+                            {it.label}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               ))
             )}

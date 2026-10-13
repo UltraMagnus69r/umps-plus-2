@@ -31,13 +31,73 @@ type Props = {
   typographyKey: CardTypographyKey
   /** Short label for assistive tech / legend */
   legend: string
+  /** Compact row for inline use next to text fields (still writes the same store slice). */
+  compact?: boolean
 }
 
-export default function FontMenu({ typographyKey, legend }: Props) {
+export default function FontMenu({ typographyKey, legend, compact = false }: Props) {
   const typo = useCardStore((s) => s.cardData[typographyKey])
   const update = useCardStore((s) => s.updateCardTypography)
 
   const patch = (partial: Partial<typeof typo>) => update(typographyKey, partial)
+
+  if (compact) {
+    return (
+      <div
+        className="grid grid-cols-2 gap-ui2 rounded-[var(--ui-radius-xl)] border border-[var(--ui-color-border)] bg-[color-mix(in_srgb,var(--ui-color-surface-muted)_42%,transparent)] p-ui2 sm:grid-cols-4"
+        role="group"
+        aria-label={legend}
+      >
+        <div className="space-y-ui1 col-span-2 sm:col-span-1">
+          <label className={`block ${UI_TEXT_LABEL_COMPACT}`}>Font</label>
+          <FontFamilyPicker
+            typographyKey={typographyKey}
+            value={typo.fontKey}
+            onChange={(fontKey) => patch({ fontKey })}
+            ariaLabel={`${legend} font family`}
+          />
+        </div>
+        <div className="space-y-ui1">
+          <label className={`block ${UI_TEXT_LABEL_COMPACT}`}>Weight</label>
+          <select
+            className={CONTROL_CLASS}
+            value={typo.weight}
+            onChange={(e) => patch({ weight: e.target.value as CardFieldTypographyWeight })}
+            aria-label={`${legend} font weight`}
+          >
+            {WEIGHT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-ui1">
+          <label className={`block ${UI_TEXT_LABEL_COMPACT}`}>Size</label>
+          <input
+            type="number"
+            min={TYPOGRAPHY_SIZE_PT_MIN}
+            max={TYPOGRAPHY_SIZE_PT_MAX}
+            step={1}
+            value={typo.sizePt}
+            onChange={(e) => patch({ sizePt: Number(e.target.value) })}
+            className={CONTROL_CLASS}
+            aria-label={`${legend} font size`}
+          />
+        </div>
+        <div className="space-y-ui1">
+          <label className={`block ${UI_TEXT_LABEL_COMPACT}`}>Color</label>
+          <input
+            type="color"
+            className="h-[var(--ui-control-height-sm)] w-full cursor-pointer rounded-[var(--ui-radius-xl)] border border-[var(--ui-color-border)] bg-[var(--ui-color-surface-elevated)] p-ui1"
+            value={/^#([0-9a-f]{6})$/i.test(typo.color) ? typo.color : '#111111'}
+            onChange={(e) => patch({ color: e.target.value, colorManual: true })}
+            aria-label={`${legend} text color`}
+          />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <fieldset className="rounded-[var(--ui-radius-xl)] border border-[var(--ui-color-border)] bg-[color-mix(in_srgb,var(--ui-color-surface-muted)_42%,transparent)] p-ui3">

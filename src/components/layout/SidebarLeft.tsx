@@ -29,7 +29,6 @@ import {
   BookOpen,
   CloudDownload,
   FileText,
-  Quote,
   BadgeInfo,
   Plus,
 } from 'lucide-react'
@@ -95,8 +94,7 @@ type LeftSectionKey =
   | 'import-sync'
   | 'core'
   | 'type'
-  | 'rules'
-  | 'flavor'
+  | 'text'
   | 'collector'
   | 'font-styling'
   | 'art'
@@ -186,20 +184,26 @@ function useCaretPreservingField<T extends HTMLInputElement | HTMLTextAreaElemen
   }
 }
 
-type LeftOpenStored = LeftSectionKey | 'none'
+type LeftOpenStored = LeftSectionKey | 'none' | 'rules' | 'flavor'
 
 function isLeftOpenStored(v: string): v is LeftOpenStored {
+  // Legacy 'rules' / 'flavor' migrate to merged 'text' section.
+  if (v === 'rules' || v === 'flavor') return true
   return (
     v === 'none' ||
     v === 'import-sync' ||
     v === 'core' ||
     v === 'type' ||
-    v === 'rules' ||
-    v === 'flavor' ||
+    v === 'text' ||
     v === 'collector' ||
     v === 'font-styling' ||
     v === 'art'
   )
+}
+
+function normalizeLeftOpenStored(v: LeftOpenStored): LeftSectionKey | 'none' {
+  if (v === 'rules' || v === 'flavor') return 'text'
+  return v
 }
 
 export type SidebarLeftInspectorSegment = 'content' | 'details'
@@ -217,7 +221,15 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
     'core',
     isLeftOpenStored,
   )
-  const leftOpenSection: LeftSectionKey | null = leftOpenStored === 'none' ? null : leftOpenStored
+  const leftOpenNormalized = normalizeLeftOpenStored(leftOpenStored)
+  const leftOpenSection: LeftSectionKey | null =
+    leftOpenNormalized === 'none' ? null : leftOpenNormalized
+
+  useEffect(() => {
+    if (leftOpenStored === 'rules' || leftOpenStored === 'flavor') {
+      setLeftOpenStored('text')
+    }
+  }, [leftOpenStored, setLeftOpenStored])
   const [uiMode, setUiMode] = useUiComplexityMode()
   const scrollFieldIntoView = useScrollFieldIntoView()
   /** Details segment always shows collector/typography; Content never does (D1). */
@@ -334,6 +346,7 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
       inspectorSegment === 'details' &&
       (leftOpenStored === 'core' ||
         leftOpenStored === 'type' ||
+        leftOpenStored === 'text' ||
         leftOpenStored === 'rules' ||
         leftOpenStored === 'flavor' ||
         leftOpenStored === 'art' ||
@@ -598,6 +611,9 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
                           {validationHints.nameUnderField}
                         </ValidationInline>
                       ) : null}
+                      <Suspense fallback={null}>
+                        <FontMenu typographyKey="nameTypography" legend="Card name typography" compact />
+                      </Suspense>
                     </div>
                   </FieldRow>
                   <FieldRow label="Name-plate mana" layout="stacked">
@@ -643,6 +659,9 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
                           {validationHints.nameUnderField}
                         </ValidationInline>
                       ) : null}
+                      <Suspense fallback={null}>
+                        <FontMenu typographyKey="nameTypography" legend="Card name typography" compact />
+                      </Suspense>
                     </div>
                   </FieldRow>
                   <div className="space-y-2">
@@ -766,6 +785,11 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
                             />
                           </FieldRow>
                         </div>
+                        {shouldShowPtTypographySubsection(activeLayoutCapabilities) ? (
+                          <Suspense fallback={null}>
+                            <FontMenu typographyKey="ptTypography" legend="Power / toughness typography" compact />
+                          </Suspense>
+                        ) : null}
                       </div>
 
                       <div className="space-y-1">
@@ -810,6 +834,9 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
                       {validationHints.typeLineUnderField}
                     </ValidationInline>
                   ) : null}
+                  <Suspense fallback={null}>
+                    <FontMenu typographyKey="typeTypography" legend="Type line typography" compact />
+                  </Suspense>
                 </div>
               </FieldRow>
 
@@ -966,10 +993,10 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
             </CollapsibleSection>
 
             <CollapsibleSection
-              title="Rules"
+              title="Rules & Flavor"
               icon={<FileText size={16} className="text-neutral-500 dark:text-neutral-400" />}
-              open={leftOpenSection === 'rules'}
-              onToggle={() => toggleLeftSection('rules')}
+              open={leftOpenSection === 'text'}
+              onToggle={() => toggleLeftSection('text')}
               mode={sectionMode}
               stackOccupied={stackOccupied}
             >
@@ -1030,6 +1057,9 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
                       className={`${TEXTAREA_CLASS} h-28`}
                       placeholder="Card rules text..."
                     />
+                    <Suspense fallback={null}>
+                      <FontMenu typographyKey="rulesTypography" legend="Rules text typography" compact />
+                    </Suspense>
                   </div>
                 </div>
               ) : (
@@ -1037,16 +1067,7 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
                   Rules text is hidden for this layout.
                 </p>
               )}
-            </CollapsibleSection>
 
-            <CollapsibleSection
-              title="Flavor"
-              icon={<Quote size={16} className="text-neutral-500 dark:text-neutral-400" />}
-              open={leftOpenSection === 'flavor'}
-              onToggle={() => toggleLeftSection('flavor')}
-              mode={sectionMode}
-              stackOccupied={stackOccupied}
-            >
               {shouldShowFlavorTextField(pdInput) ? (
                 <FieldRow label="Flavor Text" layout="stacked">
                   <div className="space-y-2">
@@ -1056,6 +1077,9 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
                       className={`${TEXTAREA_CLASS} h-20`}
                       placeholder="Flavor text..."
                     />
+                    <Suspense fallback={null}>
+                      <FontMenu typographyKey="flavorTypography" legend="Flavor text typography" compact />
+                    </Suspense>
                   </div>
                 </FieldRow>
               ) : (
@@ -1164,6 +1188,11 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
                   placeholder={DEFAULT_CARD_COPYRIGHT}
                 />
               </FieldRow>
+              <div className="space-y-2 pt-1">
+                <Suspense fallback={null}>
+                  <FontMenu typographyKey="metadataTypography" legend="Footer metadata typography" compact />
+                </Suspense>
+              </div>
               <CollapsibleSection
                 title="Footer Metadata Font"
                 icon={<ALargeSmall size={16} className="text-neutral-500 dark:text-neutral-400" />}

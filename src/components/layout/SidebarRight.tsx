@@ -180,6 +180,7 @@ const activeLayoutCapabilities = useMemo(
   const outerBorderFrameTexture = useCardStore((s) => s.cardData.outerBorderFrameTexture)
   const outerBorderFrameTextureOpacity = useCardStore((s) => s.cardData.outerBorderFrameTextureOpacity)
   const innerBorderEnabled = useCardStore((s) => s.cardData.innerBorderEnabled)
+  const innerBorderOpacity = useCardStore((s) => s.cardData.innerBorderOpacity)
   const innerBorderBackground = useCardStore((s) => s.cardData.innerBorderBackground ?? 'identity')
   // Card Frame Texture is unavailable when the inner border uses a picked image/texture.
   const cardFrameTextureDisabled =
@@ -705,6 +706,22 @@ const activeLayoutCapabilities = useMemo(
             buttonLabel="Inner Border Background"
             identityOption={{ value: 'identity', label: 'From Color Identity' }}
           />
+
+          <FieldRow label="Inner Border Opacity" layout="stacked">
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={typeof innerBorderOpacity === 'number' ? innerBorderOpacity : 1}
+              disabled={innerBorderEnabled === false}
+              onChange={(e) => setField('innerBorderOpacity', parseFloat(e.target.value))}
+              onMouseUp={commitState}
+              onTouchEnd={commitState}
+              className="w-full disabled:opacity-50"
+              aria-label="Inner border opacity"
+            />
+          </FieldRow>
 
           <FieldRow label="Card Frame Texture" layout="stacked">
             <select

@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
-import { CloudDownload, Minus, Plus, RotateCcw } from 'lucide-react'
+import { CloudDownload, Crop, Minus, Plus, RotateCcw } from 'lucide-react'
 import { WORKING_PREVIEW_FOCUS_ID } from '../../data/layoutConstants'
 import {
   isCardEffectivelyEmptyForGuidance,
@@ -43,6 +43,10 @@ function StudioCanvas({ onRequestSegment, onRequestImport }: Props) {
     })
   })
   const resetCard = useCardStore((s) => s.resetCard)
+  const showBleed = useCardStore((s) => s.cardData.showBleed)
+  const showTrim = useCardStore((s) => s.cardData.showTrim)
+  const setField = useCardStore((s) => s.setField)
+  const commitState = useCardStore((s) => s.commitState)
   const [showTip, setShowTip] = useState(false)
   const [settleKey, setSettleKey] = useState(0)
   const [pan, setPan] = useState<PanState>({ x: 0, y: 0 })
@@ -345,6 +349,34 @@ function StudioCanvas({ onRequestSegment, onRequestImport }: Props) {
                   <Plus className="h-3.5 w-3.5" />
                 </button>
               </div>
+              <button
+                type="button"
+                className="studio-empty-cta"
+                aria-pressed={!!showBleed}
+                aria-label={showBleed ? 'Hide bleed guide' : 'Show bleed guide'}
+                title={showBleed ? 'Hide bleed guide' : 'Show bleed guide'}
+                onClick={() => {
+                  setField('showBleed', !showBleed)
+                  commitState()
+                }}
+              >
+                <Crop className="h-4 w-4" />
+                Bleed
+              </button>
+              <button
+                type="button"
+                className="studio-empty-cta"
+                aria-pressed={!!showTrim}
+                aria-label={showTrim ? 'Hide trim guide' : 'Show trim guide'}
+                title={showTrim ? 'Hide trim guide' : 'Show trim guide'}
+                onClick={() => {
+                  setField('showTrim', !showTrim)
+                  commitState()
+                }}
+              >
+                <Crop className="h-4 w-4" />
+                Trim
+              </button>
               <button
                 type="button"
                 className="studio-empty-cta"
