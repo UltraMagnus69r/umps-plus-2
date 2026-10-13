@@ -124,12 +124,16 @@ export function inferStudioFlowStep(args: {
   cardEmpty: boolean
 }): StudioFlowStep {
   const { segment, leftOpen, rightOpen, cardEmpty } = args
-  if (cardEmpty || (segment === 'content' && (leftOpen === 'import-sync' || leftOpen == null))) {
-    return STUDIO_FLOW_STEPS[0]
-  }
   if (segment === 'look') {
     if (rightOpen === 'identity') return STUDIO_FLOW_STEPS[3]
     return STUDIO_FLOW_STEPS[1]
+  }
+  if (
+    cardEmpty &&
+    segment === 'content' &&
+    (leftOpen == null || leftOpen === 'none' || leftOpen === 'import-sync')
+  ) {
+    return STUDIO_FLOW_STEPS[0]
   }
   if (segment === 'details') return STUDIO_FLOW_STEPS[8]
   if (segment === 'content') {

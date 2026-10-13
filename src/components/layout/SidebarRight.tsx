@@ -331,7 +331,8 @@ const activeLayoutCapabilities = useMemo(
   }, [workspaceInitEpoch])
 
   useEffect(() => {
-    if (inspectorSegment === 'look' && (rightOpenStored === 'panels' || rightOpenStored === 'settings')) {
+    if (inspectorSegment === 'look' && (rightOpenStored === 'panels' || rightOpenStored === 'settings' || rightOpenStored === 'none')) {
+      // Guided path: Look lands on Frame (family + variant).
       setRightOpenStored('layout')
     }
     // Details: keep a flat menu of rows (do not auto-drill into Settings).
