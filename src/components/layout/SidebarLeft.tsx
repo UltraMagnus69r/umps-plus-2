@@ -212,7 +212,7 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [leftOpenStored, setLeftOpenStored] = usePersistedUiState<LeftOpenStored>(
     'umps-left-open-section',
-    'core',
+    'none',
     isLeftOpenStored,
   )
   const leftOpenNormalized = normalizeLeftOpenStored(leftOpenStored)
@@ -319,11 +319,12 @@ export default function SidebarLeft({ inspectorSegment }: SidebarLeftProps) {
   }, [workspaceInitEpoch])
 
   useEffect(() => {
+    // Segment entry must stay at the collapsed menu — never auto-drill Name/etc.
     if (
       inspectorSegment === 'content' &&
       (leftOpenStored === 'collector' || leftOpenStored === 'font-styling')
     ) {
-      setLeftOpenStored('core')
+      setLeftOpenStored('none')
     }
     if (inspectorSegment === 'details' && leftOpenStored === 'font-styling') {
       // Typography moved to Content field controls — stay at Details menu.

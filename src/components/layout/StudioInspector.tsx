@@ -78,14 +78,12 @@ function StudioInspector({
     }
     window.addEventListener('umps-flow-step', sync)
     window.addEventListener('umps-open-import', sync)
-    window.addEventListener('umps-open-look-frame', sync)
     window.addEventListener('umps-inspector-section', sync)
     window.addEventListener('storage', onStorage)
     const id = window.setInterval(sync, 800)
     return () => {
       window.removeEventListener('umps-flow-step', sync)
       window.removeEventListener('umps-open-import', sync)
-      window.removeEventListener('umps-open-look-frame', sync)
       window.removeEventListener('umps-inspector-section', sync)
       window.removeEventListener('storage', onStorage)
       window.clearInterval(id)

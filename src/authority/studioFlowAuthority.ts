@@ -193,16 +193,33 @@ export function inferStudioFlowStep(args: {
 }
 
 /**
- * Step-strip navigation: switch segment context and clear drill-in so the
- * sidebar shows the collapsed menu list. Does not open a submenu.
+ * Collapse inspector sidebars to the section list (no drill-in panel).
+ * Used by step-strip clicks and Content/Look/Details segment switches.
  */
-export function applyStudioFlowStep(step: StudioFlowStep) {
+export function clearStudioInspectorDrill() {
   try {
-    window.localStorage.setItem(FLOW_STEP_STORAGE_KEY, step.id)
     window.localStorage.setItem('umps-left-open-section', 'none')
     window.localStorage.setItem('umps-right-open-section', 'none')
   } catch {
     /* private mode */
   }
-  window.dispatchEvent(new CustomEvent('umps-flow-step', { detail: step }))
+  window.dispatchEvent(
+    new CustomEvent('umps-flow-step', {
+      detail: { menuLevel: true as const },
+    }),
+  )
+}
+
+/**
+ * Step-strip navigation: switch segment context and clear drill-in so the
+ * sidebar shows the collapsed menu list. Does not open a submenu — never
+ * applies step.leftOpen / step.rightOpen.
+ */
+export function applyStudioFlowStep(step: StudioFlowStep) {
+  try {
+    window.localStorage.setItem(FLOW_STEP_STORAGE_KEY, step.id)
+  } catch {
+    /* private mode */
+  }
+  clearStudioInspectorDrill()
 }
