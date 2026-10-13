@@ -87,6 +87,10 @@ export default defineConfig({
           '**/mana-alt/**',
           '**/assets/crowns/**',
           '**/crown/**',
+          '**/watermarks/**',
+          '**/planeswalker-symbols/**',
+          // canvg (jsPDF SVG helper) — hashed as assets/index.es-*.js; not needed for editor open
+          '**/index.es*',
           '**/PrintFeaturePage*',
           '**/html2canvas*',
           '**/jspdf*',
@@ -136,7 +140,7 @@ export default defineConfig({
             // Lazy editor chunks (Scryfall / font picker / advanced Style / print).
             urlPattern: ({ request, url }) =>
               request.destination === 'script' &&
-              (/scryfall|font-picker|style-advanced|PrintFeaturePage|html2canvas|jspdf|purify/i.test(
+              (/scryfall|font-picker|style-advanced|PrintFeaturePage|html2canvas|jspdf|purify|index\.es/i.test(
                 url.pathname,
               )),
             handler: 'CacheFirst',

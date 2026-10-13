@@ -1194,9 +1194,19 @@ function TextIconsLayer() {
 
   const blurGroupRef = useRef<Konva.Group>(null)
   const typographyFontPreview = useCardStore((s) => s.typographyFontPreview)
+  /** Debounce ink-spread cache() so rules/name keystrokes don't rebuild the filtered bitmap every frame. */
+  const BLUR_CACHE_DEBOUNCE_MS = 280
+  const blurCacheGenRef = useRef(0)
+
+  // Text-content edits: clear stale bitmap immediately, re-cache after typing pauses.
   useEffect(() => {
     blurGroupRef.current?.clearCache()
-    blurGroupRef.current?.cache()
+    const gen = ++blurCacheGenRef.current
+    const id = window.setTimeout(() => {
+      if (gen !== blurCacheGenRef.current) return
+      blurGroupRef.current?.cache()
+    }, BLUR_CACHE_DEBOUNCE_MS)
+    return () => window.clearTimeout(id)
   }, [
     cardName,
     normalizedManaCost,
@@ -1204,6 +1214,19 @@ function TextIconsLayer() {
     cardTypeLine,
     normalizedRulesText,
     flavorText,
+  ])
+
+  // Style / layout / asset changes: rebuild blur cache promptly for correct ink-spread look.
+  useEffect(() => {
+    blurGroupRef.current?.clearCache()
+    const gen = ++blurCacheGenRef.current
+    // rAF so Konva has applied the latest child props before caching.
+    const id = window.requestAnimationFrame(() => {
+      if (gen !== blurCacheGenRef.current) return
+      blurGroupRef.current?.cache()
+    })
+    return () => window.cancelAnimationFrame(id)
+  }, [
     showPowerToughnessEffective,
     setIconImg,
     /** Set symbol slot + type-line width reserve; must bust blur cache when size changes. */
@@ -1235,7 +1258,7 @@ function TextIconsLayer() {
     landRulesAsSecondaryArt,
     supportsPlaneswalkerAbilities,
     showFlavorTextOnCard,
-    flavorRender,
+    // flavorRender is driven by flavorText (text-debounce path) + geometry/typography deps above.
     ptInnerX,
     ptInnerY,
     ptInnerW,
