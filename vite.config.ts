@@ -18,23 +18,16 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Keep UI sections out of forced chunks — packing FontMenu / ScryfallImport
+          // with shared store/authority modules created circular chunk init (TDZ) at runtime.
           if (
             id.includes('/services/scryfallService') ||
-            id.includes('/authority/scryfallResultsFilterAuthority') ||
-            id.includes('/components/layout/ScryfallImportSection')
+            id.includes('/authority/scryfallResultsFilterAuthority')
           ) {
             return 'scryfall'
           }
           if (
-            id.includes('/components/ui/FontMenu') ||
-            id.includes('/components/ui/FontFamilyPicker')
-          ) {
-            return 'font-picker'
-          }
-          if (
-            id.includes('/components/layout/OuterBorderPicker') ||
-            id.includes('/data/outerBorderOptions') ||
-            id.includes('/components/layout/AdvancedPanelsSection')
+            id.includes('/data/outerBorderOptions')
           ) {
             return 'style-advanced'
           }
