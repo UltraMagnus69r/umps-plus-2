@@ -310,11 +310,11 @@ function StudioCanvas({ onRequestSegment, onRequestImport }: Props) {
                     }}
                   >
                     <CloudDownload className="h-4 w-4" />
-                    Import from Scryfall
+                    Import
                   </button>
                   <button type="button" className="studio-empty-cta" onClick={startBlank}>
                     <Plus className="h-4 w-4" />
-                    Blank card
+                    New Card
                   </button>
                 </>
               ) : (
