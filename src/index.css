@@ -2214,27 +2214,42 @@ body,
 .studio-details-stack {
   display: flex;
   flex-direction: column;
+  gap: 0;
   height: 100%;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
+  align-items: stretch;
+  justify-content: flex-start;
 }
 
 .studio-details-stack > aside {
-  height: auto;
+  height: auto !important;
+  max-height: none;
   min-height: 0;
-  flex: none;
+  flex: 0 0 auto !important;
+  display: block;
+}
+
+.studio-details-stack > aside > div {
+  height: auto !important;
+  min-height: 0 !important;
+  flex: none !important;
 }
 
 .studio-details-stack .inspector-drill-stack {
-  min-height: 0;
-  height: auto;
-  flex: none;
+  min-height: 0 !important;
+  height: auto !important;
+  flex: none !important;
+  justify-content: flex-start;
+  padding-bottom: 0.25rem;
 }
 
 .studio-details-stack .sidebar-content {
-  overflow: visible;
+  overflow: visible !important;
+  flex: none !important;
+  height: auto !important;
 }
 
 .studio-details-stack.is-drilled {

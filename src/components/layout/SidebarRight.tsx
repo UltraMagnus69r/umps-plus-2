@@ -380,7 +380,13 @@ const activeLayoutCapabilities = useMemo(
             : 'Right sidebar'
       }
     >
-      <div className="h-full min-h-0 flex flex-col">
+      <div
+        className={
+          inspectorSegment === 'details'
+            ? 'min-h-0 flex flex-col'
+            : 'h-full min-h-0 flex flex-col'
+        }
+      >
         {!embedded ? (
         <div className="sidebar-header flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
