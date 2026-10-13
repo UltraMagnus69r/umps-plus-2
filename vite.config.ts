@@ -14,6 +14,34 @@ export default defineConfig({
       ignored: ['**/.local-history/**', '**/dist/**', '**/New Assets/**'],
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (
+            id.includes('/services/scryfallService') ||
+            id.includes('/authority/scryfallResultsFilterAuthority') ||
+            id.includes('/components/layout/ScryfallImportSection')
+          ) {
+            return 'scryfall'
+          }
+          if (
+            id.includes('/components/ui/FontMenu') ||
+            id.includes('/components/ui/FontFamilyPicker')
+          ) {
+            return 'font-picker'
+          }
+          if (
+            id.includes('/components/layout/OuterBorderPicker') ||
+            id.includes('/data/outerBorderOptions') ||
+            id.includes('/components/layout/AdvancedPanelsSection')
+          ) {
+            return 'style-advanced'
+          }
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({
@@ -44,7 +72,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
-        // On-demand art stays out of the install precache and is cached after first use.
+        // Precache only the shell + critical defaults. On-demand art/fonts/print
+        // are runtime-cached on first use (see runtimeCaching below).
         globIgnores: [
           '**/features/print/**',
           '**/assets/print/**',
@@ -53,6 +82,18 @@ export default defineConfig({
           '**/land-panels/**',
           '**/spell-panels/**',
           '**/premodern-rules-textbox/**',
+          '**/assets/textures/**',
+          '**/mana-custom/**',
+          '**/mana-alt/**',
+          '**/assets/crowns/**',
+          '**/crown/**',
+          '**/PrintFeaturePage*',
+          '**/html2canvas*',
+          '**/jspdf*',
+          '**/purify*',
+          '**/scryfall*',
+          '**/font-picker*',
+          '**/style-advanced*',
         ],
         navigateFallback: '/index.html',
         cleanupOutdatedCaches: true,
@@ -66,21 +107,24 @@ export default defineConfig({
                 url.pathname.startsWith('/armor/') ||
                 url.pathname.startsWith('/land-panels/') ||
                 url.pathname.startsWith('/spell-panels/') ||
-                url.pathname.startsWith('/premodern-rules-textbox/')),
+                url.pathname.startsWith('/premodern-rules-textbox/') ||
+                url.pathname.startsWith('/assets/textures/') ||
+                url.pathname.startsWith('/assets/crowns/') ||
+                url.pathname.startsWith('/crown/') ||
+                url.pathname.startsWith('/mana-custom/') ||
+                url.pathname.startsWith('/mana-alt/')),
             handler: 'CacheFirst',
             options: {
               cacheName: 'umps-ondemand-art',
-              expiration: { maxEntries: 180, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              expiration: { maxEntries: 220, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },
           {
-            // Module 5.5 — static icon/watermark/texture assets only.
-            // Keep cache scope tight to avoid remote/user image caching side effects.
+            // Module 5.5 — static icon/watermark assets + PWA icons.
             urlPattern: ({ request, url }) =>
               request.destination === 'image' &&
               (/^\/watermarks\//.test(url.pathname) ||
                 /^\/planeswalker-symbols\//.test(url.pathname) ||
-                /^\/assets\/textures\//.test(url.pathname) ||
                 /^\/pwa-(192|512)\.svg$/.test(url.pathname)),
             handler: 'CacheFirst',
             options: {
@@ -89,11 +133,24 @@ export default defineConfig({
             },
           },
           {
+            // Lazy editor chunks (Scryfall / font picker / advanced Style / print).
+            urlPattern: ({ request, url }) =>
+              request.destination === 'script' &&
+              (/scryfall|font-picker|style-advanced|PrintFeaturePage|html2canvas|jspdf|purify/i.test(
+                url.pathname,
+              )),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'umps-lazy-chunks',
+              expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
+          {
             urlPattern: ({ request }) => request.destination === 'font',
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'umps-fonts',
-              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },
           {

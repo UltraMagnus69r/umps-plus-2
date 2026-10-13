@@ -8,7 +8,8 @@
  * Do not lazy-load the primary `KonvaStage` working preview or export registration path.
  *
  * Implementations: `QuickViewModal.tsx` + `QuickViewModalBody.tsx`, `ManaSymbolPopup.tsx` +
- * `ManaSymbolPopupPanel.tsx`; list thumbnails: `loading="lazy"` on Scryfall print rows in `SidebarLeft.tsx`.
+ * `ManaSymbolPopupPanel.tsx`; list thumbnails: `loading="lazy"` on Scryfall print rows in
+ * `ScryfallImportSection.tsx`.
  *
  * Phase 17.2 — Interaction responsiveness (perceived speed, no preview/export changes):
  * - `useDeferredValue` for context header title echo (`ContextHeader.tsx`) and workflow validation hints
@@ -19,4 +20,7 @@
  * - Split `ContextHeader` into memoized slices with narrow Zustand selectors (`ContextHeader.tsx`).
  * - Split `BottomBar` filename vs toolbar; Save uses `getState()` so toolbar skips filename/slug churn (`BottomBar.tsx`).
  * - `memo` on `CenterRail`, modal entrypoints (`QuickViewModal`, `ManaSymbolPopup`), `StatusTriIndicator`.
+ *
+ * Perf upgrades (first-load): SW precache allowlist; on-demand font catalog; lazy Scryfall /
+ * FontMenu / AdvancedPanels / OuterBorderPicker; live Stage `pixelRatio` cap (export untouched).
  */

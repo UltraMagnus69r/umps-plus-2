@@ -8,7 +8,7 @@ import BottomBar from './components/layout/BottomBar'
 import ManaSymbolPopup from './components/layout/ManaSymbolPopup'
 import QuickViewModal from './components/layout/QuickViewModal'
 import { useCardStore } from './store/useCardStore'
-import { CORE_FONT_SPECS, REQUIRED_FONT_SPECS } from './data/fonts'
+import { CORE_FONT_SPECS, ensureCreativeFontsLoaded } from './data/fonts'
 
 type PhonePane = 'card' | 'data' | 'style'
 const PHONE_PANE_KEY = 'umps-phone-pane'
@@ -23,6 +23,18 @@ function readPhonePane(): PhonePane {
   return 'card'
 }
 
+function cardTypographyFontKeys(): string[] {
+  const cd = useCardStore.getState().cardData
+  return [
+    cd.nameTypography?.fontKey,
+    cd.typeTypography?.fontKey,
+    cd.rulesTypography?.fontKey,
+    cd.flavorTypography?.fontKey,
+    cd.ptTypography?.fontKey,
+    cd.metadataTypography?.fontKey,
+  ].filter((k): k is NonNullable<typeof k> => typeof k === 'string' && k.length > 0)
+}
+
 export default function App() {
   const [isMounted, setIsMounted] = useState(false)
   const [phonePane, setPhonePane] = useState<PhonePane>('card')
@@ -35,18 +47,19 @@ export default function App() {
     async function loadRequiredFonts() {
       try {
         await Promise.allSettled(
-          CORE_FONT_SPECS.map((d) => (document as any).fonts.load(d)),
+          CORE_FONT_SPECS.map((d) => (document as Document & { fonts: FontFaceSet }).fonts.load(d)),
         )
-        await (document as any).fonts.ready
-        const coreOk = CORE_FONT_SPECS.every((d) => (document as any).fonts.check(d))
+        await (document as Document & { fonts: FontFaceSet }).fonts.ready
+        const coreOk = CORE_FONT_SPECS.every((d) =>
+          (document as Document & { fonts: FontFaceSet }).fonts.check(d),
+        )
         if (!cancelled && coreOk) setFontsLoaded(true)
       } catch {
         // Strict: do not enable Layer 4 on failure.
       }
       if (cancelled) return
-      const core = new Set<string>(CORE_FONT_SPECS)
-      const extended = REQUIRED_FONT_SPECS.filter((spec) => !core.has(spec))
-      void Promise.allSettled(extended.map((d) => (document as any).fonts.load(d)))
+      // Only load faces the current card already uses — not the full catalog.
+      void ensureCreativeFontsLoaded(cardTypographyFontKeys())
     }
 
     loadRequiredFonts()

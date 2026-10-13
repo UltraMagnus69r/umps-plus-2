@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronDown, Search, X } from 'lucide-react'
 import { getCreativeFontFamily } from '../../data/fontCatalog'
+import { ensureCreativeFontLoaded } from '../../data/fonts'
 import { UI_FOCUS_RING_CONTROL } from '../../authority/panelSurfaceAuthority'
 import {
   CREATIVE_FONT_OPTIONS,
@@ -54,8 +55,12 @@ export default function FontFamilyPicker({
 
   const setPreview = useCallback(
     (fontKey: CreativeFontKey | null) => {
-      if (fontKey == null) setTypographyFontPreview(null)
-      else setTypographyFontPreview({ typographyKey, fontKey })
+      if (fontKey == null) {
+        setTypographyFontPreview(null)
+        return
+      }
+      void ensureCreativeFontLoaded(fontKey)
+      setTypographyFontPreview({ typographyKey, fontKey })
     },
     [setTypographyFontPreview, typographyKey],
   )
@@ -105,11 +110,16 @@ export default function FontFamilyPicker({
 
   const handlePick = useCallback(
     (fontKey: CreativeFontKey) => {
+      void ensureCreativeFontLoaded(fontKey)
       onChange(fontKey)
       finishClose()
     },
     [finishClose, onChange],
   )
+
+  useEffect(() => {
+    void ensureCreativeFontLoaded(value)
+  }, [value])
 
   const filteredOptions = useMemo(() => {
     const q = query.trim().toLowerCase()

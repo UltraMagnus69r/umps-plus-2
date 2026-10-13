@@ -1,19 +1,15 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import {
-  fetchScryfallCardById,
-  fetchScryfallCardBySetCollector,
-  parseScryfallCardUrl,
-  parseSetCollectorInput,
-  searchScryfallPrintsByName,
-  type ScryfallCardFields,
-  type ScryfallPrintCandidate,
-} from '../services/scryfallService'
+import type { ScryfallCardFields, ScryfallPrintCandidate } from '../services/scryfallService'
 import {
   mapScryfallWatermarkToPath,
   type WatermarkPathKey,
   isWatermarkPathKey,
 } from '../authority/watermarkAuthority'
+
+async function loadScryfallService() {
+  return import('../services/scryfallService')
+}
 import {
   normalizeManaTokenInner,
   normalizeStoreManaCost,
@@ -186,7 +182,7 @@ export interface CardData {
   spellTextBoxId: string
   /** Standard / Land Pre-Modern: bundled rules text box background in `public/premodern-rules-textbox`. */
   preModernRulesTextBoxId: string
-  /** Modern / Borderless: Crown asset id from `public/crown` (Showcase nameplate flourish). */
+  /** Modern / Borderless: Crown asset id from `public/assets/crowns` (Showcase nameplate flourish). */
   crownAssetId: string
   /** Modern / Borderless: Armor asset id from `public/armor` (UI only until preview wiring). */
   armorAssetId: string
@@ -631,8 +627,11 @@ function applyPlaneswalkerStructuredSync(next: CardData): CardData {
   }
 }
 
-function routeScryfallInput(input: string): { kind: 'url' | 'setCollector' | 'name'; set?: string; collector?: string } {
+async function routeScryfallInput(
+  input: string,
+): Promise<{ kind: 'url' | 'setCollector' | 'name'; set?: string; collector?: string }> {
   const raw = String(input ?? '').trim()
+  const { parseScryfallCardUrl, parseSetCollectorInput } = await loadScryfallService()
   const fromUrl = parseScryfallCardUrl(raw)
   if (fromUrl) {
     return { kind: 'url', set: fromUrl.set, collector: fromUrl.collectorNumber }
@@ -1709,6 +1708,7 @@ colorBlendDirection: 'vertical',
         get().setAsyncStatus('scryfallFetch', 'loading', null)
         set(() => ({ scryfallImportStatus: { status: 'loading', message: null } }))
         try {
+          const { fetchScryfallCardById } = await loadScryfallService()
           const data = prefetched ?? (await fetchScryfallCardById(id))
           const mapped = buildScryfallImportMappedUpdate(data, scryfallFieldsToSystemUpdate(data))
           const pwExtras = buildScryfallPlaneswalkerExtras(data)
@@ -1816,6 +1816,7 @@ colorBlendDirection: 'vertical',
           scryfallCloneApplyStatus: { status: 'loading', message: null },
         }))
         try {
+          const { fetchScryfallCardById } = await loadScryfallService()
           const data = prefetched ?? (await fetchScryfallCardById(id))
           const png = String(data.png_uri ?? '').trim()
           if (!png) throw new Error('Selected print has no cloneable PNG image')
@@ -1894,7 +1895,7 @@ colorBlendDirection: 'vertical',
           return
         }
 
-        const route = routeScryfallInput(trimmed)
+        const route = await routeScryfallInput(trimmed)
         if (route.kind === 'url' || route.kind === 'setCollector') {
           const setCode = route.set ?? ''
           const collector = route.collector ?? ''
@@ -1905,6 +1906,7 @@ colorBlendDirection: 'vertical',
             scryfallCloneApplyStatus: { status: 'loading', message: null },
           }))
           try {
+            const { fetchScryfallCardBySetCollector } = await loadScryfallService()
             const data = await fetchScryfallCardBySetCollector(setCode, collector)
             if (!data.id) throw new Error('Exact print lookup did not return an id')
             await get().applyScryfallCloneById(data.id, data)
@@ -1922,6 +1924,7 @@ colorBlendDirection: 'vertical',
           scryfallCloneChosenPrint: null,
         }))
         try {
+          const { searchScryfallPrintsByName } = await loadScryfallService()
           const prints = await searchScryfallPrintsByName(trimmed)
           if (prints.length === 0) throw new Error('No matching prints found')
           if (prints.length === 1) {
@@ -1962,7 +1965,7 @@ colorBlendDirection: 'vertical',
           window.setTimeout(() => get().setAsyncStatus('scryfallFetch', 'idle'), 2000)
           return
         }
-        const route = routeScryfallInput(trimmed)
+        const route = await routeScryfallInput(trimmed)
         if (route.kind === 'url' || route.kind === 'setCollector') {
           const setCode = route.set ?? ''
           const collector = route.collector ?? ''
@@ -1974,6 +1977,7 @@ colorBlendDirection: 'vertical',
             scryfallImportStatus: { status: 'loading', message: null },
           }))
           try {
+            const { fetchScryfallCardBySetCollector } = await loadScryfallService()
             const data = await fetchScryfallCardBySetCollector(setCode, collector)
             if (data.id) {
               await get().importScryfallPrintById(data.id, data)
@@ -1997,6 +2001,7 @@ colorBlendDirection: 'vertical',
           scryfallChosenPrint: null,
         }))
         try {
+          const { searchScryfallPrintsByName } = await loadScryfallService()
           const prints = await searchScryfallPrintsByName(trimmed)
           if (prints.length === 0) {
             throw new Error('No matching prints found')

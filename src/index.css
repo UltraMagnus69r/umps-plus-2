@@ -120,7 +120,7 @@ html, body, #root {
   src: url("/fonts/Matrix%20Bold%20Small%20Caps.ttf") format("truetype");
   font-weight: 700;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {
@@ -240,7 +240,7 @@ html, body, #root {
   src: url("/fonts/PlantinMTProSemiBdIt.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 @font-face {

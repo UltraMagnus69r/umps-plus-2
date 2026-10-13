@@ -140,6 +140,11 @@ function KonvaStage({
   const previewH = Math.max(1, Math.round(scaled.height))
   const stageScaleX = previewW / w
   const stageScaleY = previewH / h
+  /** Cap retina backing store for live typing; export path uses explicit full resolution. */
+  const previewPixelRatio = useMemo(
+    () => Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 1.5),
+    [],
+  )
 
   const exportStage = useCallback(async () => {
     const stage = stageRef.current
@@ -235,6 +240,7 @@ function KonvaStage({
       height={previewH}
       scaleX={stageScaleX}
       scaleY={stageScaleY}
+      pixelRatio={previewPixelRatio}
     >
         {/* Hidden + clone: printable proxy only (Module 4.1); editor overlays remain. */}
         {!hiddenCloneChrome && (
