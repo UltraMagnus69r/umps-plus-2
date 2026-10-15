@@ -1,0 +1,357 @@
+/* Shared Proxy Printer workspace (page + Studio sheet). Lives under .print-feature-root. */
+
+/* When embedded in Studio Print sheet, don't force a full-viewport page shell. */
+.studio-sheet.print-feature-root,
+.studio-sheet--print.print-feature-root {
+  min-height: 0;
+  background: transparent;
+}
+
+.print-feature-root .proxy-printer {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.print-feature-root .proxy-printer__intro {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.print-feature-root .proxy-printer__lede {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--ui-text-muted);
+}
+
+.print-feature-root .proxy-printer__meta {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 650;
+  color: var(--ui-text-strong);
+  letter-spacing: -0.01em;
+}
+
+.print-feature-root .proxy-printer__actions,
+.print-feature-root .proxy-printer__export,
+.print-feature-root .proxy-printer__nav,
+.print-feature-root .proxy-printer__back-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.print-feature-root .proxy-printer__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.45rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid var(--ui-border);
+  background: color-mix(in srgb, var(--ui-surface-elevated) 88%, var(--ui-surface-soft));
+  color: var(--ui-text-strong);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+}
+
+.print-feature-root .proxy-printer__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.print-feature-root .proxy-printer__btn--primary {
+  background: var(--ui-accent);
+  border-color: var(--ui-accent);
+  color: var(--ui-on-accent);
+}
+
+.print-feature-root .proxy-printer__btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ui-text-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  min-height: 2rem;
+  padding-inline: 0.35rem;
+}
+
+.print-feature-root .proxy-printer__empty {
+  margin: 0;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  border: 1px dashed var(--ui-border);
+  background: color-mix(in srgb, var(--ui-surface) 70%, var(--ui-surface-soft));
+  color: var(--ui-text-muted);
+  font-size: 0.8125rem;
+}
+
+.print-feature-root .proxy-printer__slot-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: min(28rem, 55vh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.print-feature-root .proxy-printer__slot {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0.75rem;
+  border-radius: 14px;
+  border: 1px solid var(--ui-border-hairline);
+  background: #fff;
+}
+
+.print-feature-root .proxy-printer__slot-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.print-feature-root .proxy-printer__slot-thumb {
+  flex: none;
+  width: 44px;
+  height: 62px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #0e0c12;
+  border: 1px solid var(--ui-border-hairline);
+}
+
+.print-feature-root .proxy-printer__slot-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.print-feature-root .proxy-printer__slot-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.print-feature-root .proxy-printer__slot-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.print-feature-root .proxy-printer__slot-index {
+  flex: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ui-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.print-feature-root .proxy-printer__slot-name {
+  font-size: 0.8125rem;
+  font-weight: 650;
+  color: var(--ui-text-strong);
+  min-width: 0;
+}
+
+.print-feature-root .proxy-printer__slot-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 1.5rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 8px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: color-mix(in srgb, var(--ui-surface-soft) 70%, var(--ui-surface));
+  color: var(--ui-text-muted);
+  border: 1px solid var(--ui-border-hairline);
+}
+
+.print-feature-root .proxy-printer__slot-badge--custom {
+  background: color-mix(in srgb, var(--ui-accent) 14%, var(--ui-surface));
+  border-color: color-mix(in srgb, var(--ui-accent) 35%, var(--ui-border));
+  color: var(--gg-core-blue);
+}
+
+.print-feature-root .proxy-printer__slot-badge--magic {
+  background: color-mix(in srgb, #5b4a9a 12%, #fff);
+  border-color: color-mix(in srgb, #5b4a9a 30%, var(--ui-border));
+  color: #3d3170;
+}
+
+.print-feature-root .proxy-printer__slot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.print-feature-root .proxy-printer__btn--slot {
+  min-height: 44px;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.75rem;
+}
+
+.print-feature-root .proxy-printer__btn--slot.is-selected {
+  border-color: color-mix(in srgb, var(--ui-accent) 45%, var(--ui-border));
+  background: color-mix(in srgb, var(--ui-accent) 12%, var(--ui-surface));
+  color: var(--gg-core-blue);
+}
+
+.print-feature-root .proxy-printer__btn--danger {
+  color: color-mix(in srgb, #b42318 85%, var(--ui-text-strong));
+}
+
+.print-feature-root .proxy-printer__dual-hint,
+.print-feature-root .proxy-printer__fallback-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--ui-text-muted);
+}
+
+.print-feature-root .proxy-printer__dual-hint {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px dashed color-mix(in srgb, var(--ui-accent) 40%, var(--ui-border));
+  background: color-mix(in srgb, var(--ui-accent) 8%, var(--ui-surface));
+  color: var(--ui-text-strong);
+}
+
+.print-feature-root .proxy-printer__fallback {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.print-feature-root .proxy-printer__fallback-hint {
+  margin-bottom: 8px;
+}
+
+.print-feature-root .proxy-printer__section-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ui-text-muted);
+  margin-bottom: 6px;
+}
+
+.print-feature-root .proxy-printer__back-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.print-feature-root .proxy-printer__back-choices button {
+  min-height: 2.1rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--ui-border);
+  background: #fff;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.print-feature-root .proxy-printer__back-choices button.is-selected {
+  border-color: color-mix(in srgb, var(--ui-accent) 45%, var(--ui-border));
+  background: color-mix(in srgb, var(--ui-accent) 12%, var(--ui-surface));
+  color: var(--gg-core-blue);
+}
+
+.print-feature-root .proxy-printer__back-status {
+  font-size: 0.75rem;
+  color: var(--ui-text-muted);
+}
+
+.print-feature-root .proxy-printer__sheet-indicator {
+  font-size: 0.8125rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.print-feature-root .proxy-printer__preview {
+  margin: 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.print-feature-root .proxy-printer__preview .preview-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.print-feature-root .proxy-printer__previews {
+  display: grid;
+  /* minmax(0,…) so columns can shrink below content min — never force H-scroll */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+}
+
+.print-feature-root .proxy-printer__previews > .panel,
+.print-feature-root .proxy-printer__previews > .sheet-preview-panel {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.print-feature-root .proxy-printer__bleed-toggle {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  color: var(--ui-text-strong);
+  margin: 0;
+  cursor: pointer;
+  line-height: 1.35;
+  max-width: 100%;
+}
+
+.print-feature-root .proxy-printer__bleed-toggle input {
+  margin-top: 0.15rem;
+  flex: none;
+}
+
+/* Studio Print sheet: always stack fronts/backs so each sheet fills width */
+.print-feature-root .proxy-printer--sheet .proxy-printer__previews {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (max-width: 720px) {
+  .print-feature-root .proxy-printer__previews {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

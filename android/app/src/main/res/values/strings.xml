@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PipMint</string>
+    <string name="title_activity_main">PipMint</string>
+    <string name="package_name">com.ultramagnus.umps</string>
+    <string name="custom_url_scheme">com.ultramagnus.umps</string>
+</resources>

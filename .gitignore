@@ -1,0 +1,19 @@
+node_modules/
+*.tsbuildinfo
+dist/
+dist-android/
+dist-desktop/
+.DS_Store
+*.zip
+.local-history/
+New Assets/
+backups/
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/captures/
+*.apk
+*.ap_
+*.dex
+.tmp-rpm-build/

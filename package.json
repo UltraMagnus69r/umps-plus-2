@@ -1,0 +1,131 @@
+{
+  "name": "pipmint",
+  "private": true,
+  "version": "0.2.0",
+  "description": "PipMint · Custom Card Creator",
+  "author": "UltraMagnus",
+  "desktopName": "pipmint.desktop",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "prepare": "husky",
+    "local backup": "node scripts/backup-321.mjs",
+    "3-2-1 backup": "node scripts/backup-321.mjs",
+    "history:save": "node scripts/local-history-save.mjs",
+    "history:restore": "node scripts/local-history-restore.mjs",
+    "cap:sync": "npx cap sync android",
+    "android:build": "npm run build && npx cap sync android && cd android && ./gradlew assembleDebug",
+    "android:apk": "npm run android:build",
+    "electron:dev": "npm run build && electron .",
+    "desktop:linux": "npm run build && electron-builder --linux deb rpm",
+    "desktop:win": "npm run build && electron-builder --win nsis portable zip",
+    "desktop:build": "npm run build && electron-builder --linux deb rpm --win nsis portable zip",
+    "desktop:dir": "npm run build && electron-builder --linux dir --win dir",
+    "desktop": "npm run build && electron ."
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/cli": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/filesystem": "^8.1.4",
+    "@capacitor/share": "^8.0.3",
+    "clsx": "^2.1.1",
+    "jspdf": "^4.2.1",
+    "konva": "^9.3.18",
+    "lucide-react": "^0.469.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-konva": "^18.2.10",
+    "react-router-dom": "^6.28.0",
+    "tailwind-merge": "^2.6.0",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.20",
+    "electron": "^37.10.3",
+    "electron-builder": "^26.15.3",
+    "husky": "^9.0.11",
+    "postcss": "^8.4.41",
+    "tailwindcss": "^3.4.10",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.2",
+    "vite-plugin-pwa": "^1.2.0"
+  },
+  "build": {
+    "appId": "com.ultramagnus.umps",
+    "productName": "PipMint",
+    "copyright": "Copyright © UltraMagnus",
+    "directories": {
+      "output": "dist-desktop",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "linux": {
+      "target": [
+        "deb",
+        "rpm"
+      ],
+      "category": "Graphics",
+      "executableName": "pipmint",
+      "synopsis": "PipMint Custom Card Creator",
+      "description": "Desktop build of PipMint — Custom Card Creator.",
+      "maintainer": "UltraMagnus",
+      "icon": "build/icons"
+    },
+    "deb": {
+      "priority": "optional"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "executableName": "PipMint",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "PipMint",
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico"
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}.${ext}"
+    }
+  }
+}
