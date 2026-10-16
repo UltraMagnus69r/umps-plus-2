@@ -32,6 +32,10 @@ export type LayoutCapabilityFlags = {
   supportsRulesTextBoxTexture: boolean
   /** Land / Full Art: hide parsed mana-cost icons in the name strip (symbol only in mana circle). */
   suppressNameBarManaCostRendering: boolean
+  /** Baked frame nameplate — do not draw the name string. */
+  suppressNameBarTextRendering: boolean
+  /** Baked / absent type line — do not draw the type line string. */
+  suppressTypeLineTextRendering: boolean
   /** Land / Full Art: render left mana circle (driven by cardData.landFullArtManaCircleKey). */
   useLandFullArtManaCircle: boolean
   /** Land / Full Art: do not render oracle/rules body text in the rules region. */
@@ -100,6 +104,8 @@ const DEFAULT_CAPABILITIES: LayoutCapabilityFlags = {
   supportsLandSecondaryArtInRulesRegion: false,
   supportsRulesTextBoxTexture: true,
   suppressNameBarManaCostRendering: false,
+  suppressNameBarTextRendering: false,
+  suppressTypeLineTextRendering: false,
   useLandFullArtManaCircle: false,
   suppressRulesTextRendering: false,
   supportsNamePlateBox: true,

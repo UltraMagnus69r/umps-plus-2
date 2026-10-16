@@ -40,6 +40,7 @@ export function shouldShowSecondaryNameFields(input: ProgressiveDisclosureSideba
 }
 
 export function shouldShowRulesTextAndFlavorBlock(input: ProgressiveDisclosureSidebarInput): boolean {
+  if (input.capabilities.suppressRulesTextRendering) return false
   if (input.capabilities.supportsPlaneswalkerAbilities) return false
   /** Spell Saga/Class use structured stage editors instead of one rules blob. */
   if (input.capabilities.supportsSagaClassChrome && input.layoutFamily === 'spell') return false
@@ -51,6 +52,16 @@ export function shouldShowRulesTextAndFlavorBlock(input: ProgressiveDisclosureSi
     shouldShowExpandedCoreCardInputs(input.capabilities) &&
     !input.capabilities.supportsLandSecondaryArtInRulesRegion
   )
+}
+
+/** Name-bar mana cost text field (hidden when frame suppresses name-bar mana). */
+export function shouldShowManaCostTextField(capabilities: LayoutCapabilityFlags): boolean {
+  return !capabilities.suppressNameBarManaCostRendering
+}
+
+/** Type line + set-symbol section (hidden when frame has no type line / baked full-art land). */
+export function shouldShowTypeLineSection(capabilities: LayoutCapabilityFlags): boolean {
+  return !capabilities.suppressTypeLineTextRendering
 }
 
 export function shouldShowRulesTextEditor(input: ProgressiveDisclosureSidebarInput): boolean {

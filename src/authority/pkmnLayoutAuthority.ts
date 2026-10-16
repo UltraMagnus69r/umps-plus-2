@@ -79,6 +79,55 @@ export const PKMN_PT_RECT: PkmnStageRect = {
   height: 88,
 }
 
+/**
+ * PKMN basic-land full-art frames (Forest/Island/…) — measured on cropped
+ * 1500×2100 face then offset by 75 px bleed into the 1650×2250 stage.
+ * Nameplate text is baked; art fills the face below the name bar (no rules box).
+ */
+export const PKMN_LAND_NAME_BAR_RECT: PkmnStageRect = {
+  x: 165,
+  y: 175,
+  width: 1320,
+  height: 95,
+}
+
+/** Full-art window under the baked nameplate (opaque frame; no alpha hole). */
+export const PKMN_LAND_ART_RECT: PkmnStageRect = {
+  x: 180,
+  y: 280,
+  width: 1290,
+  height: 1720,
+}
+
+/** Unused type/rules/metadata/PT slots — kept for contract completeness. */
+export const PKMN_LAND_TYPE_LINE_RECT: PkmnStageRect = {
+  x: 180,
+  y: 280,
+  width: 1290,
+  height: 1,
+}
+
+export const PKMN_LAND_RULES_TEXT_RECT: PkmnStageRect = {
+  x: 180,
+  y: 2000,
+  width: 1290,
+  height: 1,
+}
+
+export const PKMN_LAND_METADATA_RECT: PkmnStageRect = {
+  x: 180,
+  y: 2100,
+  width: 900,
+  height: 1,
+}
+
+export const PKMN_LAND_PT_RECT: PkmnStageRect = {
+  x: 1200,
+  y: 2100,
+  width: 1,
+  height: 1,
+}
+
 export function buildPkmnStageRects(): {
   art: PkmnStageRect
   nameBar: PkmnStageRect
@@ -94,6 +143,24 @@ export function buildPkmnStageRects(): {
     rulesText: PKMN_RULES_TEXT_RECT,
     metadataStrip: PKMN_METADATA_RECT,
     lowerRight: PKMN_PT_RECT,
+  }
+}
+
+export function buildPkmnBasicLandStageRects(): {
+  art: PkmnStageRect
+  nameBar: PkmnStageRect
+  typeLine: PkmnStageRect
+  rulesText: PkmnStageRect
+  metadataStrip: PkmnStageRect
+  lowerRight: PkmnStageRect
+} {
+  return {
+    art: PKMN_LAND_ART_RECT,
+    nameBar: PKMN_LAND_NAME_BAR_RECT,
+    typeLine: PKMN_LAND_TYPE_LINE_RECT,
+    rulesText: PKMN_LAND_RULES_TEXT_RECT,
+    metadataStrip: PKMN_LAND_METADATA_RECT,
+    lowerRight: PKMN_LAND_PT_RECT,
   }
 }
 

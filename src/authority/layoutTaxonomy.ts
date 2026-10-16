@@ -24,6 +24,11 @@ export type LayoutVariant =
   | 'dark'
   | 'multicolor'
   | 'colorless'
+  | 'forest'
+  | 'island'
+  | 'mountain'
+  | 'plains'
+  | 'swamp'
 
 export type LayoutId = {
   family: LayoutFamily
@@ -42,8 +47,21 @@ export const layoutCompatibility: Record<LayoutFamily, readonly LayoutVariant[]>
   battle: ['modern'],
   prepared: ['modern'],
   planeswalker: ['modern', 'modern-v2', 'pre-modern', 'borderless', 'full-art'],
-  /** PKMN: color = static pre-made frame variant (no Colors recolor). */
-  pkmn: ['white', 'blue', 'red', 'green', 'dark', 'multicolor', 'colorless'],
+  /** PKMN: color or basic-land static pre-made frame variant (no Colors recolor). */
+  pkmn: [
+    'white',
+    'blue',
+    'red',
+    'green',
+    'dark',
+    'multicolor',
+    'colorless',
+    'forest',
+    'island',
+    'mountain',
+    'plains',
+    'swamp',
+  ],
 }
 
 export const LAYOUT_FAMILY_LABELS: Record<LayoutFamily, string> = {
@@ -72,6 +90,11 @@ export const LAYOUT_VARIANT_LABELS: Record<LayoutVariant, string> = {
   dark: 'Dark',
   multicolor: 'Multicolor',
   colorless: 'Colorless',
+  forest: 'Forest',
+  island: 'Island',
+  mountain: 'Mountain',
+  plains: 'Plains',
+  swamp: 'Swamp',
 }
 
 export function getLayoutFamilyLabel(family: LayoutFamily): string {
@@ -130,7 +153,12 @@ function normalizeVariant(value: unknown): LayoutVariant {
     value === 'green' ||
     value === 'dark' ||
     value === 'multicolor' ||
-    value === 'colorless'
+    value === 'colorless' ||
+    value === 'forest' ||
+    value === 'island' ||
+    value === 'mountain' ||
+    value === 'plains' ||
+    value === 'swamp'
   )
     return value
   return DEFAULT_LAYOUT_ID.variant
@@ -312,6 +340,20 @@ export function isSpellPreModernLayout(layout: Partial<LayoutId> | null | undefi
 /** PKMN family — static pre-made frames; color is the variant (no Colors recolor). */
 export function isPkmnLayout(layout: Partial<LayoutId> | null | undefined): boolean {
   return normalizeLayout(layout).family === 'pkmn'
+}
+
+const PKMN_BASIC_LAND_VARIANTS = new Set<LayoutVariant>([
+  'forest',
+  'island',
+  'mountain',
+  'plains',
+  'swamp',
+])
+
+/** PKMN basic-land full-art frames (baked nameplate; no rules / P/T chrome). */
+export function isPkmnBasicLandLayout(layout: Partial<LayoutId> | null | undefined): boolean {
+  const normalized = normalizeLayout(layout)
+  return normalized.family === 'pkmn' && PKMN_BASIC_LAND_VARIANTS.has(normalized.variant)
 }
 
 /** Inner-border mat corner radii for the active layout variant (Konva `cornerRadius`). */
