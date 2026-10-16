@@ -1,14 +1,12 @@
 /**
- * Saga / Class split-frame chrome — measured from Card Conjurer painted sheets
- * (sagaFrame + sagaMaskBanner) and ground-truth refs in media/fidelity-class-saga/.
+ * Saga / Class / Saga Creature split-frame chrome.
  *
- * Both layouts in PipMint use the ref orientation: tall art on the RIGHT,
- * parchment + vertical banner on the LEFT (Class ground-truth matches Saga
- * split; CC packClass’s left-art seating is not used).
+ * Regular Saga/Class: tall art RIGHT, parchment + banner LEFT (fidelity refs).
+ * Saga Creature: full-width reminder under name, shorter split, creature rules + P/T below type.
  */
 import { BLEED_PX, TRIM_HEIGHT, TRIM_WIDTH } from './geometryAuthority'
 import type { LayoutId } from './layoutTaxonomy'
-import { isClassLayout, isSagaLayout } from './layoutTaxonomy'
+import { isClassLayout, isSagaCreatureLayout, isSagaLayout } from './layoutTaxonomy'
 
 export type StageRect = { x: number; y: number; width: number; height: number }
 
@@ -30,59 +28,80 @@ const FACE = {
   art: { x: 0.5015, y: 0.1137, w: 0.4199, h: 0.7221 },
   name: { x: 0.0854, y: 0.0522, w: 0.8292, h: 0.0543 },
   type: { x: 0.0854, y: 0.8481, w: 0.8292, h: 0.0543 },
-  /** Full parchment column (includes space beside banner). */
   parchment: { x: 0.11, y: 0.1137, w: 0.388, h: 0.7221 },
-  /** Colored vertical chapter/level banner (mask bbox). */
   banner: { x: 0.044, y: 0.1714, w: 0.068, h: 0.661 },
-  /** Reminder band above chapter rows. */
   reminder: { x: 0.0867, y: 0.1129, w: 0.404, h: 0.1772 },
-  /** Ability / level text column (right of badges). */
   abilityCol: { x: 0.1334, y: 0.2896, w: 0.35, h: 0.535 },
-  /** Chapter badge (CC sagaChapter placement). */
   badge: { x: 0.0386, w: 0.0787, h: 0.0629 },
+} as const
+
+/** Esper Terra–style Saga Creature face (measured from fidelity reference). */
+const FACE_CREATURE = {
+  art: { x: 0.5015, y: 0.198, w: 0.4218, h: 0.528 },
+  parchment: { x: 0.0767, y: 0.198, w: 0.421, h: 0.528 },
+  banner: { x: 0.044, y: 0.215, w: 0.068, h: 0.492 },
+  /** Full-width strip under the name bar. */
+  reminder: { x: 0.0767, y: 0.1129, w: 0.8476, h: 0.078 },
+  abilityCol: { x: 0.118, y: 0.215, w: 0.368, h: 0.498 },
+  badge: { x: 0.0386, w: 0.0787, h: 0.052 },
 } as const
 
 export const SAGA_DEFAULT_REMINDER =
   '(As this Saga enters and after your draw step, add a lore counter. Sacrifice after III.)'
 
+export const SAGA_CREATURE_DEFAULT_REMINDER =
+  '(As this Saga enters and after your draw step, add a lore counter.)'
+
 export const CLASS_DEFAULT_REMINDER =
   '(Gain the next level as a sorcery to add its ability.)'
 
 export function layoutUsesSagaClassChrome(layout: Partial<LayoutId> | null | undefined): boolean {
-  return isSagaLayout(layout) || isClassLayout(layout)
+  return isSagaLayout(layout) || isClassLayout(layout) || isSagaCreatureLayout(layout)
 }
 
-export function getSagaClassArtRect(): StageRect {
-  return n(FACE.art)
+function faceFor(layout: Partial<LayoutId> | null | undefined) {
+  return isSagaCreatureLayout(layout) ? FACE_CREATURE : FACE
 }
 
-export function getSagaClassParchmentRect(): StageRect {
-  return n(FACE.parchment)
+export function getSagaClassArtRect(layout?: Partial<LayoutId> | null): StageRect {
+  return n(faceFor(layout).art)
 }
 
-export function getSagaClassBannerRect(): StageRect {
-  return n(FACE.banner)
+export function getSagaClassParchmentRect(layout?: Partial<LayoutId> | null): StageRect {
+  return n(faceFor(layout).parchment)
 }
 
-export function getSagaClassReminderRect(): StageRect {
-  return n(FACE.reminder)
+export function getSagaClassBannerRect(layout?: Partial<LayoutId> | null): StageRect {
+  return n(faceFor(layout).banner)
 }
 
-export function getSagaClassAbilityColumnRect(): StageRect {
-  return n(FACE.abilityCol)
+export function getSagaClassReminderRect(layout?: Partial<LayoutId> | null): StageRect {
+  return n(faceFor(layout).reminder)
 }
 
-export function getSagaClassBadgeMetrics(): { x: number; width: number; height: number } {
+export function getSagaClassAbilityColumnRect(layout?: Partial<LayoutId> | null): StageRect {
+  return n(faceFor(layout).abilityCol)
+}
+
+export function getSagaClassBadgeMetrics(layout?: Partial<LayoutId> | null): {
+  x: number
+  width: number
+  height: number
+} {
+  const face = faceFor(layout)
   return {
-    x: Math.round(FACE.badge.x * TRIM_WIDTH + BLEED_PX),
-    width: Math.round(FACE.badge.w * TRIM_WIDTH),
-    height: Math.round(FACE.badge.h * TRIM_HEIGHT),
+    x: Math.round(face.badge.x * TRIM_WIDTH + BLEED_PX),
+    width: Math.round(face.badge.w * TRIM_WIDTH),
+    height: Math.round(face.badge.h * TRIM_HEIGHT),
   }
 }
 
-/** Three equal chapter/level bands inside the ability column. */
-export function getSagaClassChapterBandRects(count = 3): StageRect[] {
-  const col = getSagaClassAbilityColumnRect()
+/** Chapter/level bands inside the ability column (3 for saga/class, 4 for saga-creature). */
+export function getSagaClassChapterBandRects(
+  count = 3,
+  layout?: Partial<LayoutId> | null,
+): StageRect[] {
+  const col = getSagaClassAbilityColumnRect(layout)
   const nBands = Math.max(1, Math.min(4, count))
   const h = Math.floor(col.height / nBands)
   const out: StageRect[] = []
@@ -122,17 +141,22 @@ export function addSagaBannerPath(
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number,
+  opts?: { flatTop?: boolean },
 ): void {
+  const flatTop = opts?.flatTop === true
   const topLeftY = 0
-  const topRightY = h * 0.168
+  const topRightY = flatTop ? 0 : h * 0.168
   const tipY = h
   const tipX = w * 0.5
   const botLeftY = h * 0.945
   const botRightY = h * 0.945
 
   ctx.moveTo(0, topLeftY)
-  // Concave-ish drop under the name plate (left stays high; right settles under reminder).
-  ctx.bezierCurveTo(w * 0.22, topLeftY + 2, w * 0.55, topRightY * 0.55, w, topRightY)
+  if (flatTop) {
+    ctx.lineTo(w, topRightY)
+  } else {
+    ctx.bezierCurveTo(w * 0.22, topLeftY + 2, w * 0.55, topRightY * 0.55, w, topRightY)
+  }
   ctx.lineTo(w, botRightY)
   ctx.lineTo(tipX, tipY)
   ctx.lineTo(0, botLeftY)

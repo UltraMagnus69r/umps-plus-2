@@ -600,6 +600,7 @@ export const CARD_LAYOUT_MODES = [
   'Land',
   'Class',
   'Saga',
+  'Saga Creature',
   'Hidden',
 ] as const
 

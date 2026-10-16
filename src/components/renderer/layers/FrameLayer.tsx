@@ -315,6 +315,17 @@ function FrameLayer() {
   const typeOuterW = artAlignedTypePlate?.width ?? baseTypeOuterW
   const typeOuterH = artAlignedTypePlate?.height ?? baseTypeOuterH
 
+  /** Saga Creature (and any saga-chrome layout with a rules frame) seats from the contract. */
+  const contractRulesBox = useMemo(() => {
+    if (!supportsRulesTextBoxFrame || !supportsSagaClassChrome) return null
+    return layoutRegionToStageRect(contractRegions.rulesText)
+  }, [supportsRulesTextBoxFrame, supportsSagaClassChrome, contractRegions.rulesText])
+
+  const rulesBoxX = contractRulesBox?.x ?? rulesX
+  const rulesBoxY = contractRulesBox?.y ?? rulesYEff
+  const rulesBoxW = contractRulesBox?.width ?? rulesW
+  const rulesBoxH = contractRulesBox?.height ?? rulesH
+
   const preModernTextBoxFrame = useMemo(() => {
     if (!supportsPreModernTextBoxFrame) return null
     if (supportsPlaneswalkerModernV2Layout) return getPlaneswalkerModernV2TextBoxOuterRect()
@@ -482,16 +493,16 @@ function FrameLayer() {
       )}
       {supportsRulesTextBoxFrame && (
         <Shape
-          x={rulesX}
-          y={rulesYEff}
+          x={rulesBoxX}
+          y={rulesBoxY}
           sceneFunc={(ctx, _shape) => {
             const c = ctx as unknown as CanvasRenderingContext2D
             const inner = supportsRulesTextBoxTexture
               ? 'rgba(0,0,0,0)'
               : createBoxPanelInnerFillStyle(
                   c,
-                  rulesW,
-                  rulesH,
+                  rulesBoxW,
+                  rulesBoxH,
                   effectiveRulesTextBoxColor,
                   rulesTextBoxGradientEnabled,
                   rulesTextBoxGradientDirection,
@@ -499,7 +510,7 @@ function FrameLayer() {
                   rulesTextBoxGradientReversed,
                   rulesBoxBgImage,
                 )
-            drawBeveledFrameOnContext(c, rulesW, rulesH, 0, inner, 'recessed', outerStrokeColor, bevelColors)
+            drawBeveledFrameOnContext(c, rulesBoxW, rulesBoxH, 0, inner, 'recessed', outerStrokeColor, bevelColors)
           }}
           listening={false}
         />
