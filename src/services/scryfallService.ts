@@ -25,7 +25,19 @@ function scryfallFetch(url: string, init?: RequestInit): Promise<Response> {
 
 /** Minimal card JSON shape from Scryfall (normal cards + optional faces). */
 type ScryfallImageUris = ScryfallImageUriSet & { small?: string }
-type ScryfallCardFace = { image_uris?: ScryfallImageUris }
+type ScryfallCardFace = {
+  name?: string | null
+  mana_cost?: string | null
+  type_line?: string | null
+  oracle_text?: string | null
+  flavor_text?: string | null
+  power?: string | null
+  toughness?: string | null
+  loyalty?: string | null
+  artist?: string | null
+  watermark?: string | null
+  image_uris?: ScryfallImageUris
+}
 
 type ScryfallRawCard = {
   id?: string
@@ -65,7 +77,55 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return v != null && typeof v === 'object' && !Array.isArray(v)
 }
 
-function readPrimaryImageUris(card: ScryfallRawCard): ScryfallImageUriSet | null {
+function faceTypeLine(face: ScryfallCardFace | null | undefined): string {
+  return String(face?.type_line ?? '')
+}
+
+/**
+ * Prefer the face that matches the inferred PipMint layout (Saga Creature back,
+ * Saga/Class face, etc.). Falls back to the first face with oracle text.
+ */
+function pickImportFace(
+  card: ScryfallRawCard,
+  inferred: LayoutId,
+): ScryfallCardFace | null {
+  const faces = Array.isArray(card.card_faces) ? card.card_faces : []
+  if (faces.length === 0) return null
+  const score = (face: ScryfallCardFace): number => {
+    const tl = faceTypeLine(face)
+    let s = 0
+    if (inferred.variant === 'saga-creature') {
+      if (/\bCreature\b/i.test(tl) && /\bSaga\b/i.test(tl)) s += 100
+      else if (/\bSaga\b/i.test(tl)) s += 40
+    } else if (inferred.variant === 'saga') {
+      if (/\bSaga\b/i.test(tl) && !/\bCreature\b/i.test(tl)) s += 100
+      else if (/\bSaga\b/i.test(tl)) s += 50
+    } else if (inferred.variant === 'class') {
+      if (/\bClass\b/i.test(tl)) s += 100
+    } else if (inferred.family === 'battle') {
+      if (/\bBattle\b/i.test(tl)) s += 100
+    }
+    if (typeof face.oracle_text === 'string' && face.oracle_text.trim()) s += 5
+    if (face.image_uris) s += 1
+    return s
+  }
+  let best = faces[0]
+  let bestScore = score(best)
+  for (let i = 1; i < faces.length; i++) {
+    const sc = score(faces[i])
+    if (sc > bestScore) {
+      best = faces[i]
+      bestScore = sc
+    }
+  }
+  return best
+}
+
+function readPrimaryImageUris(
+  card: ScryfallRawCard,
+  preferredFace?: ScryfallCardFace | null,
+): ScryfallImageUriSet | null {
+  if (preferredFace?.image_uris) return preferredFace.image_uris
   if (card.image_uris) return card.image_uris
   const faces = card.card_faces
   if (Array.isArray(faces) && faces.length > 0) {
@@ -161,32 +221,60 @@ function mapRawCardToFields(card: ScryfallRawCard): ScryfallCardFields {
   const setNormalized = setRaw != null ? setRaw.trim().toLowerCase() : null
   const layoutHints = readScryfallLayoutHints(card)
   const inferredLayout = inferScryfallLayoutId(layoutHints)
-  const imageUris = readPrimaryImageUris(card)
+  const face = pickImportFace(card, inferredLayout)
+  const faceName = face?.name != null ? toStr(face.name) : null
+  const typeLine =
+    (face?.type_line != null ? toStr(face.type_line) : null) ??
+    (card.type_line != null ? toStr(card.type_line) : null)
+  // Re-infer when a DFC face is more specific than the combined type line.
+  const faceHints = readScryfallLayoutHints({
+    ...card,
+    type_line: typeLine,
+    layout: card.layout,
+  })
+  const faceInferred = inferScryfallLayoutId(faceHints)
+  const imageUris = readPrimaryImageUris(card, face)
   return {
     id: card.id != null ? toStr(card.id) : null,
-    name: toStr(card.name),
-    mana_cost: card.mana_cost != null ? toStr(card.mana_cost) : null,
-    type_line: card.type_line != null ? toStr(card.type_line) : null,
-    oracle_text: card.oracle_text != null ? toStr(card.oracle_text) : null,
-    flavor_text: card.flavor_text != null ? toStr(card.flavor_text) : null,
-    loyalty: card.loyalty != null ? toStr(card.loyalty) : null,
-    power: card.power != null ? toStr(card.power) : null,
-    toughness: card.toughness != null ? toStr(card.toughness) : null,
+    name: faceName ?? toStr(card.name),
+    mana_cost:
+      (face?.mana_cost != null ? toStr(face.mana_cost) : null) ??
+      (card.mana_cost != null ? toStr(card.mana_cost) : null),
+    type_line: typeLine,
+    oracle_text:
+      (face?.oracle_text != null ? toStr(face.oracle_text) : null) ??
+      (card.oracle_text != null ? toStr(card.oracle_text) : null),
+    flavor_text:
+      (face?.flavor_text != null ? toStr(face.flavor_text) : null) ??
+      (card.flavor_text != null ? toStr(card.flavor_text) : null),
+    loyalty:
+      (face?.loyalty != null ? toStr(face.loyalty) : null) ??
+      (card.loyalty != null ? toStr(card.loyalty) : null),
+    power:
+      (face?.power != null ? toStr(face.power) : null) ??
+      (card.power != null ? toStr(card.power) : null),
+    toughness:
+      (face?.toughness != null ? toStr(face.toughness) : null) ??
+      (card.toughness != null ? toStr(card.toughness) : null),
     set: setNormalized,
     collector_number: card.collector_number != null ? toStr(card.collector_number) : null,
     rarity: card.rarity != null ? toStr(card.rarity) : null,
-    artist: card.artist != null ? toStr(card.artist) : null,
+    artist:
+      (face?.artist != null ? toStr(face.artist) : null) ??
+      (card.artist != null ? toStr(card.artist) : null),
     lang: card.lang != null ? toStr(card.lang) : null,
-    watermark: card.watermark != null ? toStr(card.watermark) : null,
-    art_crop_uri: resolveScryfallImportArtUri(imageUris, inferredLayout.variant),
+    watermark:
+      (face?.watermark != null ? toStr(face.watermark) : null) ??
+      (card.watermark != null ? toStr(card.watermark) : null),
+    art_crop_uri: resolveScryfallImportArtUri(imageUris, faceInferred.variant),
     png_uri: extractPngUrl(card),
     color_identity: Array.isArray(card.color_identity)
       ? (card.color_identity.filter((x): x is string => typeof x === 'string') as string[])
       : null,
-    full_art: layoutHints.full_art,
-    border_color: layoutHints.border_color,
-    frame_effects: layoutHints.frame_effects,
-    inferred_layout: inferredLayout,
+    full_art: faceHints.full_art,
+    border_color: faceHints.border_color,
+    frame_effects: faceHints.frame_effects,
+    inferred_layout: faceInferred,
   }
 }
 
