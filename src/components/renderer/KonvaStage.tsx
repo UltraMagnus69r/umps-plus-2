@@ -283,6 +283,9 @@ function KonvaStage({
                 <BattleChromeLayer />
                 <ArtLayer />
               </>
+            ) : layoutCaps.printOnlyStaticFrame ? (
+              /** PKMN basic lands — print-as-is frame PNG only (no art/text/chrome overlays). */
+              <PkmnFrameLayer />
             ) : (
               <>
                 <TextureBorderLayer />

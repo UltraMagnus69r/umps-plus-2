@@ -30,9 +30,9 @@ export function shouldShowExpandedCoreCardInputs(capabilities: LayoutCapabilityF
   return !capabilities.useLandFullArtManaCircle
 }
 
-/** Secondary name overlay is available on every family/variant (including PKMN / Land FA). */
-export function shouldShowSecondaryNameToggle(_input: ProgressiveDisclosureSidebarInput): boolean {
-  return true
+/** Secondary name overlay — hidden for print-only static frames (PKMN lands). */
+export function shouldShowSecondaryNameToggle(input: ProgressiveDisclosureSidebarInput): boolean {
+  return !input.capabilities.printOnlyStaticFrame
 }
 
 export function shouldShowSecondaryNameFields(input: ProgressiveDisclosureSidebarInput): boolean {
@@ -223,9 +223,14 @@ export function shouldShowPrintAlignmentDebugTools(_workflowState: WorkflowState
 /** Alias (roadmap naming): P/T core inputs visibility. */
 export const shouldShowPTFields = shouldShowPowerToughnessControls
 
-/** Art Assets section remains available for all layouts; upload/zoom apply universally. */
-export function shouldShowArtControls(_input: ProgressiveDisclosureSidebarInput): boolean {
-  return true
+/** Art Assets — hidden for print-only static frames (frame PNG is the full card). */
+export function shouldShowArtControls(input: ProgressiveDisclosureSidebarInput): boolean {
+  return !input.capabilities.printOnlyStaticFrame
+}
+
+/** Core name/mana/P/T editors — hidden when the frame is print-only. */
+export function shouldShowPrintOnlyFrameNotice(capabilities: LayoutCapabilityFlags): boolean {
+  return capabilities.printOnlyStaticFrame === true
 }
 
 /** Color Identity section is always shown when opened; pip vs manual splits use dedicated helpers. */
