@@ -11,7 +11,19 @@ import {
 import {
   resolveSpellPreModernRulesInnerRect,
 } from '../../../authority/spellPreModernLayoutAuthority'
-import { MODERN_DUMMY_MANA_PIP_SCALE, MODERN_COLLECTOR_DATA_DOWN_NUDGE_PX, MODERN_PLATE_TEXT_STROKE_COLOR, MODERN_PLATE_TEXT_STROKE_PX } from '../../../authority/modernDummyLayoutAuthority'
+import {
+  getModernDummyManaPipGapPx,
+  getModernDummyManaPipSizePx,
+  getModernDummyManaStageRect,
+  MODERN_COLLECTOR_DATA_DOWN_NUDGE_PX,
+  MODERN_PLATE_TEXT_STROKE_COLOR,
+  MODERN_PLATE_TEXT_STROKE_PX,
+} from '../../../authority/modernDummyLayoutAuthority'
+import {
+  getLayoutRecipe,
+  getRecipeTypographyMinSizePx,
+  getRecipeTypographySizePx,
+} from '../../../authority/recipes/layoutRecipeAuthority'
 import { PW_MODERN_V2_COLLECTOR_DATA_DOWN_NUDGE_PX, PW_MODERN_V2_HOLOGRAM_DOWN_NUDGE_PX } from '../../../authority/planeswalkerModernV2LayoutAuthority'
 import { getPreModernTextBoxOuterRect } from '../../../authority/preModernTextBoxAuthority'
 import { resolveCardCopyright } from '../../../authority/collectorDataAuthority'
@@ -118,8 +130,8 @@ function TextIconsLayer() {
   const layout = getStandardLayoutGeometry()
   const setIconPad = layout.setIconPad
 
-  const nameBaseFont = Math.max(1, Math.floor(layout.nameH * NAME_PLATE_BASE_HEIGHT_RATIO))
-  const typeBaseFont = Math.max(1, Math.floor(layout.typeH * TYPE_LINE_BASE_HEIGHT_RATIO))
+  const nameBaseFontFromGeometry = Math.max(1, Math.floor(layout.nameH * NAME_PLATE_BASE_HEIGHT_RATIO))
+  const typeBaseFontFromGeometry = Math.max(1, Math.floor(layout.typeH * TYPE_LINE_BASE_HEIGHT_RATIO))
 
   /** Single shallow subscription — Pre-5.2 had 32 parallel hooks; equality skips re-render when no picked field changes. */
   const {
@@ -280,11 +292,32 @@ function TextIconsLayer() {
   const hologramYAdjust = supportsPlaneswalkerModernV2Layout ? PW_MODERN_V2_HOLOGRAM_DOWN_NUDGE_PX : 0
   const modernPlateTextStroke = supportsModernDummyLayout ? MODERN_PLATE_TEXT_STROKE_COLOR : undefined
   const modernPlateTextStrokeWidth = supportsModernDummyLayout ? MODERN_PLATE_TEXT_STROKE_PX : 0
+  const layoutRecipe = supportsModernDummyLayout ? getLayoutRecipe(activeLayout) : null
   const nameManaIconSize = supportsPreModernFaceLayout
     ? getSpellPreModernManaCostIconSizePx()
     : supportsModernDummyLayout
-      ? Math.round(MANA_COST_ICON_SIZE * MODERN_DUMMY_MANA_PIP_SCALE)
+      ? getModernDummyManaPipSizePx()
       : MANA_COST_ICON_SIZE
+  const nameManaIconGap = supportsModernDummyLayout ? getModernDummyManaPipGapPx() : MANA_COST_ICON_GAP
+  const recipeManaRect = supportsModernDummyLayout ? getModernDummyManaStageRect() : null
+  const nameBaseFont = layoutRecipe
+    ? getRecipeTypographySizePx(layoutRecipe, 'name')
+    : nameBaseFontFromGeometry
+  const typeBaseFont = layoutRecipe
+    ? getRecipeTypographySizePx(layoutRecipe, 'type')
+    : typeBaseFontFromGeometry
+  const recipeNameMinFont = layoutRecipe
+    ? getRecipeTypographyMinSizePx(layoutRecipe, 'name')
+    : null
+  const recipeTypeMinFont = layoutRecipe
+    ? getRecipeTypographyMinSizePx(layoutRecipe, 'type')
+    : null
+  const recipeRulesSizePx = layoutRecipe
+    ? getRecipeTypographySizePx(layoutRecipe, 'rules')
+    : null
+  const recipeRulesMinFont = layoutRecipe
+    ? getRecipeTypographyMinSizePx(layoutRecipe, 'rules')
+    : null
   const innerBorderBackgroundPreview = useCardStore((s) => s.innerBorderBackgroundPreview)
 
   const nameRect = layoutRegionToStageRect(activeRegions.nameBar)
@@ -818,10 +851,18 @@ function TextIconsLayer() {
       const c = chunks[i]
       if (c.kind === 'icon') totalWidth += scaleManaPipDisplaySizePx(nameManaIconSize, c.symbolSet)
       else totalWidth += measureTextWidth(c.value, nameStack, nameFontStyle, nameManaIconSize)
-      if (i < chunks.length - 1) totalWidth += MANA_COST_ICON_GAP
+      if (i < chunks.length - 1) totalWidth += nameManaIconGap
     }
     return { chunks, totalWidth }
-  }, [normalizedManaCost, measureTextWidth, manaImageTick, nameStack, nameFontStyle, nameManaIconSize])
+  }, [
+    normalizedManaCost,
+    measureTextWidth,
+    manaImageTick,
+    nameStack,
+    nameFontStyle,
+    nameManaIconSize,
+    nameManaIconGap,
+  ])
 
   const nameLeftInset = pkmnCollectorLayout ? PKMN_NAME_TEXT_LEFT_INSET : 10
   const nameTextMaxW = suppressNameBarManaCostRendering
@@ -844,7 +885,7 @@ function TextIconsLayer() {
   const nameFontSize = useMemo(() => {
     const nameText = String(cardName ?? '')
     const target = nameTargetPx
-    const minSize = NAME_MIN_FONT
+    const minSize = Math.max(NAME_MIN_FONT, recipeNameMinFont ?? NAME_MIN_FONT)
     const fits = (size: number) => measureTextWidth(nameText, nameStack, nameFontStyle, size) <= nameTextMaxW
     let lo = minSize
     let hi = Math.max(lo, target)
@@ -864,6 +905,7 @@ function TextIconsLayer() {
     nameStack,
     nameFontStyle,
     nameTargetPx,
+    recipeNameMinFont,
   ])
 
   const typeTargetPx = useMemo(
@@ -872,8 +914,8 @@ function TextIconsLayer() {
   )
 
   const typeFontSize = useMemo(() => {
-    const start = Math.max(TYPE_MIN_FONT, typeTargetPx)
-    const minSize = TYPE_MIN_FONT
+    const minSize = Math.max(TYPE_MIN_FONT, recipeTypeMinFont ?? TYPE_MIN_FONT)
+    const start = Math.max(minSize, typeTargetPx)
     return getScaledSingleLineFontSize({
       text: String(cardTypeLine ?? ''),
       fontFamily: typeStack,
@@ -890,6 +932,7 @@ function TextIconsLayer() {
     typeStack,
     typeFontStyle,
     typeTargetPx,
+    recipeTypeMinFont,
   ])
 
   const spellPreModernTypeTextY = useMemo(
@@ -1003,13 +1046,17 @@ function TextIconsLayer() {
     innerBorderBottom,
   ])
 
+  const rulesMaxFont = recipeRulesSizePx != null ? Math.max(RULES_MAX_FONT, recipeRulesSizePx) : RULES_MAX_FONT
+  const rulesMinFont = recipeRulesMinFont != null ? Math.max(RULES_MIN_FONT, recipeRulesMinFont) : RULES_MIN_FONT
+  const rulesSizeReferencePx = recipeRulesSizePx ?? TYPO_RULES_PT_REF_PX
+
   const rulesTargetStart = useMemo(
     () =>
       Math.max(
-        RULES_MIN_FONT,
-        Math.min(RULES_MAX_FONT, typographyPtToStagePx(rulesTypography.sizePt, TYPO_RULES_PT_REF_PX)),
+        rulesMinFont,
+        Math.min(rulesMaxFont, typographyPtToStagePx(rulesTypography.sizePt, rulesSizeReferencePx)),
       ),
-    [rulesTypography.sizePt],
+    [rulesTypography.sizePt, rulesMinFont, rulesMaxFont, rulesSizeReferencePx],
   )
 
   const rulesFontSize = useMemo(
@@ -1017,8 +1064,8 @@ function TextIconsLayer() {
       getScaledRulesFontSize({
         chunks: rulesChunks,
         startSize: rulesTargetStart,
-        minSize: RULES_MIN_FONT,
-        maxSize: RULES_MAX_FONT,
+        minSize: rulesMinFont,
+        maxSize: rulesMaxFont,
         boxWidth: effectiveRulesInnerW,
         boxHeight: effectiveRulesInnerH,
         paddingTop: rulesTextPadTop,
@@ -1039,6 +1086,8 @@ function TextIconsLayer() {
       rulesStack,
       rulesFontStyleKonva,
       rulesTargetStart,
+      rulesMinFont,
+      rulesMaxFont,
     ]
   )
   const effectiveRulesFontSize = fullArtOnly ? floorToHalfPx(rulesFontSize * 1.25) : rulesFontSize
@@ -1345,11 +1394,17 @@ function TextIconsLayer() {
       {!suppressNameBarManaCostRendering && manaCostRender.chunks.length > 0 && (
         <Group
           x={Math.round(
-            (preModernFaceText ? artRect.x + artRect.width : nameInnerX + nameInnerW) -
-              (preModernFaceText ? 0 : 10) -
-              manaCostRender.totalWidth,
+            (preModernFaceText
+              ? artRect.x + artRect.width
+              : recipeManaRect
+                ? recipeManaRect.x + recipeManaRect.width
+                : nameInnerX + nameInnerW - 10) - manaCostRender.totalWidth,
           )}
-          y={Math.round(nameInnerY + (nameInnerH - nameManaIconSize) / 2)}
+          y={Math.round(
+            recipeManaRect
+              ? recipeManaRect.y + (recipeManaRect.height - nameManaIconSize) / 2
+              : nameInnerY + (nameInnerH - nameManaIconSize) / 2,
+          )}
         >
           {(() => {
             let dx = 0
@@ -1399,7 +1454,7 @@ function TextIconsLayer() {
                   </Fragment>
                 )
                 dx += iconSize
-                if (i < lastIdx) dx += MANA_COST_ICON_GAP
+                if (i < lastIdx) dx += nameManaIconGap
                 return node
               }
               const wText = measureTextWidth(c.value, nameStack, nameFontStyle, nameManaIconSize)
@@ -1422,7 +1477,7 @@ function TextIconsLayer() {
                 />
               )
               dx += wText
-              if (i < lastIdx) dx += MANA_COST_ICON_GAP
+              if (i < lastIdx) dx += nameManaIconGap
               return node
             })
           })()}

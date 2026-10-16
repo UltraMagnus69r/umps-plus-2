@@ -171,6 +171,11 @@ export default function AdvancedPanelsSection() {
   const customWatermarkDataUrl = useCardStore((s) => s.cardData.customWatermarkDataUrl)
   const watermarkOpacity = useCardStore((s) => s.cardData.watermarkOpacity)
   const panelBackgroundPreview = useCardStore((s) => s.panelBackgroundPreview)
+  const referenceImage = useCardStore((s) => s.cardData.referenceImage)
+  const referenceOpacity = useCardStore((s) => s.cardData.referenceOpacity)
+  const setReferenceImage = useCardStore((s) => s.setReferenceImage)
+  const setReferenceOpacity = useCardStore((s) => s.setReferenceOpacity)
+  const clearReferenceImage = useCardStore((s) => s.clearReferenceImage)
 
   const classicPanelSectionIds = useMemo(() => [CLASSIC_OUTER_BORDER_SECTION_ID] as const, [])
 
@@ -441,6 +446,61 @@ export default function AdvancedPanelsSection() {
             onTouchEnd={commitState}
             className="w-full"
             aria-label="Watermark opacity"
+          />
+        </FieldRow>
+      </div>
+
+      <div className="space-y-2 border-t border-neutral-200/60 pt-3 dark:border-neutral-800/60">
+        <div className="space-y-1">
+          <div className={`block ${UI_TEXT_LABEL_SEMIBOLD}`}>Fidelity reference</div>
+          <p className={`${UI_TEXT_HELP_COMPACT} leading-snug`}>
+            Ghost overlay (editor only, excluded from export). Load a Card Conjurer / scan face at trim
+            aspect, opacity ~0.4, toggle against Standard / Modern seating.
+          </p>
+        </div>
+        <FieldRow label="Reference image" layout="stacked">
+          <div className="space-y-2">
+            <input
+              type="file"
+              accept="image/*"
+              className="block w-full text-xs"
+              aria-label="Upload fidelity reference image"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (!file) return
+                const reader = new FileReader()
+                reader.onload = () => {
+                  const base64 = String(reader.result ?? '')
+                  if (!base64) return
+                  setReferenceImage(base64)
+                }
+                reader.readAsDataURL(file)
+                e.target.value = ''
+              }}
+            />
+            {referenceImage ? (
+              <button
+                type="button"
+                className={`sidebar-btn-secondary ui-focus-ring h-9 w-full rounded-xl border px-3 ${UI_TEXT_ACTION} hover:bg-neutral-50 dark:hover:bg-neutral-800`}
+                onClick={() => clearReferenceImage()}
+                aria-label="Clear fidelity reference image"
+              >
+                Clear reference
+              </button>
+            ) : null}
+          </div>
+        </FieldRow>
+        <FieldRow label="Reference opacity" layout="stacked">
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={typeof referenceOpacity === 'number' ? referenceOpacity : 0.4}
+            onChange={(e) => setReferenceOpacity(parseFloat(e.target.value))}
+            className="w-full"
+            aria-label="Fidelity reference opacity"
+            disabled={!referenceImage}
           />
         </FieldRow>
       </div>
