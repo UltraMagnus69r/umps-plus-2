@@ -11,6 +11,16 @@ import { buildPlaneswalkerModernV2StageRects } from './planeswalkerModernV2Layou
 import { buildPkmnStageRects } from './pkmnLayoutAuthority'
 import { getPreModernTextBoxInnerRect } from './preModernTextBoxAuthority'
 import {
+  BATTLE_STAGE_HEIGHT,
+  BATTLE_STAGE_WIDTH,
+  getBattleArtRect,
+  getBattleCollectorRect,
+  getBattleDefenseRect,
+  getBattleNameRect,
+  getBattleRulesRect,
+  getBattleTypeRect,
+} from './battleLayoutAuthority'
+import {
   BATTLE_REGULAR_RECIPE,
   buildRecipeCoreStageRects,
   buildRecipeExtensionStageRects,
@@ -24,6 +34,7 @@ import type { LayoutRegionRect } from './layoutContract'
 import type { LayoutFamily, LayoutId, LayoutVariant } from './layoutTaxonomy'
 import { PKMN_FRAME_OPTIONS } from '../data/pkmnFrameOptions'
 import {
+  isBattleLayout,
   layoutCompatibility,
   layoutFromLegacyMode,
   layoutToLegacyMode,
@@ -939,41 +950,43 @@ function buildSagaCreatureContract(): LayoutContract {
   })
 }
 
-/** Battle / Siege — CC landscape seating mapped into portrait stage. */
+/** Battle / Siege — true landscape stage (2250×1650); chrome owns plates/text. */
 function buildBattleModernContract(): LayoutContract {
-  const rects = buildRecipeCoreStageRects(BATTLE_REGULAR_RECIPE)
-  const standard = getStandardLayoutGeometry()
+  const toNorm = (r: { x: number; y: number; width: number; height: number }) => ({
+    left: r.x / BATTLE_STAGE_WIDTH,
+    top: r.y / BATTLE_STAGE_HEIGHT,
+    width: r.width / BATTLE_STAGE_WIDTH,
+    height: r.height / BATTLE_STAGE_HEIGHT,
+  })
   return normalizeLayoutContract({
     id: { family: 'battle', variant: 'modern' },
     regions: {
-      art: pxRectToNormalizedRect(rects.art),
-      nameBar: pxRectToNormalizedRect(rects.nameBar),
-      typeLine: pxRectToNormalizedRect(rects.typeLine),
-      rulesText: pxRectToNormalizedRect(rects.rulesText),
-      metadataStrip: pxRectToNormalizedRect({
-        x: standard.bottomInfoX,
-        y: standard.bottomInfoY,
-        width: standard.bottomInfoW,
-        height: standard.bottomInfoH,
-      }),
+      art: toNorm(getBattleArtRect()),
+      nameBar: toNorm(getBattleNameRect()),
+      typeLine: toNorm(getBattleTypeRect()),
+      rulesText: toNorm(getBattleRulesRect()),
+      metadataStrip: toNorm(getBattleCollectorRect()),
       lowerRight: {
         kind: 'functionalZone',
-        rect: pxRectToNormalizedRect(rects.lowerRight),
+        rect: toNorm(getBattleDefenseRect()),
       },
     },
     capabilities: {
-      supportsFlavorText: true,
+      supportsFlavorText: false,
       supportsPowerToughnessBox: false,
       supportsMetadataStrip: true,
       supportsEdgeToBleedArt: false,
       supportsFloatingTextTreatment: false,
       supportsSecondaryStructuralRegions: true,
-      supportsNamePlateBox: true,
-      supportsTypeLineBox: true,
+      supportsNamePlateBox: false,
+      supportsTypeLineBox: false,
       supportsHologramSeal: true,
-      supportsRulesTextBoxFrame: true,
-      supportsRulesTextBoxTexture: true,
+      supportsRulesTextBoxFrame: false,
+      supportsRulesTextBoxTexture: false,
       supportsModernDummyLayout: false,
+      suppressRulesTextRendering: true,
+      supportsBattleChrome: true,
+      usesLandscapeStage: true,
     },
     bleedBehavior: 'trim-contained',
     compliance: {
@@ -1174,7 +1187,17 @@ export function getActiveLayoutArtRectFromState(input: RuntimeLayoutInput): {
   width: number
   height: number
 } {
-  return normalizedToStageRect(getActiveLayoutRegionsFromState(input).art)
+  const art = getActiveLayoutRegionsFromState(input).art
+  const layout = normalizeLayout(input?.cardData?.layout ?? null)
+  if (isBattleLayout(layout)) {
+    return {
+      x: Math.round(art.left * BATTLE_STAGE_WIDTH),
+      y: Math.round(art.top * BATTLE_STAGE_HEIGHT),
+      width: Math.round(art.width * BATTLE_STAGE_WIDTH),
+      height: Math.round(art.height * BATTLE_STAGE_HEIGHT),
+    }
+  }
+  return normalizedToStageRect(art)
 }
 
 export function getLegacyLayoutArtRect(layoutMode: CardLayoutMode): {

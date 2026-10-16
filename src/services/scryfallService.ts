@@ -34,6 +34,8 @@ type ScryfallCardFace = {
   power?: string | null
   toughness?: string | null
   loyalty?: string | null
+  /** Battle / Siege defense (face-level). */
+  defense?: string | null
   artist?: string | null
   watermark?: string | null
   image_uris?: ScryfallImageUris
@@ -51,6 +53,7 @@ type ScryfallRawCard = {
   loyalty?: string | null
   power?: string | null
   toughness?: string | null
+  defense?: string | null
   set?: string | null
   collector_number?: string | null
   rarity?: string | null
@@ -157,6 +160,8 @@ export type ScryfallCardFields = {
   loyalty: string | null
   power: string | null
   toughness: string | null
+  /** Battle / Siege defense (from face when present). */
+  defense: string | null
   /** Lowercase set code for `getSetSymbolUrl`. */
   set: string | null
   collector_number: string | null
@@ -256,6 +261,9 @@ function mapRawCardToFields(card: ScryfallRawCard): ScryfallCardFields {
     toughness:
       (face?.toughness != null ? toStr(face.toughness) : null) ??
       (card.toughness != null ? toStr(card.toughness) : null),
+    defense:
+      (face?.defense != null ? toStr(face.defense) : null) ??
+      (card.defense != null ? toStr(card.defense) : null),
     set: setNormalized,
     collector_number: card.collector_number != null ? toStr(card.collector_number) : null,
     rarity: card.rarity != null ? toStr(card.rarity) : null,

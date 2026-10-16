@@ -61,6 +61,7 @@ import { CONSTRAINT_COPY } from '../../authority/constraintFeedbackAuthority'
 import { resolveWorkflowValidationHints } from '../../authority/validationFeedbackAuthority'
 import {
   isLandFullArtReducedCore,
+  shouldShowBattleDefenseControls,
   shouldShowFlavorTextField,
   shouldShowLandPanelArtSelector,
   shouldShowPlaneswalkerCoreInputs,
@@ -301,6 +302,7 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
   const power = useCardStore((s) => s.cardData.power)
   const toughness = useCardStore((s) => s.cardData.toughness)
   const showPowerToughness = useCardStore((s) => s.cardData.showPowerToughness)
+  const battleDefense = useCardStore((s) => s.cardData.battleDefense)
   const startingLoyalty = useCardStore((s) => s.cardData.startingLoyalty)
   const planeswalkerStaticText = useCardStore((s) => s.cardData.planeswalkerStaticText)
   const planeswalkerAbilityCount = useCardStore((s) => s.cardData.planeswalkerAbilityCount)
@@ -442,6 +444,9 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
   const flavorField = useCaretPreservingField<HTMLTextAreaElement>(flavorText, (v) => setField('flavorText', v))
   const powerField = useCaretPreservingField<HTMLInputElement>(power, (v) => setField('power', v))
   const toughnessField = useCaretPreservingField<HTMLInputElement>(toughness, (v) => setField('toughness', v))
+  const battleDefenseField = useCaretPreservingField<HTMLInputElement>(battleDefense, (v) =>
+    setField('battleDefense', v),
+  )
   const activeLayoutCapabilities = getActiveLayoutCapabilitiesFromState({
     currentLayout,
     cardData: { layout: activeLayout },
@@ -1121,6 +1126,19 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
                   setField={setField}
                   commitState={commitState}
                 />
+              ) : null}
+
+              {shouldShowBattleDefenseControls(pdInput) ? (
+                <FieldRow label="Defense" layout="stacked">
+                  <input
+                    {...battleDefenseField}
+                    onBlur={commitState}
+                    className={INPUT_CLASS}
+                    placeholder="e.g., 6"
+                    aria-label="Battle defense"
+                    inputMode="numeric"
+                  />
+                </FieldRow>
               ) : null}
 
               {shouldShowRulesTextEditor(pdInput) ? (

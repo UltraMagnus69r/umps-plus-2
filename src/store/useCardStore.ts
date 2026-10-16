@@ -90,6 +90,7 @@ import {
   reminderAfterChapterCountChange,
   SAGA_CHAPTER_COUNT_DEFAULT,
 } from '../authority/sagaClassStageAuthority'
+import { normalizeBattleDefense } from '../authority/battleLayoutAuthority'
 import {
   normalizeSecondaryNameAlign,
   normalizeSecondaryNameFontSize,
@@ -348,6 +349,9 @@ export interface CardData {
   /** When false, flavor is editable but not rendered on card (planeswalker default OFF). */
   showFlavorTextOnCard: boolean
 
+  /** Battle / Siege — defense value in the shield (top-right of landscape face). */
+  battleDefense: string
+
   /** Saga / Class / Saga Creature — reminder strip text (structured; not cardText blob). */
   sagaReminderText: string
   /** Number of chapter/level bands (2–5). Default 3. */
@@ -382,6 +386,7 @@ export const FIELD_DIRTY_KEYS = [
   'power',
   'toughness',
   'showPowerToughness',
+  'battleDefense',
   'set',
   'collectorNumber',
   'rarity',
@@ -411,6 +416,7 @@ export function createInitialFieldDirty(): FieldDirtyState {
     power: false,
     toughness: false,
     showPowerToughness: false,
+    battleDefense: false,
     set: false,
     collectorNumber: false,
     rarity: false,
@@ -437,6 +443,7 @@ const CARD_KEY_TO_DIRTY_MAP = {
   power: 'power',
   toughness: 'toughness',
   showPowerToughness: 'showPowerToughness',
+  battleDefense: 'battleDefense',
   set: 'set',
   collector_number: 'collectorNumber',
   rarity: 'rarity',
@@ -494,6 +501,7 @@ function scryfallFieldsToSystemUpdate(data: ScryfallCardFields): SystemCardDataU
   if (data.flavor_text != null) out.flavorText = data.flavor_text
   if (data.power != null) out.power = data.power
   if (data.toughness != null) out.toughness = data.toughness
+  if (data.defense != null) out.battleDefense = normalizeBattleDefense(data.defense)
   if (data.set != null) out.set = data.set
   if (data.collector_number != null) out.collector_number = data.collector_number
   if (data.rarity != null) out.rarity = normalizeScryfallRarity(data.rarity)
@@ -588,6 +596,7 @@ function applySystemUpdateToCardData(
     else if (cardKey === 'flavorText') next = { ...next, flavorText: String(raw ?? '') }
     else if (cardKey === 'power') next = { ...next, power: String(raw ?? '') }
     else if (cardKey === 'toughness') next = { ...next, toughness: String(raw ?? '') }
+    else if (cardKey === 'battleDefense') next = { ...next, battleDefense: normalizeBattleDefense(raw) }
     else if (cardKey === 'set') next = { ...next, set: String(raw ?? '').trim().toLowerCase() }
     else if (cardKey === 'collector_number') next = { ...next, collector_number: String(raw ?? '') }
     else if (cardKey === 'rarity') next = { ...next, rarity: raw as CardData['rarity'] }
@@ -1148,6 +1157,7 @@ export const defaultCardData: CardData = {
   metadataTypography: defaultMetadataTypography(),
   sagaChapterTypography: defaultSagaChapterTypography(),
   ...DEFAULT_PLANESWALKER_CARD_FIELDS,
+  battleDefense: '',
   sagaReminderText: '',
   sagaChapterCount: SAGA_CHAPTER_COUNT_DEFAULT,
   sagaStageTexts: defaultSagaStageTexts(SAGA_CHAPTER_COUNT_DEFAULT),
@@ -1348,6 +1358,7 @@ function normalizeSnapshot(s: Snapshot): Snapshot {
       typeof anyS?.showFlavorTextOnCard === 'boolean'
         ? anyS.showFlavorTextOnCard
         : defaultCardData.showFlavorTextOnCard,
+    battleDefense: normalizeBattleDefense(anyS?.battleDefense ?? defaultCardData.battleDefense),
     sagaReminderText: normalizeSagaReminderText(
       anyS?.sagaReminderText,
       defaultCardData.sagaReminderText,
@@ -1780,6 +1791,9 @@ colorBlendDirection: 'vertical',
               }
             }
             next = applyPlaneswalkerStructuredSync(next)
+          }
+          if (key === 'battleDefense') {
+            next.battleDefense = normalizeBattleDefense(value)
           }
           if (key === 'sagaReminderText') {
             next.sagaReminderText = normalizeSagaReminderText(value)

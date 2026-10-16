@@ -64,6 +64,10 @@ export type LayoutCapabilityFlags = {
   supportsPlaneswalkerModernV2Layout: boolean
   /** Spell Saga/Class — parchment column, vertical banner, chapter/level badges. */
   supportsSagaClassChrome: boolean
+  /** Battle / Siege — landscape chrome (name strip, parchment rules, defense shield). */
+  supportsBattleChrome: boolean
+  /** Battle — landscape stage (2250×1650) instead of portrait. */
+  usesLandscapeStage: boolean
 }
 
 export type BleedBehavior = 'trim-contained' | 'edge-to-bleed'
@@ -110,6 +114,8 @@ const DEFAULT_CAPABILITIES: LayoutCapabilityFlags = {
   supportsPlaneswalkerAbilities: false,
   supportsPlaneswalkerModernV2Layout: false,
   supportsSagaClassChrome: false,
+  supportsBattleChrome: false,
+  usesLandscapeStage: false,
 }
 
 const DEFAULT_COMPLIANCE: ComplianceMetadata = {

@@ -1,37 +1,28 @@
 /**
- * Card Conjurer Battle / Siege seating (packBattle) — landscape 2100×1500 face
- * mapped into PipMint portrait trim 1500×2100 via 90° CW:
- *   x_p = 1 - y_l - h_l,  y_p = x_l,  w_p = h_l,  h_p = w_l
- * (CC norms: x/w of 2100, y/h of 1500.)
+ * Battle / Siege — true landscape face (CC packBattle).
+ * Regions are trim-norm of 2100×1500; BattleChromeLayer + battleLayoutAuthority own seating.
  */
-import type { LayoutRecipe, TrimNormRect } from './layoutRecipeTypes'
+import type { LayoutRecipe } from './layoutRecipeTypes'
 import { M15_REGULAR_MANA_PIP_SIZE_PX } from './m15RegularCreatureRecipe'
 
 const CC_PIP_SIZE_FRAC = 71 / 1638
 
-/** Landscape rect (CC Battle face) → portrait trim-norm. */
-function landscapeToPortrait(r: TrimNormRect): TrimNormRect {
-  return {
-    x: 1 - r.y - r.h,
-    y: r.x,
-    w: r.h,
-    h: r.w,
-  }
-}
-
 /** CC Battle landscape fractions (x/w ÷2100, y/h ÷1500). */
-const L_ART = { x: 167 / 2100, y: 60 / 1500, w: 1873 / 2100, h: 1371 / 1500 }
-const L_TITLE = { x: 387 / 2100, y: 81 / 1500, w: 1547 / 2100, h: 114 / 1500 }
-const L_MANA = { x: 0 / 2100, y: 100 / 1500, w: 1957 / 2100, h: 71 / 1500 }
-const L_TYPE = { x: 268 / 2100, y: 873 / 1500, w: 1667 / 2100, h: 114 / 1500 }
-const L_RULES = { x: 272 / 2100, y: 1008 / 1500, w: 1661 / 2100, h: 414 / 1500 }
-const L_DEFENSE = { x: 1920 / 2100, y: 1320 / 1500, w: 86 / 2100, h: 123 / 1500 }
-const L_SET = { x: 1945 / 2100, y: 925 / 1500, w: 180 / 2100, h: 86 / 1500 }
+/** Visible aperture between name strip and right column (not under type/rules chrome). */
+const L_ART = { x: 167 / 2100, y: 60 / 1500, w: (1680 - 167) / 2100, h: 1371 / 1500 }
+const L_TITLE = { x: 48 / 2100, y: 70 / 1500, w: 110 / 2100, h: 1260 / 1500 }
+const L_MANA = { x: 48 / 2100, y: 78 / 1500, w: 110 / 2100, h: 200 / 1500 }
+const L_TYPE = { x: 1680 / 2100, y: 70 / 1500, w: 360 / 2100, h: 100 / 1500 }
+const L_RULES = { x: 1680 / 2100, y: 180 / 1500, w: 360 / 2100, h: 1180 / 1500 }
+const L_DEFENSE = { x: 1920 / 2100, y: 60 / 1500, w: 120 / 2100, h: 140 / 1500 }
+const L_SET = { x: 1945 / 2100, y: 78 / 1500, w: 90 / 2100, h: 86 / 1500 }
+const L_COLLECTOR = { x: 180 / 2100, y: 1410 / 1500, w: 1740 / 2100, h: 70 / 1500 }
 
 export const BATTLE_REGULAR_RECIPE: LayoutRecipe = {
   id: 'magic.battle.regular',
   family: 'battle',
   variant: 'modern',
+  /** Landscape trim; consumers that assume portrait must use battleLayoutAuthority. */
   space: 'trim-1500x2100',
   chrome: {
     mode: 'procedural',
@@ -39,21 +30,20 @@ export const BATTLE_REGULAR_RECIPE: LayoutRecipe = {
     ptOverlay: null,
   },
   regions: {
-    art: landscapeToPortrait(L_ART),
-    name: landscapeToPortrait(L_TITLE),
-    mana: { ...landscapeToPortrait(L_MANA), align: 'right' },
-    type: landscapeToPortrait(L_TYPE),
-    setSymbol: { ...landscapeToPortrait(L_SET), anchor: 'right-center' },
-    rules: landscapeToPortrait(L_RULES),
-    /** Defense badge (siege toughness) — mapped from landscape defense slot */
-    ptText: landscapeToPortrait(L_DEFENSE),
-    collector: { x: 0.06, y: 0.94, w: 0.88, h: 0.05 },
+    art: L_ART,
+    name: L_TITLE,
+    mana: { ...L_MANA, align: 'center' },
+    type: L_TYPE,
+    setSymbol: { ...L_SET, anchor: 'right-center' },
+    rules: L_RULES,
+    ptText: L_DEFENSE,
+    collector: L_COLLECTOR,
   },
   typography: {
-    name: { font: 'belerenb', size: (0.0381 * 2100) / 1500, oneLine: true, minSize: 0.022 },
-    type: { font: 'belerenb', size: (0.0324 * 2100) / 1500, oneLine: true, minSize: 0.02 },
-    rules: { font: 'mplantin', size: (0.0362 * 2100) / 1500, minSize: 0.018, lineHeight: 1.2, vAlign: 'top' },
-    pt: { font: 'belerenbsc', size: (0.0372 * 2100) / 1500, align: 'center' },
+    name: { font: 'belerenb', size: 0.0381, oneLine: true, minSize: 0.022 },
+    type: { font: 'belerenb', size: 0.0324, oneLine: true, minSize: 0.02 },
+    rules: { font: 'mplantin', size: 0.0362, minSize: 0.018, lineHeight: 1.2, vAlign: 'top' },
+    pt: { font: 'belerenbsc', size: 0.0372, align: 'center' },
   },
   mana: {
     pipSize: CC_PIP_SIZE_FRAC,
@@ -63,7 +53,7 @@ export const BATTLE_REGULAR_RECIPE: LayoutRecipe = {
     shadowY: 0.0029,
   },
   extensions: {
-    defense: landscapeToPortrait(L_DEFENSE),
+    defense: L_DEFENSE,
   },
   acceptancePxAt600: {
     nameTop: 6,

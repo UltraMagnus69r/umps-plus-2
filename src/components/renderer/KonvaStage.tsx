@@ -7,6 +7,7 @@ import {
   STAGE_EXPORT_HEIGHT,
   STAGE_EXPORT_WIDTH,
 } from '../../authority/geometryAuthority'
+import { getBattleStageSize } from '../../authority/battleLayoutAuthority'
 import { getOuterBorderFill } from '../../authority/colorAuthority'
 import { UI_PREVIEW_SURFACE } from '../../authority/panelSurfaceAuthority'
 import { shouldRenderNameplateCrown } from '../../authority/crownLayoutAuthority'
@@ -27,6 +28,7 @@ import LandSecondaryArtLayer from './layers/LandSecondaryArtLayer'
 import SpellTextBoxLayer from './layers/SpellTextBoxLayer'
 import PreModernRulesTextBoxLayer from './layers/PreModernRulesTextBoxLayer'
 import SagaClassChromeLayer from './layers/SagaClassChromeLayer'
+import BattleChromeLayer from './layers/BattleChromeLayer'
 import TextIconsLayer from './layers/TextIconsLayer'
 import PlaneswalkerAbilitiesLayer from './layers/PlaneswalkerAbilitiesLayer'
 import SetSymbolLayer from './layers/SetSymbolLayer'
@@ -119,10 +121,14 @@ function KonvaStage({
   const stageRef = useRef<Konva.Stage | null>(null)
 
   const { ref: containerRef, size } = useContainerSize<HTMLDivElement>()
-  const w = DIMENSIONS.FULL_BLEED.width
-  const h = DIMENSIONS.FULL_BLEED.height
-  const tw = DIMENSIONS.TRIM.width
-  const th = DIMENSIONS.TRIM.height
+  const landscapeStage = layoutCaps.usesLandscapeStage === true
+  const battleSize = getBattleStageSize()
+  const w = landscapeStage ? battleSize.width : DIMENSIONS.FULL_BLEED.width
+  const h = landscapeStage ? battleSize.height : DIMENSIONS.FULL_BLEED.height
+  const tw = landscapeStage ? battleSize.width - 2 * BLEED_PX : DIMENSIONS.TRIM.width
+  const th = landscapeStage ? battleSize.height - 2 * BLEED_PX : DIMENSIONS.TRIM.height
+  const exportW = landscapeStage ? battleSize.width : STAGE_EXPORT_WIDTH
+  const exportH = landscapeStage ? battleSize.height : STAGE_EXPORT_HEIGHT
 
   const scale = useMemo(() => {
     const cw = size.width || 1
@@ -167,14 +173,14 @@ function KonvaStage({
       if (labelsLayer) labelsLayer.visible(false)
       if (overlayLayer) overlayLayer.visible(false)
       if (referenceLayer) referenceLayer.visible(false)
-      stage.width(STAGE_EXPORT_WIDTH)
-      stage.height(STAGE_EXPORT_HEIGHT)
+      stage.width(exportW)
+      stage.height(exportH)
       stage.scale({ x: 1, y: 1 })
       stage.draw()
 
       const stageCanvas = stage.toCanvas({ pixelRatio: 1 })
-      const TARGET_W = STAGE_EXPORT_WIDTH
-      const TARGET_H = STAGE_EXPORT_HEIGHT
+      const TARGET_W = exportW
+      const TARGET_H = exportH
       const out = document.createElement('canvas')
       out.width = TARGET_W
       out.height = TARGET_H
@@ -220,7 +226,7 @@ function KonvaStage({
       stage.scale({ x: prevScaleX, y: prevScaleY })
       stage.draw()
     }
-  }, [])
+  }, [exportW, exportH])
 
   useEffect(() => {
     if (!registerExporter) return
@@ -271,26 +277,35 @@ function KonvaStage({
         {/* Hidden + clone: printable proxy only (Module 4.1); editor overlays remain. */}
         {!hiddenCloneChrome && (
           <>
-            <TextureBorderLayer />
-            <ArtLayer />
-            <PkmnFrameLayer />
-            <FrameLayer />
-            {/* Over art (and empty art fill), under nameplate — all families including PKMN. */}
-            <SecondaryNameLayer />
-            {layoutCaps.supportsSagaClassChrome ? <SagaClassChromeLayer /> : null}
-            {showCrown ? <CrownLayer /> : null}
-            {layoutCaps.supportsNamePlateBox ? <NamePlateLayer /> : null}
-            {showRulesTexture ? <RulesTextBoxTextureLayer /> : null}
-            <WatermarkLayer />
-            {layoutCaps.supportsLandSecondaryArtInRulesRegion ? <LandSecondaryArtLayer /> : null}
-            {layoutCaps.supportsSpellTextBoxPanel ? <SpellTextBoxLayer /> : null}
-            {showBundledRulesPanel ? <PreModernRulesTextBoxLayer /> : null}
-            {layoutCaps.useLandFullArtManaCircle ? <LandFullArtManaCircleLayer /> : null}
-            <TextIconsLayer />
-            {layoutCaps.supportsPlaneswalkerAbilities ? <PlaneswalkerAbilitiesLayer /> : null}
-            <SetSymbolLayer />
-            <PowerToughnessOverlayLayer />
-            {layoutCaps.supportsStartingLoyaltyBox ? <StartingLoyaltyOverlayLayer /> : null}
+            {layoutCaps.supportsBattleChrome ? (
+              <>
+                <BattleChromeLayer />
+                <ArtLayer />
+              </>
+            ) : (
+              <>
+                <TextureBorderLayer />
+                <ArtLayer />
+                <PkmnFrameLayer />
+                <FrameLayer />
+                {/* Over art (and empty art fill), under nameplate — all families including PKMN. */}
+                <SecondaryNameLayer />
+                {layoutCaps.supportsSagaClassChrome ? <SagaClassChromeLayer /> : null}
+                {showCrown ? <CrownLayer /> : null}
+                {layoutCaps.supportsNamePlateBox ? <NamePlateLayer /> : null}
+                {showRulesTexture ? <RulesTextBoxTextureLayer /> : null}
+                <WatermarkLayer />
+                {layoutCaps.supportsLandSecondaryArtInRulesRegion ? <LandSecondaryArtLayer /> : null}
+                {layoutCaps.supportsSpellTextBoxPanel ? <SpellTextBoxLayer /> : null}
+                {showBundledRulesPanel ? <PreModernRulesTextBoxLayer /> : null}
+                {layoutCaps.useLandFullArtManaCircle ? <LandFullArtManaCircleLayer /> : null}
+                <TextIconsLayer />
+                {layoutCaps.supportsPlaneswalkerAbilities ? <PlaneswalkerAbilitiesLayer /> : null}
+                <SetSymbolLayer />
+                <PowerToughnessOverlayLayer />
+                {layoutCaps.supportsStartingLoyaltyBox ? <StartingLoyaltyOverlayLayer /> : null}
+              </>
+            )}
           </>
         )}
         <ClonedCardLayer />
