@@ -40,6 +40,8 @@ export function shouldShowSecondaryNameFields(input: ProgressiveDisclosureSideba
 
 export function shouldShowRulesTextAndFlavorBlock(input: ProgressiveDisclosureSidebarInput): boolean {
   if (input.capabilities.supportsPlaneswalkerAbilities) return false
+  /** Spell Saga/Class use structured stage editors instead of one rules blob. */
+  if (input.capabilities.supportsSagaClassChrome && input.layoutFamily === 'spell') return false
   return (
     shouldShowExpandedCoreCardInputs(input.capabilities) &&
     !input.capabilities.supportsLandSecondaryArtInRulesRegion
@@ -48,6 +50,11 @@ export function shouldShowRulesTextAndFlavorBlock(input: ProgressiveDisclosureSi
 
 export function shouldShowRulesTextEditor(input: ProgressiveDisclosureSidebarInput): boolean {
   return shouldShowRulesTextAndFlavorBlock(input)
+}
+
+/** Spell Saga / Class — structured reminder + I/II/III stage editors (not Saga Creature). */
+export function shouldShowSagaClassCoreInputs(input: ProgressiveDisclosureSidebarInput): boolean {
+  return input.capabilities.supportsSagaClassChrome === true && input.layoutFamily === 'spell'
 }
 
 export function shouldShowFlavorTextField(input: ProgressiveDisclosureSidebarInput): boolean {

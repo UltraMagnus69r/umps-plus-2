@@ -1,6 +1,7 @@
 /**
  * Saga Regular seating — Card Conjurer pack + painted-frame chrome geometry.
  * Right tall art; left parchment + chapter banner.
+ * Reminder band short; remaining column = three equal chapter bands.
  */
 import type { LayoutRecipe } from './layoutRecipeTypes'
 import { M15_REGULAR_MANA_PIP_SIZE_PX } from './m15RegularCreatureRecipe'
@@ -23,7 +24,6 @@ export const SAGA_REGULAR_RECIPE: LayoutRecipe = {
     mana: { x: 0.0, y: 0.0613, w: 0.9292, h: 71 / 2100, align: 'right' },
     type: { x: 0.0854, y: 0.8481, w: 0.8292, h: 0.0543 },
     setSymbol: { x: 0.9227, y: 0.8739, w: 0.12, h: 0.0381, anchor: 'right-center' },
-    /** Parchment column (text + reminder); banner overlays left edge. */
     rules: { x: 0.11, y: 0.1137, w: 0.388, h: 0.7221 },
     ptText: { x: 0.7928, y: 0.902, w: 0.1367, h: 0.0372 },
     collector: { x: 0.06, y: 0.94, w: 0.88, h: 0.05 },
@@ -42,11 +42,11 @@ export const SAGA_REGULAR_RECIPE: LayoutRecipe = {
     shadowY: 0.0029,
   },
   extensions: {
-    banner: { x: 0.044, y: 0.1714, w: 0.068, h: 0.661 },
-    reminder: { x: 0.0867, y: 0.1129, w: 0.404, h: 0.1772 },
-    chapterRow1: { x: 0.1334, y: 0.2896, w: 0.35, h: 0.1783 },
-    chapterRow2: { x: 0.1334, y: 0.4679, w: 0.35, h: 0.1783 },
-    chapterRow3: { x: 0.1334, y: 0.6462, w: 0.35, h: 0.1784 },
+    banner: { x: 0.044, y: 0.160, w: 0.068, h: 0.665 },
+    reminder: { x: 0.0867, y: 0.1137, w: 0.404, h: 0.078 },
+    chapterRow1: { x: 0.1334, y: 0.200, w: 0.35, h: 0.2083 },
+    chapterRow2: { x: 0.1334, y: 0.4083, w: 0.35, h: 0.2083 },
+    chapterRow3: { x: 0.1334, y: 0.6166, w: 0.35, h: 0.2084 },
   },
   acceptancePxAt600: {
     nameTop: 4,

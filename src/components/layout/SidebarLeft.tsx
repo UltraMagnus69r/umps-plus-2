@@ -67,9 +67,12 @@ import {
   shouldShowPowerToughnessControls,
   shouldShowPtTypographySubsection,
   shouldShowRulesTextEditor,
+  shouldShowSagaClassCoreInputs,
   shouldShowSecondaryNameFields,
 } from '../../authority/progressiveDisclosureAuthority'
 import PlaneswalkerCoreInputs from './PlaneswalkerCoreInputs'
+import SagaClassCoreInputs from './SagaClassCoreInputs'
+import { isClassLayout } from '../../authority/layoutTaxonomy'
 import { usePersistedUiState, useUiComplexityMode } from '../../hooks/usePersistedUiState'
 import { useScrollFieldIntoView } from '../../hooks/useScrollFieldIntoView'
 import {
@@ -293,6 +296,8 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
   const planeswalkerAbilityCount = useCardStore((s) => s.cardData.planeswalkerAbilityCount)
   const planeswalkerAbilities = useCardStore((s) => s.cardData.planeswalkerAbilities)
   const showFlavorTextOnCard = useCardStore((s) => s.cardData.showFlavorTextOnCard)
+  const sagaReminderText = useCardStore((s) => s.cardData.sagaReminderText)
+  const sagaStageTexts = useCardStore((s) => s.cardData.sagaStageTexts)
   const currentLayout = useCardStore((s) => s.currentLayout)
   const activeLayout = useCardStore((s) => s.cardData.layout as LayoutId)
   const artImage = useCardStore((s) => s.cardData.artImage)
@@ -1049,6 +1054,16 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
                   planeswalkerAbilities={planeswalkerAbilities}
                   flavorText={flavorText}
                   showFlavorTextOnCard={showFlavorTextOnCard}
+                  setField={setField}
+                  commitState={commitState}
+                />
+              ) : null}
+
+              {shouldShowSagaClassCoreInputs(pdInput) ? (
+                <SagaClassCoreInputs
+                  mode={isClassLayout(activeLayout) ? 'class' : 'saga'}
+                  sagaReminderText={sagaReminderText}
+                  sagaStageTexts={sagaStageTexts}
                   setField={setField}
                   commitState={commitState}
                 />
