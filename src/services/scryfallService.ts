@@ -53,6 +53,8 @@ type ScryfallRawCard = {
   set_name?: string | null
   released_at?: string | null
   image_uris?: ScryfallImageUris
+  /** Scryfall layout id: normal, saga, class, battle, transform, … */
+  layout?: string | null
   frame?: string | null
   border_color?: string | null
   full_art?: boolean
@@ -265,38 +267,85 @@ export async function fetchScryfallCardById(cardId: string): Promise<ScryfallCar
   return mapRawCardToFields(assertValidCardResponse(raw.data[0]))
 }
 
+function mapSearchItemToPrintCandidate(item: unknown): ScryfallPrintCandidate | null {
+  if (!isRecord(item) || typeof item.id !== 'string') return null
+  const set = toStr((item.set as string | null | undefined) ?? null)
+  const collector = toStr((item.collector_number as string | null | undefined) ?? null)
+  const nameValue = toStr((item.name as string | null | undefined) ?? null)
+  if (!set || !collector || !nameValue) return null
+  const imageUris = isRecord(item.image_uris) ? item.image_uris : null
+  const smallImage = imageUris && typeof imageUris.small === 'string' ? imageUris.small : null
+  return {
+    id: item.id,
+    name: nameValue,
+    set: set.toLowerCase(),
+    set_name: toStr((item.set_name as string | null | undefined) ?? null),
+    collector_number: collector,
+    released_at: toStr((item.released_at as string | null | undefined) ?? null),
+    small_image: smallImage,
+    rarity: toStr((item.rarity as string | null | undefined) ?? null),
+    lang: toStr((item.lang as string | null | undefined) ?? null),
+  }
+}
+
+function mapRawCardToPrintCandidate(card: ScryfallRawCard): ScryfallPrintCandidate | null {
+  return mapSearchItemToPrintCandidate(card)
+}
+
+async function searchScryfallPrintList(query: string): Promise<ScryfallPrintCandidate[] | null> {
+  const searchUrl = `${SCRYFALL_CARDS_SEARCH}?q=${encodeURIComponent(query)}&unique=prints&order=released&dir=desc`
+  const res = await scryfallFetch(searchUrl)
+  const raw = await parseJsonResponse(res)
+  if (res.status === 404) return null
+  if (!res.ok) throw new Error(readScryfallError(raw, res.status))
+  if (!isRecord(raw) || !Array.isArray(raw.data)) throw new Error('Unexpected Scryfall search response')
+  const out: ScryfallPrintCandidate[] = []
+  for (const item of raw.data) {
+    const mapped = mapSearchItemToPrintCandidate(item)
+    if (mapped) out.push(mapped)
+  }
+  return out
+}
+
+/**
+ * Resolve every print of a card name for the import/clone picker.
+ *
+ * Strategy:
+ * 1. Exact name (`!"Name"`) — normal catalog prints
+ * 2. Exact name + `include:extras` — Heroes of the Realm / promo-only names (e.g. War of the Spark ph19)
+ * 3. `/cards/named?fuzzy=` → retry exact (+extras) on the canonical name; else return that single print
+ */
 export async function searchScryfallPrintsByName(name: string): Promise<ScryfallPrintCandidate[]> {
   const q = String(name ?? '').trim()
   if (!q) throw new Error('Card name is required')
 
-  const searchUrl = `${SCRYFALL_CARDS_SEARCH}?q=${encodeURIComponent(`!"${q}"`)}&unique=prints&order=released&dir=desc`
-  const res = await scryfallFetch(searchUrl)
-  const raw = await parseJsonResponse(res)
-  if (!res.ok) throw new Error(readScryfallError(raw, res.status))
-  if (!isRecord(raw) || !Array.isArray(raw.data)) throw new Error('Unexpected Scryfall search response')
+  const exact = `!"${q}"`
+  const primary = await searchScryfallPrintList(exact)
+  if (primary && primary.length > 0) return primary
 
-  const out: ScryfallPrintCandidate[] = []
-  for (const item of raw.data) {
-    if (!isRecord(item) || typeof item.id !== 'string') continue
-    const set = toStr((item.set as string | null | undefined) ?? null)
-    const collector = toStr((item.collector_number as string | null | undefined) ?? null)
-    const nameValue = toStr((item.name as string | null | undefined) ?? null)
-    if (!set || !collector || !nameValue) continue
-    const imageUris = isRecord(item.image_uris) ? item.image_uris : null
-    const smallImage = imageUris && typeof imageUris.small === 'string' ? imageUris.small : null
-    out.push({
-      id: item.id,
-      name: nameValue,
-      set: set.toLowerCase(),
-      set_name: toStr((item.set_name as string | null | undefined) ?? null),
-      collector_number: collector,
-      released_at: toStr((item.released_at as string | null | undefined) ?? null),
-      small_image: smallImage,
-      rarity: toStr((item.rarity as string | null | undefined) ?? null),
-      lang: toStr((item.lang as string | null | undefined) ?? null),
-    })
+  const withExtras = await searchScryfallPrintList(`${exact} include:extras`)
+  if (withExtras && withExtras.length > 0) return withExtras
+
+  // Fuzzy named resolves typos / near-matches; then re-run exact print search on the oracle name.
+  const namedUrl = `${SCRYFALL_NAMED_FUZZY}?fuzzy=${encodeURIComponent(q)}`
+  const namedRes = await scryfallFetch(namedUrl)
+  const namedRaw = await parseJsonResponse(namedRes)
+  if (!namedRes.ok) throw new Error(readScryfallError(namedRaw, namedRes.status))
+  const card = assertValidCardResponse(namedRaw)
+  const canonical = toStr(card.name)?.trim()
+  if (canonical && canonical.toLowerCase() !== q.toLowerCase()) {
+    const canonExact = `!"${canonical}"`
+    const canonPrimary = await searchScryfallPrintList(canonExact)
+    if (canonPrimary && canonPrimary.length > 0) return canonPrimary
+    const canonExtras = await searchScryfallPrintList(`${canonExact} include:extras`)
+    if (canonExtras && canonExtras.length > 0) return canonExtras
   }
-  return out
+  const single = mapRawCardToPrintCandidate(card)
+  if (single) return [single]
+
+  throw new Error(
+    "Your query didn't match any cards. Adjust your search terms or refer to the syntax guide at https://scryfall.com/docs/reference",
+  )
 }
 
 /** Scryfall SVG set symbol CDN (Module 5.2). */
