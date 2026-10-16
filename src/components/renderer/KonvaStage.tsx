@@ -273,6 +273,8 @@ function KonvaStage({
           <>
             <TextureBorderLayer />
             <ArtLayer />
+            {/* Over art, under frame/nameplate — all families including PKMN. */}
+            <SecondaryNameLayer />
             <PkmnFrameLayer />
             <FrameLayer />
             {layoutCaps.supportsSagaClassChrome ? <SagaClassChromeLayer /> : null}
@@ -289,7 +291,6 @@ function KonvaStage({
             <SetSymbolLayer />
             <PowerToughnessOverlayLayer />
             {layoutCaps.supportsStartingLoyaltyBox ? <StartingLoyaltyOverlayLayer /> : null}
-            {layoutCaps.supportsPreModernFaceLayout ? <SecondaryNameLayer /> : null}
           </>
         )}
         <ClonedCardLayer />

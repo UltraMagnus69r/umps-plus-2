@@ -30,8 +30,9 @@ export function shouldShowExpandedCoreCardInputs(capabilities: LayoutCapabilityF
   return !capabilities.useLandFullArtManaCircle
 }
 
-export function shouldShowSecondaryNameToggle(input: ProgressiveDisclosureSidebarInput): boolean {
-  return shouldShowExpandedCoreCardInputs(input.capabilities)
+/** Secondary name overlay is available on every family/variant (including PKMN / Land FA). */
+export function shouldShowSecondaryNameToggle(_input: ProgressiveDisclosureSidebarInput): boolean {
+  return true
 }
 
 export function shouldShowSecondaryNameFields(input: ProgressiveDisclosureSidebarInput): boolean {

@@ -1,23 +1,17 @@
 import { memo, useCallback, useEffect, useRef } from 'react'
-import { Group, Image, Layer, Text } from 'react-konva'
+import { Group, Image, Layer } from 'react-konva'
 import type Konva from 'konva'
 import { shallow } from 'zustand/shallow'
 import { clampArtPlacementOffsets } from '../../../authority/artPlacementAuthority'
 import {
   getActiveLayoutCapabilitiesFromState,
   getActiveLayoutArtRectFromState,
-  getActiveLayoutRegionsFromState,
-  layoutRegionToStageRect,
 } from '../../../authority/layoutRegistry'
-import { isBorderlessArtTreatmentLayout } from '../../../authority/layoutTaxonomy'
 import { getPlaneswalkerModernV2ArtInnerRect } from '../../../authority/planeswalkerModernV2LayoutAuthority'
-import { getFontStack } from '../../../authority/typographyAuthority'
 import { useKonvaPublicImage } from '../../../hooks/useKonvaPublicImage'
 import { useCardStore } from '../../../store/useCardStore'
 import type { LayoutId } from '../../../authority/layoutTaxonomy'
 import { addPlaneswalkerModernV2ArtInnerClipPath } from './planeswalkerModernV2ArtPath'
-
-const TEXT_SHADOW_OFFSET = { x: 1, y: 1 }
 
 type ArtDragSession = {
   pointerId: number
@@ -31,8 +25,9 @@ type ArtDragSession = {
 }
 
 /**
- * Art layer — image (drag/zoom) and optional secondary name.
+ * Art layer — image (drag/zoom) only.
  * Renders above TextureBorderLayer so artwork is visible in the art window; frame and text stack above.
+ * Secondary name is drawn by SecondaryNameLayer (over art, under nameplate).
  *
  * Art reposition uses custom pointer-delta drag (not Konva `draggable`) so CSS preview
  * pan/zoom on StudioCanvas cannot snap the image origin under the cursor.
@@ -45,10 +40,6 @@ function ArtLayer() {
     artZoom,
     artOffsetX,
     artOffsetY,
-    secondaryName,
-    showSecondaryName,
-    secondaryNameFontSize,
-    secondaryNameLightText,
   } = useCardStore(
     (s) => ({
       currentLayout: s.currentLayout,
@@ -57,10 +48,6 @@ function ArtLayer() {
       artZoom: s.cardData.artZoom,
       artOffsetX: s.cardData.artOffsetX,
       artOffsetY: s.cardData.artOffsetY,
-      secondaryName: s.cardData.secondaryName,
-      showSecondaryName: s.cardData.showSecondaryName,
-      secondaryNameFontSize: s.cardData.secondaryNameFontSize,
-      secondaryNameLightText: s.cardData.secondaryNameLightText,
     }),
     shallow,
   )
@@ -79,14 +66,6 @@ function ArtLayer() {
   const artInnerY = artR.y
   const artInnerW = artR.width
   const artInnerH = artR.height
-  const nameBarRect = layoutRegionToStageRect(
-    getActiveLayoutRegionsFromState({
-      currentLayout,
-      cardData: { layout: activeLayout },
-    }).nameBar,
-  )
-  const borderlessLike = isBorderlessArtTreatmentLayout(activeLayout)
-  const supportsPreModernFaceLayout = capabilities.supportsPreModernFaceLayout
 
   const artImg = useKonvaPublicImage(artImage)
   const layerRef = useRef<Konva.Layer>(null)
@@ -106,13 +85,6 @@ function ArtLayer() {
     }
     return undefined
   }, [artImage, artImg, setAsyncStatus])
-
-  const secondaryFontSize = (() => {
-    const v = typeof secondaryNameFontSize === 'number' && Number.isFinite(secondaryNameFontSize)
-      ? secondaryNameFontSize
-      : 55
-    return Math.max(20, Math.min(90, Math.floor(v * 2) / 2))
-  })()
 
   const pinchRef = useRef<{ distance: number; zoom: number } | null>(null)
 
@@ -326,27 +298,6 @@ function ArtLayer() {
             onPointerDown={beginArtDrag}
           />
         </Group>
-      )}
-
-      {showSecondaryName && secondaryName && !supportsPreModernFaceLayout && (
-        <Text
-          text={secondaryName}
-          x={borderlessLike ? nameBarRect.x + 10 : artInnerX + 10}
-          y={borderlessLike ? nameBarRect.y + nameBarRect.height + 6 : artInnerY + 8}
-          width={borderlessLike ? nameBarRect.width - 20 : artInnerW - 20}
-          height={Math.max(54, Math.min(Math.ceil(secondaryFontSize * 1.25), artInnerH - 16))}
-          fontFamily={getFontStack('NAME')}
-          fontStyle="bold"
-          fontSize={secondaryFontSize}
-          fill={secondaryNameLightText ? '#fff' : '#111'}
-          stroke={secondaryNameLightText ? '#111' : '#fff'}
-          strokeWidth={2}
-          shadowColor={secondaryNameLightText ? '#000' : '#fff'}
-          shadowBlur={4}
-          shadowOffset={TEXT_SHADOW_OFFSET}
-          listening={false}
-          verticalAlign="top"
-        />
       )}
     </Layer>
   )

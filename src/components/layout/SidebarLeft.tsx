@@ -82,6 +82,14 @@ import {
   type StudioFlowStepId,
 } from '../../authority/studioFlowAuthority'
 import type { ManaTextTarget } from '../../utils/manaTextTarget'
+import {
+  normalizeSecondaryNameAlign,
+  normalizeSecondaryNameFontSize,
+  SECONDARY_NAME_ALIGNS,
+  SECONDARY_NAME_FONT_SIZE_MAX,
+  SECONDARY_NAME_FONT_SIZE_MIN,
+  type SecondaryNameAlign,
+} from '../../authority/secondaryNameAuthority'
 
 const FontMenu = lazy(() => import('../ui/FontMenu'))
 const ScryfallImportSection = lazy(() => import('./ScryfallImportSection'))
@@ -283,6 +291,7 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
   const secondaryName = useCardStore((s) => s.cardData.secondaryName)
   const showSecondaryName = useCardStore((s) => s.cardData.showSecondaryName)
   const secondaryNameFontSize = useCardStore((s) => s.cardData.secondaryNameFontSize)
+  const secondaryNameAlign = useCardStore((s) => s.cardData.secondaryNameAlign)
   const secondaryNameLightText = useCardStore((s) => s.cardData.secondaryNameLightText)
   const typeLine = useCardStore((s) => s.cardData.typeLine)
   const manaCost = useCardStore((s) => s.cardData.manaCost)
@@ -710,60 +719,6 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
                       </Suspense>
                     </div>
                   </FieldRow>
-                  <div className="space-y-2">
-                    <div className="space-y-1">
-                      <SwitchRow
-                        label="Show Secondary Name"
-                        checked={!!showSecondaryName}
-                        onToggle={() => {
-                          setField('showSecondaryName', !showSecondaryName)
-                          commitState()
-                        }}
-                        ariaLabel="Show secondary name"
-                      />
-                    </div>
-
-                    {shouldShowSecondaryNameFields(pdInput) ? (
-                      <>
-                        <div className="space-y-1">
-                          <label className={LABEL_CLASS}>Secondary Name</label>
-                          <input
-                            {...secondaryNameField}
-                            onBlur={commitState}
-                            className={INPUT_CLASS}
-                            placeholder="e.g., Original Card Name"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className={LABEL_CLASS}>Secondary Name Size</label>
-                          <input
-                            type="range"
-                            min={20}
-                            max={90}
-                            step={0.5}
-                            value={typeof secondaryNameFontSize === 'number' ? secondaryNameFontSize : 55}
-                            onChange={(e) => setField('secondaryNameFontSize', parseFloat(e.target.value))}
-                            onMouseUp={commitState}
-                            onTouchEnd={commitState}
-                            className="w-full"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <SwitchRow
-                            label="Secondary Name Light Text"
-                            checked={!!secondaryNameLightText}
-                            onToggle={() => {
-                              setField('secondaryNameLightText', !secondaryNameLightText)
-                              commitState()
-                            }}
-                            ariaLabel="Secondary name light text"
-                          />
-                        </div>
-                      </>
-                    ) : null}
-                  </div>
                   <div className="space-y-2 py-3" data-mana-anchor-row="manaCost">
                     <div className="flex flex-wrap items-center gap-2">
                       <label className={LABEL_CLASS}>Mana Cost</label>
@@ -854,6 +809,88 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
                   ) : null}
                 </>
               )}
+
+              <div className="space-y-2 pt-2">
+                <div className="space-y-1">
+                  <SwitchRow
+                    label="Show Secondary Name"
+                    checked={!!showSecondaryName}
+                    onToggle={() => {
+                      setField('showSecondaryName', !showSecondaryName)
+                      commitState()
+                    }}
+                    ariaLabel="Show secondary name"
+                  />
+                </div>
+
+                {shouldShowSecondaryNameFields(pdInput) ? (
+                  <>
+                    <div className="space-y-1">
+                      <label className={LABEL_CLASS}>Secondary Name</label>
+                      <input
+                        {...secondaryNameField}
+                        onBlur={commitState}
+                        className={INPUT_CLASS}
+                        placeholder="e.g., Original Card Name"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className={LABEL_CLASS}>Secondary Name Size</label>
+                      <input
+                        type="range"
+                        min={SECONDARY_NAME_FONT_SIZE_MIN}
+                        max={SECONDARY_NAME_FONT_SIZE_MAX}
+                        step={0.5}
+                        value={normalizeSecondaryNameFontSize(secondaryNameFontSize)}
+                        onChange={(e) =>
+                          setField(
+                            'secondaryNameFontSize',
+                            normalizeSecondaryNameFontSize(parseFloat(e.target.value)),
+                          )
+                        }
+                        onMouseUp={commitState}
+                        onTouchEnd={commitState}
+                        className="w-full"
+                        aria-label="Secondary name size"
+                      />
+                    </div>
+
+                    <FieldRow label="Secondary Name Align" layout="stacked">
+                      <select
+                        value={normalizeSecondaryNameAlign(secondaryNameAlign)}
+                        onChange={(e) => {
+                          setField(
+                            'secondaryNameAlign',
+                            normalizeSecondaryNameAlign(e.target.value as SecondaryNameAlign),
+                          )
+                          commitState()
+                        }}
+                        className={INPUT_CLASS}
+                        aria-label="Secondary name alignment"
+                      >
+                        {SECONDARY_NAME_ALIGNS.map((a) => (
+                          <option key={a} value={a}>
+                            {a === 'left' ? 'Left' : a === 'center' ? 'Center' : 'Right'}
+                          </option>
+                        ))}
+                      </select>
+                    </FieldRow>
+
+                    <div className="space-y-1">
+                      <SwitchRow
+                        label="Secondary Name Light Text"
+                        checked={!!secondaryNameLightText}
+                        onToggle={() => {
+                          setField('secondaryNameLightText', !secondaryNameLightText)
+                          commitState()
+                        }}
+                        ariaLabel="Secondary name light text"
+                      />
+                    </div>
+                  </>
+                ) : null}
+              </div>
             </CollapsibleSection>
             ) : null}
 
