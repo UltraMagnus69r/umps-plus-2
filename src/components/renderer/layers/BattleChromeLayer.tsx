@@ -58,8 +58,9 @@ function lightenHex(hex: string, amount: number): string {
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
 }
 
-function addPillPath(ctx: CanvasRenderingContext2D, w: number, h: number): void {
-  const r = Math.min(w, h) * 0.45
+/** MotM-like name/type plate — soft corners, not a full pill. */
+function addPlatePath(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+  const r = Math.min(w, h) * 0.28
   ctx.moveTo(r, 0)
   ctx.lineTo(w - r, 0)
   ctx.quadraticCurveTo(w, 0, w, r)
@@ -297,7 +298,7 @@ function BattleChromeLayer() {
         }}
       />
 
-      {/* Top nameplate pill */}
+      {/* Top nameplate — flush above art */}
       <Shape
         x={nameR.x}
         y={nameR.y}
@@ -305,7 +306,7 @@ function BattleChromeLayer() {
         sceneFunc={(ctx) => {
           const c = ctx as unknown as CanvasRenderingContext2D
           c.beginPath()
-          addPillPath(c, nameR.width, nameR.height)
+          addPlatePath(c, nameR.width, nameR.height)
           const g = c.createLinearGradient(0, 0, 0, nameR.height)
           g.addColorStop(0, highlight)
           g.addColorStop(0.45, fill)
@@ -318,7 +319,7 @@ function BattleChromeLayer() {
         }}
       />
 
-      {/* Transform mark — soft-grey disc, triangle vertices on the circle edge */}
+      {/* Transform mark — black circle, white down triangle, 2px grey stroke (MotM) */}
       <Shape
         x={transformR.x}
         y={transformR.y}
@@ -329,27 +330,22 @@ function BattleChromeLayer() {
           const h = transformR.height
           const cx = w / 2
           const cy = h / 2
-          const r = Math.min(w, h) * 0.48
+          const r = Math.min(w, h) * 0.46
           c.beginPath()
           c.arc(cx, cy, r, 0, Math.PI * 2)
-          c.fillStyle = '#1a1a1a'
+          c.fillStyle = '#111111'
           c.fill()
-          c.strokeStyle = 'rgba(200,200,200,0.45)'
+          c.strokeStyle = '#9a9a9a'
           c.lineWidth = 2
           c.stroke()
-          // Soft grey disc (replaces prior near-white fill)
-          c.beginPath()
-          c.arc(cx, cy, r * 0.9, 0, Math.PI * 2)
-          c.fillStyle = '#c4c4c4'
-          c.fill()
-          // Downward triangle — corners touch the circle edge
-          const triR = r * 0.9
+          // White downward triangle (stack: points into the card / art)
+          const triR = r * 0.72
           c.beginPath()
           c.moveTo(cx, cy + triR)
           c.lineTo(cx - triR * (Math.sqrt(3) / 2), cy - triR * 0.5)
           c.lineTo(cx + triR * (Math.sqrt(3) / 2), cy - triR * 0.5)
           c.closePath()
-          c.fillStyle = '#1a1a1a'
+          c.fillStyle = '#ffffff'
           c.fill()
         }}
       />
@@ -392,7 +388,7 @@ function BattleChromeLayer() {
         sceneFunc={(ctx) => {
           const c = ctx as unknown as CanvasRenderingContext2D
           c.beginPath()
-          addPillPath(c, typeR.width, typeR.height)
+          addPlatePath(c, typeR.width, typeR.height)
           const g = c.createLinearGradient(0, 0, 0, typeR.height)
           g.addColorStop(0, highlight)
           g.addColorStop(0.5, fill)
@@ -413,7 +409,7 @@ function BattleChromeLayer() {
         text={typeLabel}
         fontFamily="Beleren, Georgia, serif"
         fontStyle="bold"
-        fontSize={34}
+        fontSize={32}
         fill="#f7f2e8"
         align="left"
         verticalAlign="middle"
@@ -533,15 +529,7 @@ function BattleChromeLayer() {
         />
       </Group>
 
-      <Shape
-        listening={false}
-        sceneFunc={(ctx) => {
-          const c = ctx as unknown as CanvasRenderingContext2D
-          c.strokeStyle = 'rgba(0,0,0,0.55)'
-          c.lineWidth = 3
-          c.strokeRect(artR.x, artR.y, artR.width, artR.height)
-        }}
-      />
+      {/* Art bay is intentionally flush — no inset stroke / inner border mat. */}
     </Layer>
   )
 }
