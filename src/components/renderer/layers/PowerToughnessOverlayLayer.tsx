@@ -8,7 +8,10 @@ import {
   getStandardLayoutGeometry,
   reverseBezierPlatePathInLocalRect,
 } from '../../../authority/geometryAuthority'
-import { layoutPtSlashCenteredText } from '../../../authority/ptTextLayoutAuthority'
+import {
+  layoutPtSlashCenteredText,
+  type PtGlyphInkMetrics,
+} from '../../../authority/ptTextLayoutAuthority'
 import { buildCanvasFont } from '../../../data/fontCatalog'
 import {
   getActiveLayoutCapabilitiesFromState,
@@ -98,6 +101,7 @@ function PowerToughnessOverlayLayer() {
     cardToughness,
     secondaryNameLightText,
     ptTypography,
+    fontsLoaded,
     currentLayout,
     activeLayout,
     landFullArtManaCircleKey,
@@ -127,6 +131,7 @@ function PowerToughnessOverlayLayer() {
       cardToughness: s.cardData.toughness,
       secondaryNameLightText: s.cardData.secondaryNameLightText,
       ptTypography: s.cardData.ptTypography,
+      fontsLoaded: s.fontsLoaded,
       currentLayout: s.currentLayout,
       activeLayout: s.cardData.layout as LayoutId,
       landFullArtManaCircleKey: s.cardData.landFullArtManaCircleKey,
@@ -356,18 +361,37 @@ function PowerToughnessOverlayLayer() {
   const ptTextPadX = 6
 
   const measureCtxRef = useRef<CanvasRenderingContext2D | null>(null)
+  const ensureMeasureCtx = useCallback(() => {
+    if (!measureCtxRef.current) {
+      const c = document.createElement('canvas')
+      measureCtxRef.current = c.getContext('2d')
+    }
+    return measureCtxRef.current
+  }, [])
   const measurePtTextWidth = useCallback(
     (text: string, fontFamily: string, fontStyle: string, fontSize: number) => {
-      if (!measureCtxRef.current) {
-        const c = document.createElement('canvas')
-        measureCtxRef.current = c.getContext('2d')
-      }
-      const ctx = measureCtxRef.current
+      const ctx = ensureMeasureCtx()
       if (!ctx) return 0
       ctx.font = buildCanvasFont(fontStyle, fontSize, fontFamily)
       return ctx.measureText(text).width
     },
-    [],
+    [ensureMeasureCtx],
+  )
+  const measurePtInk = useCallback(
+    (text: string, fontFamily: string, fontStyle: string, fontSize: number): PtGlyphInkMetrics => {
+      const ctx = ensureMeasureCtx()
+      if (!ctx) {
+        return { ascent: fontSize * 0.7, descent: 0, fontAscent: fontSize * 0.7, fontDescent: fontSize * 0.2 }
+      }
+      ctx.font = buildCanvasFont(fontStyle, fontSize, fontFamily)
+      const m = ctx.measureText(text)
+      const ascent = m.actualBoundingBoxAscent || fontSize * 0.7
+      const descent = m.actualBoundingBoxDescent || 0
+      const fontAscent = m.fontBoundingBoxAscent || ascent
+      const fontDescent = m.fontBoundingBoxDescent || descent
+      return { ascent, descent, fontAscent, fontDescent }
+    },
+    [ensureMeasureCtx],
   )
 
   const boxedPtLayout = useMemo(() => {
@@ -385,6 +409,7 @@ function PowerToughnessOverlayLayer() {
       align: 'center',
       padX: ptTextPadX,
       measure: measurePtTextWidth,
+      measureInk: measurePtInk,
     })
   }, [
     pkmnPtSplit,
@@ -399,6 +424,8 @@ function PowerToughnessOverlayLayer() {
     ptFontStyleKonva,
     ptDisplayFontSize,
     measurePtTextWidth,
+    measurePtInk,
+    fontsLoaded,
   ])
 
   const floatingPtLayout = useMemo(() => {
@@ -417,6 +444,7 @@ function PowerToughnessOverlayLayer() {
       align: 'center',
       padX: 6,
       measure: measurePtTextWidth,
+      measureInk: measurePtInk,
     })
   }, [
     supportsFloatingTextTreatment,
@@ -432,6 +460,8 @@ function PowerToughnessOverlayLayer() {
     ptStack,
     ptDisplayFontSize,
     measurePtTextWidth,
+    measurePtInk,
+    fontsLoaded,
   ])
 
   if (!showPowerToughnessEffective) {

@@ -18,18 +18,30 @@ export type PtSlashTextLayout = {
   toughness: PtTextPartRect
 }
 
+export type PtGlyphInkMetrics = {
+  ascent: number
+  descent: number
+  fontAscent: number
+  fontDescent: number
+}
+
 const SLASH = '/'
 
 /**
- * Beleren (and similar) ink sits low in the em box; Konva middle-align centers the
- * em box, so the whole P/T reading looks bottom-heavy. Shared lift keeps slash +
- * digits on one band while moving optical center up into the capsule.
+ * Konva `_fixTextRendering` + verticalAlign middle centers the *font* bounding box
+ * of "M", not the actual slash/digit ink. When actual ink is taller above the baseline
+ * than the font box implies, glyphs sit high in the capsule. Positive return = shift
+ * the shared text band downward so ink mid aligns with the box mid.
  */
-export function ptOpticalLiftPx(fontSize: number, boxH: number): number {
-  // ~5% of font size — enough to correct Beleren's low ink without overshooting high.
-  const fromFont = Math.round(Math.max(1, fontSize) * 0.05)
-  const cap = Math.max(0, Math.floor(Math.max(1, boxH) * 0.08))
-  return Math.min(fromFont, cap)
+export function ptFixTextRenderingSinkPx(ink: PtGlyphInkMetrics): number {
+  const fa = Number.isFinite(ink.fontAscent) ? ink.fontAscent : 0
+  const fd = Number.isFinite(ink.fontDescent) ? ink.fontDescent : 0
+  const a = Number.isFinite(ink.ascent) ? ink.ascent : fa
+  const d = Number.isFinite(ink.descent) ? ink.descent : 0
+  const sink = (a - d) / 2 - (fa - fd) / 2
+  if (!Number.isFinite(sink)) return 0
+  // Never lift upward — only correct high seating.
+  return Math.max(0, Math.round(sink))
 }
 
 export function layoutPtSlashCenteredText(opts: {
@@ -46,15 +58,24 @@ export function layoutPtSlashCenteredText(opts: {
   align?: 'center' | 'right' | 'left'
   padX?: number
   measure: (text: string, fontFamily: string, fontStyle: string, fontSize: number) => number
+  /** Slash ink metrics for geometric vertical centering under `_fixTextRendering`. */
+  measureInk?: (
+    text: string,
+    fontFamily: string,
+    fontStyle: string,
+    fontSize: number,
+  ) => PtGlyphInkMetrics
 }): PtSlashTextLayout {
   const power = String(opts.power ?? '')
   const toughness = String(opts.toughness ?? '')
   const padX = Math.max(0, opts.padX ?? 0)
   const innerX = opts.boxX + padX
   const innerW = Math.max(1, opts.boxW - padX * 2)
-  const lift = ptOpticalLiftPx(opts.fontSize, opts.boxH)
-  // Shift the shared middle band up so slash + digits optically center in the box.
-  const y = opts.boxY - lift
+
+  // No upward optical lift. Optional downward sink so actual ink centers in the capsule.
+  const ink = opts.measureInk?.(SLASH, opts.fontFamily, opts.fontStyle, opts.fontSize)
+  const sink = ink ? ptFixTextRenderingSinkPx(ink) : 0
+  const y = opts.boxY + sink
   const height = Math.max(1, opts.boxH)
 
   const wPower = Math.max(0, opts.measure(power, opts.fontFamily, opts.fontStyle, opts.fontSize))
