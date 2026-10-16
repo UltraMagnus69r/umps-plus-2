@@ -1,3 +1,4 @@
+import { isPkmnBasicLandFrameVariantId } from '../../data/pkmnFrameOptions'
 import { getAllowedVariantsForFamily, getLayoutFamilyLabel, getLayoutVariantLabel, LAYOUT_FAMILY_LABELS, type LayoutFamily, type LayoutId, type LayoutVariant } from '../../authority/layoutTaxonomy'
 
 const FAMILIES = Object.keys(LAYOUT_FAMILY_LABELS) as LayoutFamily[]
@@ -75,8 +76,39 @@ type Props = {
   onSelectVariant: (variant: LayoutVariant) => void
 }
 
+function VariantChip({
+  variant,
+  selected,
+  onSelect,
+}: {
+  variant: LayoutVariant
+  selected: boolean
+  onSelect: (variant: LayoutVariant) => void
+}) {
+  return (
+    <button
+      type="button"
+      role="option"
+      aria-selected={selected}
+      onClick={() => onSelect(variant)}
+      className={[
+        'ui-focus-ring rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition-colors',
+        selected
+          ? 'border-[var(--ui-color-primary)] bg-[color-mix(in_srgb,var(--ui-color-primary)_12%,transparent)] text-[var(--ui-color-text-strong)]'
+          : 'border-[var(--ui-color-border)] bg-[var(--ui-color-surface-elevated)] text-[var(--ui-color-muted)] hover:border-[color-mix(in_srgb,var(--ui-color-primary)_35%,var(--ui-color-border))]',
+      ].join(' ')}
+    >
+      {getLayoutVariantLabel(variant)}
+    </button>
+  )
+}
+
 export default function LayoutThumbnailPicker({ layout, onSelectFamily, onSelectVariant }: Props) {
   const variants = getAllowedVariantsForFamily(layout.family)
+  const pkmnLandVariants =
+    layout.family === 'pkmn' ? variants.filter((v) => isPkmnBasicLandFrameVariantId(v)) : []
+  const primaryVariants =
+    layout.family === 'pkmn' ? variants.filter((v) => !isPkmnBasicLandFrameVariantId(v)) : variants
 
   return (
     <div className="space-y-3">
@@ -113,27 +145,32 @@ export default function LayoutThumbnailPicker({ layout, onSelectFamily, onSelect
           Variant
         </div>
         <div className="flex flex-wrap gap-1.5" role="listbox" aria-label="Layout variant">
-          {variants.map((variant) => {
-            const selected = layout.variant === variant
-            return (
-              <button
-                key={variant}
-                type="button"
-                role="option"
-                aria-selected={selected}
-                onClick={() => onSelectVariant(variant)}
-                className={[
-                  'ui-focus-ring rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition-colors',
-                  selected
-                    ? 'border-[var(--ui-color-primary)] bg-[color-mix(in_srgb,var(--ui-color-primary)_12%,transparent)] text-[var(--ui-color-text-strong)]'
-                    : 'border-[var(--ui-color-border)] bg-[var(--ui-color-surface-elevated)] text-[var(--ui-color-muted)] hover:border-[color-mix(in_srgb,var(--ui-color-primary)_35%,var(--ui-color-border))]',
-                ].join(' ')}
-              >
-                {getLayoutVariantLabel(variant)}
-              </button>
-            )
-          })}
+          {primaryVariants.map((variant) => (
+            <VariantChip
+              key={variant}
+              variant={variant}
+              selected={layout.variant === variant}
+              onSelect={onSelectVariant}
+            />
+          ))}
         </div>
+        {pkmnLandVariants.length > 0 ? (
+          <div className="mt-2.5">
+            <div className="mb-1.5 text-[length:var(--ui-font-size-xs)] font-semibold text-[var(--ui-color-muted)]">
+              PKMN Lands
+            </div>
+            <div className="flex flex-wrap gap-1.5" role="listbox" aria-label="PKMN land variants">
+              {pkmnLandVariants.map((variant) => (
+                <VariantChip
+                  key={variant}
+                  variant={variant}
+                  selected={layout.variant === variant}
+                  onSelect={onSelectVariant}
+                />
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   )

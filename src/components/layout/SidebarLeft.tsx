@@ -61,6 +61,7 @@ import { CONSTRAINT_COPY } from '../../authority/constraintFeedbackAuthority'
 import { resolveWorkflowValidationHints } from '../../authority/validationFeedbackAuthority'
 import {
   isLandFullArtReducedCore,
+  shouldShowArtControls,
   shouldShowBattleDefenseControls,
   shouldShowFlavorTextField,
   shouldShowLandPanelArtSelector,
@@ -68,10 +69,12 @@ import {
   shouldShowPlaneswalkerCoreInputs,
   shouldShowPowerToughnessControls,
   shouldShowPreparedCoreInputs,
+  shouldShowPrintOnlyFrameNotice,
   shouldShowPtTypographySubsection,
   shouldShowRulesTextEditor,
   shouldShowSagaClassCoreInputs,
   shouldShowSecondaryNameFields,
+  shouldShowSecondaryNameToggle,
   shouldShowTypeLineSection,
 } from '../../authority/progressiveDisclosureAuthority'
 import PlaneswalkerCoreInputs from './PlaneswalkerCoreInputs'
@@ -659,7 +662,12 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
               {validationHints.coreBrowsingHint ? (
                 <ValidationInline>{validationHints.coreBrowsingHint}</ValidationInline>
               ) : null}
-              {landFullArtReducedCore ? (
+              {shouldShowPrintOnlyFrameNotice(activeLayoutCapabilities) ? (
+                <p className="text-[length:var(--ui-font-size-sm)] text-[var(--ui-color-muted)]">
+                  Print-only land frame — the static PNG is the full card (no art upload or text
+                  overlays).
+                </p>
+              ) : landFullArtReducedCore ? (
                 <>
                   <FieldRow label="Card Name" layout="stacked">
                     <div className="space-y-2" data-mana-keep-clear="name">
@@ -825,6 +833,7 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
                 </>
               )}
 
+              {shouldShowSecondaryNameToggle(pdInput) ? (
               <div className="space-y-2 pt-2">
                 <div className="space-y-1">
                   <SwitchRow
@@ -906,6 +915,7 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
                   </>
                 ) : null}
               </div>
+              ) : null}
             </CollapsibleSection>
             ) : null}
 
@@ -1003,7 +1013,7 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
             </CollapsibleSection>
             ) : null}
 
-            {showSection('art') ? (
+            {showSection('art') && shouldShowArtControls(pdInput) ? (
             <CollapsibleSection
               title="Artwork"
               icon={<ImageIcon size={16} className="text-neutral-500 dark:text-neutral-400" />}

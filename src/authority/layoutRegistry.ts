@@ -1069,6 +1069,8 @@ function buildPkmnContract(variant: LayoutVariant): LayoutContract {
       supportsStartingLoyaltyBox: false,
       supportsPlaneswalkerAbilities: false,
       supportsPlaneswalkerModernV2Layout: false,
+      /** Land PNGs are print-as-is — frame image only. */
+      printOnlyStaticFrame: basicLand,
     },
     bleedBehavior: 'trim-contained',
     compliance: {

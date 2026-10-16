@@ -74,6 +74,11 @@ export type LayoutCapabilityFlags = {
   usesLandscapeStage: boolean
   /** Prepared Creatures — split rules + nested mini-spell chrome. */
   supportsPreparedChrome: boolean
+  /**
+   * Print-only static frame PNG (e.g. PKMN basic lands) — stage shows only the
+   * pre-made frame image; no art upload, text, P/T, collector, or secondary name.
+   */
+  printOnlyStaticFrame: boolean
 }
 
 export type BleedBehavior = 'trim-contained' | 'edge-to-bleed'
@@ -125,6 +130,7 @@ const DEFAULT_CAPABILITIES: LayoutCapabilityFlags = {
   supportsBattleChrome: false,
   usesLandscapeStage: false,
   supportsPreparedChrome: false,
+  printOnlyStaticFrame: false,
 }
 
 const DEFAULT_COMPLIANCE: ComplianceMetadata = {
