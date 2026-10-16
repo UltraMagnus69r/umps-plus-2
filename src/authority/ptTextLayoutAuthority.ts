@@ -20,6 +20,17 @@ export type PtSlashTextLayout = {
 
 const SLASH = '/'
 
+/**
+ * Beleren (and similar) ink sits low in the em box; Konva middle-align centers the
+ * em box, so the whole P/T reading looks bottom-heavy. Shared lift keeps slash +
+ * digits on one band while moving optical center up into the capsule.
+ */
+export function ptOpticalLiftPx(fontSize: number, boxH: number): number {
+  const fromFont = Math.round(Math.max(1, fontSize) * 0.1)
+  const cap = Math.max(0, Math.floor(Math.max(1, boxH) * 0.14))
+  return Math.min(fromFont, cap)
+}
+
 export function layoutPtSlashCenteredText(opts: {
   power: string
   toughness: string
@@ -40,7 +51,9 @@ export function layoutPtSlashCenteredText(opts: {
   const padX = Math.max(0, opts.padX ?? 0)
   const innerX = opts.boxX + padX
   const innerW = Math.max(1, opts.boxW - padX * 2)
-  const y = opts.boxY
+  const lift = ptOpticalLiftPx(opts.fontSize, opts.boxH)
+  // Shift the shared middle band up so slash + digits optically center in the box.
+  const y = opts.boxY - lift
   const height = Math.max(1, opts.boxH)
 
   const wPower = Math.max(0, opts.measure(power, opts.fontFamily, opts.fontStyle, opts.fontSize))
