@@ -8,7 +8,8 @@ import {
 import { buildSpellPreModernStageRects } from './spellPreModernLayoutAuthority'
 import { buildModernDummyStageRects } from './modernDummyLayoutAuthority'
 import { buildPlaneswalkerModernV2StageRects } from './planeswalkerModernV2LayoutAuthority'
-import { buildPkmnStageRects } from './pkmnLayoutAuthority'
+import { buildPkmnBasicLandStageRects, buildPkmnStageRects } from './pkmnLayoutAuthority'
+import { isPkmnBasicLandFrameVariantId } from '../data/pkmnFrameOptions'
 import { getPreModernTextBoxInnerRect } from './preModernTextBoxAuthority'
 import {
   BATTLE_STAGE_HEIGHT,
@@ -1022,9 +1023,10 @@ function buildBattleModernContract(): LayoutContract {
   })
 }
 
-/** PKMN — static pre-made frame; variant id is the color name. */
+/** PKMN — static pre-made frame; variant id is the color or basic-land name. */
 function buildPkmnContract(variant: LayoutVariant): LayoutContract {
-  const rects = buildPkmnStageRects()
+  const basicLand = isPkmnBasicLandFrameVariantId(variant)
+  const rects = basicLand ? buildPkmnBasicLandStageRects() : buildPkmnStageRects()
   return normalizeLayoutContract({
     id: { family: 'pkmn', variant },
     regions: {
@@ -1034,22 +1036,24 @@ function buildPkmnContract(variant: LayoutVariant): LayoutContract {
       rulesText: pxRectToNormalizedRect(rects.rulesText),
       metadataStrip: pxRectToNormalizedRect(rects.metadataStrip),
       lowerRight: {
-        kind: 'powerToughness',
+        kind: basicLand ? 'functionalZone' : 'powerToughness',
         rect: pxRectToNormalizedRect(rects.lowerRight),
       },
     },
     capabilities: {
-      supportsFlavorText: true,
-      supportsPowerToughnessBox: true,
-      supportsMetadataStrip: true,
+      supportsFlavorText: !basicLand,
+      supportsPowerToughnessBox: !basicLand,
+      supportsMetadataStrip: !basicLand,
       supportsEdgeToBleedArt: false,
       supportsFloatingTextTreatment: false,
       supportsSecondaryStructuralRegions: false,
       supportsLandSecondaryArtInRulesRegion: false,
       supportsRulesTextBoxTexture: false,
-      suppressNameBarManaCostRendering: false,
+      suppressNameBarManaCostRendering: basicLand,
+      suppressNameBarTextRendering: basicLand,
+      suppressTypeLineTextRendering: basicLand,
       useLandFullArtManaCircle: false,
-      suppressRulesTextRendering: false,
+      suppressRulesTextRendering: basicLand,
       /** Frame PNG includes plates — no procedural raised chrome / identity recolor. */
       supportsNamePlateBox: false,
       supportsTypeLineBox: false,

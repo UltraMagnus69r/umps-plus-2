@@ -64,6 +64,7 @@ import {
   shouldShowBattleDefenseControls,
   shouldShowFlavorTextField,
   shouldShowLandPanelArtSelector,
+  shouldShowManaCostTextField,
   shouldShowPlaneswalkerCoreInputs,
   shouldShowPowerToughnessControls,
   shouldShowPreparedCoreInputs,
@@ -71,6 +72,7 @@ import {
   shouldShowRulesTextEditor,
   shouldShowSagaClassCoreInputs,
   shouldShowSecondaryNameFields,
+  shouldShowTypeLineSection,
 } from '../../authority/progressiveDisclosureAuthority'
 import PlaneswalkerCoreInputs from './PlaneswalkerCoreInputs'
 import PreparedCoreInputs from './PreparedCoreInputs'
@@ -730,6 +732,7 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
                       </Suspense>
                     </div>
                   </FieldRow>
+                  {shouldShowManaCostTextField(activeLayoutCapabilities) ? (
                   <div className="space-y-2 py-3" data-mana-anchor-row="manaCost">
                     <div className="flex flex-wrap items-center gap-2">
                       <label className={LABEL_CLASS}>Mana Cost</label>
@@ -774,6 +777,7 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
                       />
                     </div>
                   </div>
+                  ) : null}
 
                   {shouldShowPowerToughnessControls(pdInput) ? (
                     <>
@@ -905,7 +909,7 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
             </CollapsibleSection>
             ) : null}
 
-            {showSection('type') ? (
+            {showSection('type') && shouldShowTypeLineSection(activeLayoutCapabilities) ? (
             <CollapsibleSection
               title="Type & Set symbol"
               icon={<BadgeInfo size={16} className="text-neutral-500 dark:text-neutral-400" />}

@@ -275,6 +275,8 @@ function TextIconsLayer() {
   const identityAutoColorEnabled = landFullArtManaCircle ? true : autoColorEnabled
 
   const suppressNameBarManaCostRendering = activeCapabilities.suppressNameBarManaCostRendering
+  const suppressNameBarTextRendering = activeCapabilities.suppressNameBarTextRendering
+  const suppressTypeLineTextRendering = activeCapabilities.suppressTypeLineTextRendering
   const suppressRulesTextRendering = activeCapabilities.suppressRulesTextRendering
   const supportsPlaneswalkerAbilities = activeCapabilities.supportsPlaneswalkerAbilities
   const supportsHologramSeal = activeCapabilities.supportsHologramSeal
@@ -1346,6 +1348,8 @@ function TextIconsLayer() {
     currentLayout,
     activeLayout,
     suppressNameBarManaCostRendering,
+    suppressNameBarTextRendering,
+    suppressTypeLineTextRendering,
     suppressRulesTextRendering,
     landRulesAsSecondaryArt,
     supportsPlaneswalkerAbilities,
@@ -1365,6 +1369,7 @@ function TextIconsLayer() {
         blurRadius={INK_SPREAD_BLUR_RADIUS}
         listening={false}
       >
+      {!suppressNameBarTextRendering && (
       <Text
         text={cardName}
         x={suppressNameBarManaCostRendering ? nameInnerX : preModernFaceText ? artRect.x : nameInnerX + nameLeftInset}
@@ -1395,6 +1400,7 @@ function TextIconsLayer() {
         shadowOffset={standardFullArt ? TEXT_SHADOW_OFFSET : undefined}
         verticalAlign="middle"
       />
+      )}
 
       {!suppressNameBarManaCostRendering && manaCostRender.chunks.length > 0 && (
         <Group
@@ -1489,6 +1495,7 @@ function TextIconsLayer() {
         </Group>
       )}
 
+      {!suppressTypeLineTextRendering && (
       <Text
         text={cardTypeLine}
         x={preModernFaceText ? artRect.x + typeLineLeftPad : typeInnerX + typeLineLeftPad}
@@ -1515,6 +1522,7 @@ function TextIconsLayer() {
         align="left"
         verticalAlign={supportsPreModernFaceLayout ? 'top' : 'middle'}
       />
+      )}
 
       <Group
         clipX={effectiveRulesInnerX}
@@ -1613,7 +1621,7 @@ function TextIconsLayer() {
         ))}
       </Group>
 
-      {setIconImg && (
+      {!suppressTypeLineTextRendering && setIconImg && (
         <Group
           key={`custom-set-icon-${iconBoxS}`}
           x={(preModernFaceText ? artRect.x + artRect.width : typeX + typeW) - iconBoxS - setIconPad}
