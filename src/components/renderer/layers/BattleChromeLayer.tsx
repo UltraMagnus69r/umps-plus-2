@@ -13,6 +13,7 @@ import {
   getBattleDefenseRect,
   getBattleHologramRect,
   getBattleInnerBorderCornerRadii,
+  getBattleLeftCornerHorizontalRadius,
   getBattleManaRect,
   getBattleNameRect,
   getBattleRulesRect,
@@ -59,7 +60,11 @@ function addPillPath(ctx: CanvasRenderingContext2D, w: number, h: number): void 
   ctx.closePath()
 }
 
-/** Rounded rect with per-corner radii (TL, TR, BR, BL). */
+/**
+ * Rounded rect with per-corner radii (TL, TR, BR, BL).
+ * Left corners keep vertical anchors at `tl`/`bl` but push the top/bottom
+ * tangent points further right by `leftTangentExtra` so the arc starts later.
+ */
 function addRoundRectPath(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -67,6 +72,7 @@ function addRoundRectPath(
   w: number,
   h: number,
   radii: readonly [number, number, number, number],
+  leftTangentExtra = 0,
 ): void {
   const [tl, tr, br, bl] = radii.map((r) => Math.max(0, Math.min(r, Math.min(w, h) / 2))) as [
     number,
@@ -74,15 +80,19 @@ function addRoundRectPath(
     number,
     number,
   ]
-  ctx.moveTo(x + tl, y)
+  const tlH = Math.min(w / 2, tl + Math.max(0, leftTangentExtra))
+  const blH = Math.min(w / 2, bl + Math.max(0, leftTangentExtra))
+  ctx.moveTo(x + tlH, y)
   ctx.lineTo(x + w - tr, y)
   ctx.quadraticCurveTo(x + w, y, x + w, y + tr)
   ctx.lineTo(x + w, y + h - br)
   ctx.quadraticCurveTo(x + w, y + h, x + w - br, y + h)
-  ctx.lineTo(x + bl, y + h)
+  ctx.lineTo(x + blH, y + h)
+  // BL: vertical anchor at y+h-bl stays; bottom tangent at x+blH
   ctx.quadraticCurveTo(x, y + h, x, y + h - bl)
   ctx.lineTo(x, y + tl)
-  ctx.quadraticCurveTo(x, y, x + tl, y)
+  // TL: vertical anchor at y+tl stays; top tangent at x+tlH
+  ctx.quadraticCurveTo(x, y, x + tlH, y)
   ctx.closePath()
 }
 
@@ -211,6 +221,8 @@ function BattleChromeLayer() {
   const artR = getBattleArtRect()
   const holoR = getBattleHologramRect()
   const cornerRadii = getBattleInnerBorderCornerRadii()
+  const leftTangentExtra =
+    getBattleLeftCornerHorizontalRadius() - cornerRadii[0]
 
   const defense = normalizeBattleDefense(battleDefense) || '0'
   const rulesBody = String(cardText ?? '').trim() || BATTLE_SIEGE_DEFAULT_REMINDER
@@ -231,11 +243,12 @@ function BattleChromeLayer() {
 
   const nameTextLeft = transformR.x + transformR.width + 16
   const nameTextWidth = Math.max(40, manaR.x - nameTextLeft - 12)
-  const showStamp = showHologram !== false && caps.supportsHologramSeal !== false
+  /** Battle chrome owns the left-frame stamp; TextIcons seal is disabled for battle. */
+  const showStamp = showHologram !== false
 
   return (
     <Layer listening={false}>
-      {/* Bleed + trim mat with Modern-bottom radii on the left */}
+      {/* Bleed + trim mat — left arcs start ~50 px later on top/bottom */}
       <Shape
         listening={false}
         sceneFunc={(ctx) => {
@@ -243,7 +256,7 @@ function BattleChromeLayer() {
           c.fillStyle = '#0a0a0a'
           c.fillRect(0, 0, stage.width, stage.height)
           c.beginPath()
-          addRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, cornerRadii)
+          addRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, cornerRadii, leftTangentExtra)
           c.fillStyle = fill
           c.fill()
           c.strokeStyle = stroke
@@ -274,7 +287,7 @@ function BattleChromeLayer() {
         }}
       />
 
-      {/* Transform mark — white triangle in circle (DFC front) */}
+      {/* Transform mark — soft-grey disc, triangle vertices on the circle edge */}
       <Shape
         x={transformR.x}
         y={transformR.y}
@@ -285,24 +298,25 @@ function BattleChromeLayer() {
           const h = transformR.height
           const cx = w / 2
           const cy = h / 2
-          const r = Math.min(w, h) * 0.46
+          const r = Math.min(w, h) * 0.48
           c.beginPath()
           c.arc(cx, cy, r, 0, Math.PI * 2)
           c.fillStyle = '#1a1a1a'
           c.fill()
-          c.strokeStyle = 'rgba(255,255,255,0.35)'
+          c.strokeStyle = 'rgba(200,200,200,0.45)'
           c.lineWidth = 2
           c.stroke()
-          // Inner pale disc
+          // Soft grey disc (replaces prior near-white fill)
           c.beginPath()
-          c.arc(cx, cy, r * 0.78, 0, Math.PI * 2)
-          c.fillStyle = '#f4f0ea'
+          c.arc(cx, cy, r * 0.9, 0, Math.PI * 2)
+          c.fillStyle = '#c4c4c4'
           c.fill()
-          // Downward white triangle (play-orientation DFC marker)
+          // Downward triangle — corners touch the circle edge
+          const triR = r * 0.9
           c.beginPath()
-          c.moveTo(cx, cy + r * 0.42)
-          c.lineTo(cx - r * 0.38, cy - r * 0.28)
-          c.lineTo(cx + r * 0.38, cy - r * 0.28)
+          c.moveTo(cx, cy + triR)
+          c.lineTo(cx - triR * (Math.sqrt(3) / 2), cy - triR * 0.5)
+          c.lineTo(cx + triR * (Math.sqrt(3) / 2), cy - triR * 0.5)
           c.closePath()
           c.fillStyle = '#1a1a1a'
           c.fill()

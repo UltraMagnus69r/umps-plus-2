@@ -1006,7 +1006,8 @@ function buildBattleModernContract(): LayoutContract {
       supportsSecondaryStructuralRegions: true,
       supportsNamePlateBox: false,
       supportsTypeLineBox: false,
-      supportsHologramSeal: true,
+      /** Left-frame stamp is drawn by BattleChromeLayer only. */
+      supportsHologramSeal: false,
       supportsRulesTextBoxFrame: false,
       supportsRulesTextBoxTexture: false,
       supportsModernDummyLayout: false,
