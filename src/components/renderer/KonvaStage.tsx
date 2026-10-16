@@ -273,10 +273,10 @@ function KonvaStage({
           <>
             <TextureBorderLayer />
             <ArtLayer />
-            {/* Over art, under frame/nameplate — all families including PKMN. */}
-            <SecondaryNameLayer />
             <PkmnFrameLayer />
             <FrameLayer />
+            {/* Over art (and empty art fill), under nameplate — all families including PKMN. */}
+            <SecondaryNameLayer />
             {layoutCaps.supportsSagaClassChrome ? <SagaClassChromeLayer /> : null}
             {showCrown ? <CrownLayer /> : null}
             {layoutCaps.supportsNamePlateBox ? <NamePlateLayer /> : null}
