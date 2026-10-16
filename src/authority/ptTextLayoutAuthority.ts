@@ -33,15 +33,21 @@ const SLASH = '/'
  * than the font box implies, glyphs sit high in the capsule. Positive return = shift
  * the shared text band downward so ink mid aligns with the box mid.
  */
+/**
+ * Raised P/T bevel reads heavier along the bottom edge, so equal geometric pads
+ * still look high. Extra downward nudge after the metrics sink.
+ */
+export const PT_RAISED_BEVEL_OPTICAL_SINK_PX = 6
+
 export function ptFixTextRenderingSinkPx(ink: PtGlyphInkMetrics): number {
   const fa = Number.isFinite(ink.fontAscent) ? ink.fontAscent : 0
   const fd = Number.isFinite(ink.fontDescent) ? ink.fontDescent : 0
   const a = Number.isFinite(ink.ascent) ? ink.ascent : fa
   const d = Number.isFinite(ink.descent) ? ink.descent : 0
   const sink = (a - d) / 2 - (fa - fd) / 2
-  if (!Number.isFinite(sink)) return 0
+  if (!Number.isFinite(sink)) return PT_RAISED_BEVEL_OPTICAL_SINK_PX
   // Never lift upward — only correct high seating.
-  return Math.max(0, Math.round(sink))
+  return Math.max(0, Math.round(sink) + PT_RAISED_BEVEL_OPTICAL_SINK_PX)
 }
 
 export function layoutPtSlashCenteredText(opts: {
@@ -72,8 +78,10 @@ export function layoutPtSlashCenteredText(opts: {
   const innerX = opts.boxX + padX
   const innerW = Math.max(1, opts.boxW - padX * 2)
 
-  // No upward optical lift. Optional downward sink so actual ink centers in the capsule.
-  const ink = opts.measureInk?.(SLASH, opts.fontFamily, opts.fontStyle, opts.fontSize)
+  // No upward optical lift. Downward sink so actual P/T ink centers in the capsule
+  // (Konva _fixTextRendering middle-aligns the font box of "M", not glyph ink).
+  const inkSample = `${power}/${toughness}` || SLASH
+  const ink = opts.measureInk?.(inkSample, opts.fontFamily, opts.fontStyle, opts.fontSize)
   const sink = ink ? ptFixTextRenderingSinkPx(ink) : 0
   const y = opts.boxY + sink
   const height = Math.max(1, opts.boxH)
