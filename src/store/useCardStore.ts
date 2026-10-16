@@ -90,6 +90,10 @@ import {
   SAGA_CHAPTER_COUNT_DEFAULT,
 } from '../authority/sagaClassStageAuthority'
 import {
+  normalizeSecondaryNameAlign,
+  normalizeSecondaryNameFontSize,
+} from '../authority/secondaryNameAuthority'
+import {
   normalizeLandFullArtManaCircleKey,
   type LandFullArtManaCircleKey,
 } from '../authority/landFullArtManaCircle'
@@ -169,6 +173,8 @@ export interface CardData {
   showSecondaryName: boolean
   // Phase 3.6a – Secondary Name manual sizing (designer-controlled)
   secondaryNameFontSize: number
+  /** Horizontal justification inside the art window (under the nameplate). */
+  secondaryNameAlign: 'left' | 'center' | 'right'
   /** When false: black text, white stroke, white shadow. When true: white text, black stroke, black shadow. */
   secondaryNameLightText: boolean
   manaCost: string
@@ -1008,6 +1014,7 @@ export const defaultCardData: CardData = {
   secondaryName: '',
   showSecondaryName: false,
   secondaryNameFontSize: 55,
+  secondaryNameAlign: 'left',
   secondaryNameLightText: true,
   manaCost: '',
   manaSymbolSet: 'classic',
@@ -1282,6 +1289,8 @@ function normalizeSnapshot(s: Snapshot): Snapshot {
     metadataTypography: migrateTypographyColorManual(anyS?.metadataTypography, defaultMetadataTypography()),
     copyright: normalizeCardCopyright(anyS?.copyright),
     manaSymbolSet: normalizeManaSymbolSetId(anyS?.manaSymbolSet),
+    secondaryNameFontSize: normalizeSecondaryNameFontSize(anyS?.secondaryNameFontSize),
+    secondaryNameAlign: normalizeSecondaryNameAlign(anyS?.secondaryNameAlign),
     theme: 'googled',
     startingLoyalty: normalizeStartingLoyalty(anyS?.startingLoyalty),
     planeswalkerStaticText: String(anyS?.planeswalkerStaticText ?? defaultCardData.planeswalkerStaticText),
