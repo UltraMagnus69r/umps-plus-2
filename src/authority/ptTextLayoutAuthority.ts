@@ -72,8 +72,10 @@ export function layoutPtSlashCenteredText(opts: {
   const innerX = opts.boxX + padX
   const innerW = Math.max(1, opts.boxW - padX * 2)
 
-  // No upward optical lift. Optional downward sink so actual ink centers in the capsule.
-  const ink = opts.measureInk?.(SLASH, opts.fontFamily, opts.fontStyle, opts.fontSize)
+  // No upward optical lift. Downward sink so actual P/T ink centers in the capsule
+  // (Konva _fixTextRendering middle-aligns the font box of "M", not glyph ink).
+  const inkSample = `${power}/${toughness}` || SLASH
+  const ink = opts.measureInk?.(inkSample, opts.fontFamily, opts.fontStyle, opts.fontSize)
   const sink = ink ? ptFixTextRenderingSinkPx(ink) : 0
   const y = opts.boxY + sink
   const height = Math.max(1, opts.boxH)
