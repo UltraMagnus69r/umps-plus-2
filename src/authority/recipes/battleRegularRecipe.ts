@@ -7,14 +7,16 @@ import { M15_REGULAR_MANA_PIP_SIZE_PX } from './m15RegularCreatureRecipe'
 
 const CC_PIP_SIZE_FRAC = 71 / 1638
 
+const WIDEN_RIGHT = 20 / 2100
 const L_COLLECTOR = { x: 28 / 2100, y: 70 / 1500, w: 70 / 2100, h: 1360 / 1500 }
-const L_TITLE = { x: 120 / 2100, y: 55 / 1500, w: 1860 / 2100, h: 110 / 1500 }
-const L_MANA = { x: 1500 / 2100, y: 68 / 1500, w: 460 / 2100, h: 84 / 1500 }
-const L_ART = { x: 120 / 2100, y: 180 / 1500, w: 1860 / 2100, h: 620 / 1500 }
-const L_TYPE = { x: 120 / 2100, y: 815 / 1500, w: 1860 / 2100, h: 95 / 1500 }
-const L_SET = { x: 1860 / 2100, y: 825 / 1500, w: 100 / 2100, h: 75 / 1500 }
-const L_RULES = { x: 120 / 2100, y: 925 / 1500, w: 1860 / 2100, h: 500 / 1500 }
-const L_DEFENSE = { x: 1840 / 2100, y: 1280 / 1500, w: 130 / 2100, h: 150 / 1500 }
+const L_TITLE = { x: 120 / 2100, y: 55 / 1500, w: 1860 / 2100 + WIDEN_RIGHT, h: 110 / 1500 }
+const L_MANA = { x: 1520 / 2100, y: 68 / 1500, w: 460 / 2100, h: 84 / 1500 }
+const L_ART = { x: 120 / 2100, y: 180 / 1500, w: 1860 / 2100 + WIDEN_RIGHT, h: 620 / 1500 }
+const L_TYPE = { x: 120 / 2100, y: 815 / 1500, w: 1860 / 2100 + WIDEN_RIGHT, h: 95 / 1500 }
+const L_SET = { x: 1880 / 2100, y: 825 / 1500, w: 100 / 2100, h: 75 / 1500 }
+const L_RULES = { x: 120 / 2100, y: 925 / 1500, w: 1860 / 2100 + WIDEN_RIGHT, h: 500 / 1500 }
+const L_DEFENSE = { x: 1860 / 2100, y: 1280 / 1500, w: 130 / 2100, h: 150 / 1500 }
+const L_HOLOGRAM = { x: 38 / 2100, y: 680 / 1500, w: 70 / 2100, h: 110 / 1500 }
 
 export const BATTLE_REGULAR_RECIPE: LayoutRecipe = {
   id: 'magic.battle.regular',
@@ -53,6 +55,7 @@ export const BATTLE_REGULAR_RECIPE: LayoutRecipe = {
   extensions: {
     defense: L_DEFENSE,
     collectorStrip: L_COLLECTOR,
+    hologram: L_HOLOGRAM,
   },
   acceptancePxAt600: {
     nameTop: 6,

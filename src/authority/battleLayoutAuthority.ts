@@ -3,7 +3,7 @@
  * Ground truth: fidelity-battle/battle-landscape-stack-reference.png
  * Top→bottom: nameplate, art, type, upright rules, defense; collector on left edge.
  */
-import { BLEED_PX } from './geometryAuthority'
+import { BLEED_PX, INNER_BORDER_CORNER_RADIUS_MODERN } from './geometryAuthority'
 import type { LayoutId } from './layoutTaxonomy'
 import { isBattleLayout } from './layoutTaxonomy'
 
@@ -11,6 +11,12 @@ export const BATTLE_TRIM_WIDTH = 2100
 export const BATTLE_TRIM_HEIGHT = 1500
 export const BATTLE_STAGE_WIDTH = BATTLE_TRIM_WIDTH + 2 * BLEED_PX // 2250
 export const BATTLE_STAGE_HEIGHT = BATTLE_TRIM_HEIGHT + 2 * BLEED_PX // 1650
+
+/** Modern bottom inner-border radius (stage px) — used for Battle landscape left corners. */
+export const BATTLE_INNER_BORDER_LEFT_CORNER_RADIUS =
+  INNER_BORDER_CORNER_RADIUS_MODERN[2] /* bottom-right = bottom radius language */
+/** Modern top inner-border radius — used for Battle landscape right corners. */
+export const BATTLE_INNER_BORDER_RIGHT_CORNER_RADIUS = INNER_BORDER_CORNER_RADIUS_MODERN[0]
 
 export type BattleStageRect = { x: number; y: number; width: number; height: number }
 
@@ -24,6 +30,9 @@ function n(rect: { x: number; y: number; w: number; h: number }): BattleStageRec
   }
 }
 
+/** +20 stage-px widen on art/rules right edge (trim-norm). */
+const WIDEN_RIGHT = 20 / BATTLE_TRIM_WIDTH
+
 /**
  * Landscape stack seating (trim-norm of 2100×1500).
  * Content reads upright; collector strip along the left edge is drawn rotated.
@@ -32,20 +41,22 @@ const FACE = {
   /** Vertical collector / credit strip (text rotated 90° CW). */
   collector: { x: 28 / 2100, y: 70 / 1500, w: 70 / 2100, h: 1360 / 1500 },
   /** Horizontal nameplate — name left, mana right. */
-  name: { x: 120 / 2100, y: 55 / 1500, w: 1860 / 2100, h: 110 / 1500 },
+  name: { x: 120 / 2100, y: 55 / 1500, w: 1860 / 2100 + WIDEN_RIGHT, h: 110 / 1500 },
   /** DFC / transform mark on the left of the nameplate. */
   transform: { x: 135 / 2100, y: 72 / 1500, w: 76 / 2100, h: 76 / 1500 },
   /** Mana chips along the right of the nameplate. */
-  mana: { x: 1500 / 2100, y: 68 / 1500, w: 460 / 2100, h: 84 / 1500 },
-  /** Wide art aperture under the nameplate. */
-  art: { x: 120 / 2100, y: 180 / 1500, w: 1860 / 2100, h: 620 / 1500 },
+  mana: { x: 1520 / 2100, y: 68 / 1500, w: 460 / 2100, h: 84 / 1500 },
+  /** Wide art aperture under the nameplate (+20 px right). */
+  art: { x: 120 / 2100, y: 180 / 1500, w: 1860 / 2100 + WIDEN_RIGHT, h: 620 / 1500 },
   /** Type line under art. */
-  type: { x: 120 / 2100, y: 815 / 1500, w: 1860 / 2100, h: 95 / 1500 },
-  setSymbol: { x: 1860 / 2100, y: 825 / 1500, w: 100 / 2100, h: 75 / 1500 },
-  /** Tan parchment rules — upright text. */
-  rules: { x: 120 / 2100, y: 925 / 1500, w: 1860 / 2100, h: 500 / 1500 },
+  type: { x: 120 / 2100, y: 815 / 1500, w: 1860 / 2100 + WIDEN_RIGHT, h: 95 / 1500 },
+  setSymbol: { x: 1880 / 2100, y: 825 / 1500, w: 100 / 2100, h: 75 / 1500 },
+  /** Tan parchment rules — upright text (+20 px right). */
+  rules: { x: 120 / 2100, y: 925 / 1500, w: 1860 / 2100 + WIDEN_RIGHT, h: 500 / 1500 },
   /** Defense shield overlapping bottom-right of rules. */
-  defense: { x: 1840 / 2100, y: 1280 / 1500, w: 130 / 2100, h: 150 / 1500 },
+  defense: { x: 1860 / 2100, y: 1280 / 1500, w: 130 / 2100, h: 150 / 1500 },
+  /** Security / hologram stamp — left end of inner border (play orientation). */
+  hologram: { x: 38 / 2100, y: 680 / 1500, w: 70 / 2100, h: 110 / 1500 },
 } as const
 
 export function layoutUsesBattleChrome(layout: Partial<LayoutId> | null | undefined): boolean {
@@ -92,6 +103,10 @@ export function getBattleCollectorRect(): BattleStageRect {
   return n(FACE.collector)
 }
 
+export function getBattleHologramRect(): BattleStageRect {
+  return n(FACE.hologram)
+}
+
 export function getBattleTrimRect(): BattleStageRect {
   return {
     x: BLEED_PX,
@@ -99,6 +114,16 @@ export function getBattleTrimRect(): BattleStageRect {
     width: BATTLE_TRIM_WIDTH,
     height: BATTLE_TRIM_HEIGHT,
   }
+}
+
+/**
+ * Konva/canvas corner radii for the Battle inner mat (TL, TR, BR, BL).
+ * Upper-left + lower-left match Standard Modern bottom inner-border radius.
+ */
+export function getBattleInnerBorderCornerRadii(): readonly [number, number, number, number] {
+  const left = BATTLE_INNER_BORDER_LEFT_CORNER_RADIUS
+  const right = BATTLE_INNER_BORDER_RIGHT_CORNER_RADIUS
+  return [left, right, right, left]
 }
 
 /** Default Siege reminder (Scryfall / oracle). */

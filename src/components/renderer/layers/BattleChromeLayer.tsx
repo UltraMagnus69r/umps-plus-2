@@ -1,16 +1,18 @@
 /**
  * Battle / Siege landscape stack chrome —
  * top nameplate (name + mana), art aperture, type line, upright tan rules,
- * defense shield, left-edge collector strip (rotated).
+ * defense shield, left-edge collector strip, hologram stamp.
  */
 import { memo, useMemo } from 'react'
-import { Group, Layer, Shape, Text } from 'react-konva'
+import { Ellipse, Group, Layer, Shape, Text } from 'react-konva'
 import { shallow } from 'zustand/shallow'
 import {
   BATTLE_SIEGE_DEFAULT_REMINDER,
   getBattleArtRect,
   getBattleCollectorRect,
   getBattleDefenseRect,
+  getBattleHologramRect,
+  getBattleInnerBorderCornerRadii,
   getBattleManaRect,
   getBattleNameRect,
   getBattleRulesRect,
@@ -57,14 +59,48 @@ function addPillPath(ctx: CanvasRenderingContext2D, w: number, h: number): void 
   ctx.closePath()
 }
 
-function addShieldPath(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+/** Rounded rect with per-corner radii (TL, TR, BR, BL). */
+function addRoundRectPath(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  radii: readonly [number, number, number, number],
+): void {
+  const [tl, tr, br, bl] = radii.map((r) => Math.max(0, Math.min(r, Math.min(w, h) / 2))) as [
+    number,
+    number,
+    number,
+    number,
+  ]
+  ctx.moveTo(x + tl, y)
+  ctx.lineTo(x + w - tr, y)
+  ctx.quadraticCurveTo(x + w, y, x + w, y + tr)
+  ctx.lineTo(x + w, y + h - br)
+  ctx.quadraticCurveTo(x + w, y + h, x + w - br, y + h)
+  ctx.lineTo(x + bl, y + h)
+  ctx.quadraticCurveTo(x, y + h, x, y + h - bl)
+  ctx.lineTo(x, y + tl)
+  ctx.quadraticCurveTo(x, y, x + tl, y)
+  ctx.closePath()
+}
+
+/** Spiky defense shield matching Battle rarity defense badge. */
+function addSpikyShieldPath(ctx: CanvasRenderingContext2D, w: number, h: number): void {
   const cx = w / 2
-  ctx.moveTo(cx, 2)
-  ctx.lineTo(w - 4, h * 0.22)
-  ctx.lineTo(w - 6, h * 0.62)
-  ctx.quadraticCurveTo(cx, h - 2, cx, h - 2)
-  ctx.quadraticCurveTo(cx, h - 2, 6, h * 0.62)
-  ctx.lineTo(4, h * 0.22)
+  const cy = h * 0.46
+  const spikes = 12
+  const outerR = Math.min(w, h) * 0.48
+  const innerR = outerR * 0.72
+  for (let i = 0; i < spikes * 2; i++) {
+    const ang = -Math.PI / 2 + (i * Math.PI) / spikes
+    const r = i % 2 === 0 ? outerR : innerR
+    const px = cx + Math.cos(ang) * r
+    const py = cy + Math.sin(ang) * r * 1.05
+    if (i === 0) ctx.moveTo(px, py)
+    else ctx.lineTo(px, py)
+  }
   ctx.closePath()
 }
 
@@ -92,6 +128,7 @@ function BattleChromeLayer() {
     manualColorHex4,
     manualColorHex5,
     manualColorCount,
+    showHologram,
   } = useCardStore(
     (s) => ({
       currentLayout: s.currentLayout,
@@ -116,6 +153,7 @@ function BattleChromeLayer() {
       manualColorHex4: s.manualColorHex4,
       manualColorHex5: s.manualColorHex5,
       manualColorCount: s.manualColorCount,
+      showHologram: s.showHologram,
     }),
     shallow,
   )
@@ -171,6 +209,8 @@ function BattleChromeLayer() {
   const defenseR = getBattleDefenseRect()
   const collectorR = getBattleCollectorRect()
   const artR = getBattleArtRect()
+  const holoR = getBattleHologramRect()
+  const cornerRadii = getBattleInnerBorderCornerRadii()
 
   const defense = normalizeBattleDefense(battleDefense) || '0'
   const rulesBody = String(cardText ?? '').trim() || BATTLE_SIEGE_DEFAULT_REMINDER
@@ -191,10 +231,11 @@ function BattleChromeLayer() {
 
   const nameTextLeft = transformR.x + transformR.width + 16
   const nameTextWidth = Math.max(40, manaR.x - nameTextLeft - 12)
+  const showStamp = showHologram !== false && caps.supportsHologramSeal !== false
 
   return (
     <Layer listening={false}>
-      {/* Bleed + trim mat */}
+      {/* Bleed + trim mat with Modern-bottom radii on the left */}
       <Shape
         listening={false}
         sceneFunc={(ctx) => {
@@ -202,19 +243,12 @@ function BattleChromeLayer() {
           c.fillStyle = '#0a0a0a'
           c.fillRect(0, 0, stage.width, stage.height)
           c.beginPath()
-          const rr = 48
-          c.moveTo(trim.x + rr, trim.y)
-          c.arcTo(trim.x + trim.width, trim.y, trim.x + trim.width, trim.y + trim.height, rr)
-          c.arcTo(trim.x + trim.width, trim.y + trim.height, trim.x, trim.y + trim.height, rr)
-          c.arcTo(trim.x, trim.y + trim.height, trim.x, trim.y, rr)
-          c.arcTo(trim.x, trim.y, trim.x + trim.width, trim.y, rr)
-          c.closePath()
+          addRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, cornerRadii)
           c.fillStyle = fill
           c.fill()
           c.strokeStyle = stroke
           c.lineWidth = 4
           c.stroke()
-          // Punch art aperture so ArtLayer shows through.
           c.clearRect(artR.x, artR.y, artR.width, artR.height)
         }}
       />
@@ -240,7 +274,7 @@ function BattleChromeLayer() {
         }}
       />
 
-      {/* Transform / DFC mark (left of name) */}
+      {/* Transform mark — white triangle in circle (DFC front) */}
       <Shape
         x={transformR.x}
         y={transformR.y}
@@ -249,24 +283,32 @@ function BattleChromeLayer() {
           const c = ctx as unknown as CanvasRenderingContext2D
           const w = transformR.width
           const h = transformR.height
+          const cx = w / 2
+          const cy = h / 2
+          const r = Math.min(w, h) * 0.46
           c.beginPath()
-          c.arc(w / 2, h / 2, Math.min(w, h) * 0.42, 0, Math.PI * 2)
-          c.fillStyle = '#111'
+          c.arc(cx, cy, r, 0, Math.PI * 2)
+          c.fillStyle = '#1a1a1a'
           c.fill()
-          c.strokeStyle = '#f0ebe3'
-          c.lineWidth = 3
+          c.strokeStyle = 'rgba(255,255,255,0.35)'
+          c.lineWidth = 2
           c.stroke()
+          // Inner pale disc
           c.beginPath()
-          c.moveTo(w * 0.32, h * 0.28)
-          c.lineTo(w * 0.72, h * 0.5)
-          c.lineTo(w * 0.32, h * 0.72)
+          c.arc(cx, cy, r * 0.78, 0, Math.PI * 2)
+          c.fillStyle = '#f4f0ea'
+          c.fill()
+          // Downward white triangle (play-orientation DFC marker)
+          c.beginPath()
+          c.moveTo(cx, cy + r * 0.42)
+          c.lineTo(cx - r * 0.38, cy - r * 0.28)
+          c.lineTo(cx + r * 0.38, cy - r * 0.28)
           c.closePath()
-          c.fillStyle = '#f0ebe3'
+          c.fillStyle = '#1a1a1a'
           c.fill()
         }}
       />
 
-      {/* Name — upright, left */}
       <Text
         listening={false}
         x={nameTextLeft}
@@ -284,7 +326,6 @@ function BattleChromeLayer() {
         ellipsis
       />
 
-      {/* Mana — upright, right */}
       <Text
         listening={false}
         x={manaR.x}
@@ -299,7 +340,6 @@ function BattleChromeLayer() {
         verticalAlign="middle"
       />
 
-      {/* Type line pill */}
       <Shape
         x={typeR.x}
         y={typeR.y}
@@ -336,7 +376,6 @@ function BattleChromeLayer() {
         ellipsis
       />
 
-      {/* Tan parchment rules — upright */}
       <Shape
         listening={false}
         sceneFunc={(ctx) => {
@@ -371,7 +410,7 @@ function BattleChromeLayer() {
         wrap="word"
       />
 
-      {/* Defense shield (bottom-right of rules) */}
+      {/* Spiky defense shield */}
       <Shape
         x={defenseR.x}
         y={defenseR.y}
@@ -379,30 +418,57 @@ function BattleChromeLayer() {
         sceneFunc={(ctx) => {
           const c = ctx as unknown as CanvasRenderingContext2D
           c.beginPath()
-          addShieldPath(c, defenseR.width, defenseR.height)
-          c.fillStyle = '#141414'
+          addSpikyShieldPath(c, defenseR.width, defenseR.height)
+          c.fillStyle = '#121212'
           c.fill()
           c.strokeStyle = '#f5f0e8'
-          c.lineWidth = 3
+          c.lineWidth = 2.5
           c.stroke()
         }}
       />
       <Text
         listening={false}
         x={defenseR.x}
-        y={defenseR.y + 8}
+        y={defenseR.y + 6}
         width={defenseR.width}
-        height={defenseR.height - 16}
+        height={defenseR.height - 12}
         text={defense}
         fontFamily="Beleren, Georgia, serif"
         fontStyle="bold"
-        fontSize={48}
+        fontSize={46}
         fill="#ffffff"
         align="center"
         verticalAlign="middle"
       />
 
-      {/* Collector along left edge — rotated 90° CW so it reads bottom → top when card is upright */}
+      {/* Hologram / security stamp — left end of inner border */}
+      {showStamp ? (
+        <Group listening={false}>
+          <Ellipse
+            x={holoR.x + holoR.width / 2}
+            y={holoR.y + holoR.height / 2}
+            radiusX={holoR.width / 2}
+            radiusY={holoR.height / 2}
+            fillLinearGradientStartPoint={{ x: -holoR.width / 2, y: -holoR.height / 2 }}
+            fillLinearGradientEndPoint={{ x: holoR.width / 2, y: holoR.height / 2 }}
+            fillLinearGradientColorStops={[0, '#F3F3F3', 0.45, '#C8C8C8', 1, '#9A9A9A']}
+            stroke="#2a2a2a"
+            strokeWidth={2}
+            listening={false}
+          />
+          <Ellipse
+            x={holoR.x + holoR.width / 2}
+            y={holoR.y + holoR.height / 2}
+            radiusX={holoR.width / 2 - 5}
+            radiusY={holoR.height / 2 - 5}
+            fillLinearGradientStartPoint={{ x: -holoR.width / 2, y: holoR.height / 2 }}
+            fillLinearGradientEndPoint={{ x: holoR.width / 2, y: -holoR.height / 2 }}
+            fillLinearGradientColorStops={[0, '#E8E8E8', 0.5, '#B0B0B0', 1, '#D8D8D8']}
+            listening={false}
+          />
+        </Group>
+      ) : null}
+
       <Group x={collectorR.x + collectorR.width} y={collectorR.y} rotation={90} listening={false}>
         <Text
           listening={false}
@@ -421,7 +487,6 @@ function BattleChromeLayer() {
         />
       </Group>
 
-      {/* Inner black frame line around art aperture */}
       <Shape
         listening={false}
         sceneFunc={(ctx) => {
