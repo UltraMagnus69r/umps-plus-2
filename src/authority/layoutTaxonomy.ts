@@ -15,6 +15,7 @@ export type LayoutVariant =
   | 'borderless'
   | 'full-art'
   | 'saga'
+  | 'saga-creature'
   | 'class'
   | 'white'
   | 'blue'
@@ -35,7 +36,7 @@ export const DEFAULT_LAYOUT_ID: LayoutId = {
 }
 
 export const layoutCompatibility: Record<LayoutFamily, readonly LayoutVariant[]> = {
-  standard: ['modern', 'pre-modern', 'borderless', 'full-art'],
+  standard: ['modern', 'pre-modern', 'borderless', 'full-art', 'saga-creature'],
   land: ['modern', 'pre-modern', 'borderless', 'full-art'],
   spell: ['modern', 'pre-modern', 'saga', 'class'],
   battle: ['modern'],
@@ -60,6 +61,7 @@ export const LAYOUT_VARIANT_LABELS: Record<LayoutVariant, string> = {
   borderless: 'Borderless',
   'full-art': 'Full Art',
   saga: 'Saga',
+  'saga-creature': 'Saga Creature',
   class: 'Class',
   white: 'White',
   blue: 'Blue',
@@ -117,6 +119,7 @@ function normalizeVariant(value: unknown): LayoutVariant {
     value === 'borderless' ||
     value === 'full-art' ||
     value === 'saga' ||
+    value === 'saga-creature' ||
     value === 'class' ||
     value === 'white' ||
     value === 'blue' ||
@@ -274,6 +277,12 @@ export function isSagaLayout(layout: Partial<LayoutId> | null | undefined): bool
   return normalized.family === 'spell' && normalized.variant === 'saga'
 }
 
+/** Standard / Saga Creature — reminder strip + split chapters/art + creature rules + P/T. */
+export function isSagaCreatureLayout(layout: Partial<LayoutId> | null | undefined): boolean {
+  const normalized = normalizeLayout(layout)
+  return normalized.family === 'standard' && normalized.variant === 'saga-creature'
+}
+
 /** Spell / Class — right art, left level column (matches fidelity ground-truth ref). */
 export function isClassLayout(layout: Partial<LayoutId> | null | undefined): boolean {
   const normalized = normalizeLayout(layout)
@@ -353,6 +362,8 @@ export function layoutFromLegacyMode(mode: CardLayoutMode): LayoutId {
       return { family: 'land', variant: 'modern' }
     case 'Saga':
       return { family: 'spell', variant: 'saga' }
+    case 'Saga Creature':
+      return { family: 'standard', variant: 'saga-creature' }
     case 'Class':
       return { family: 'spell', variant: 'class' }
     case 'Full Art':
@@ -372,6 +383,7 @@ export function layoutFromLegacyMode(mode: CardLayoutMode): LayoutId {
 export function layoutToLegacyMode(layout: LayoutId): Exclude<CardLayoutMode, 'Hidden'> {
   const normalized = normalizeLayout(layout)
   if (normalized.family === 'spell' && normalized.variant === 'saga') return 'Saga'
+  if (normalized.family === 'standard' && normalized.variant === 'saga-creature') return 'Saga Creature'
   if (normalized.family === 'spell' && normalized.variant === 'class') return 'Class'
   if (normalized.family === 'battle') return 'Standard'
   if (normalized.family === 'planeswalker' && normalized.variant === 'full-art') return 'Full Art'

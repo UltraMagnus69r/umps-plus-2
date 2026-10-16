@@ -15,6 +15,7 @@ import {
   buildRecipeCoreStageRects,
   buildRecipeExtensionStageRects,
   CLASS_REGULAR_RECIPE,
+  SAGA_CREATURE_RECIPE,
   SAGA_REGULAR_RECIPE,
 } from './recipes/layoutRecipeAuthority'
 import type { LayoutContract, LayoutFamilyRegionExtensions } from './layoutContract'
@@ -810,7 +811,11 @@ function buildSpellPreModernContract(): LayoutContract {
 }
 
 function recipeExtensionsToFamilyExtensions(
-  recipe: typeof SAGA_REGULAR_RECIPE | typeof CLASS_REGULAR_RECIPE | typeof BATTLE_REGULAR_RECIPE,
+  recipe:
+    | typeof SAGA_REGULAR_RECIPE
+    | typeof CLASS_REGULAR_RECIPE
+    | typeof SAGA_CREATURE_RECIPE
+    | typeof BATTLE_REGULAR_RECIPE,
 ): LayoutFamilyRegionExtensions | undefined {
   const ext = buildRecipeExtensionStageRects(recipe)
   if (!ext) return undefined
@@ -882,6 +887,56 @@ function buildClassStandardContract(): LayoutContract {
     { family: 'spell', variant: 'class' },
     CLASS_REGULAR_RECIPE,
   )
+}
+
+/** Standard / Saga Creature — reminder strip + split + creature rules + P/T. */
+function buildSagaCreatureContract(): LayoutContract {
+  const rects = buildRecipeCoreStageRects(SAGA_CREATURE_RECIPE)
+  const standard = getStandardLayoutGeometry()
+  return normalizeLayoutContract({
+    id: { family: 'standard', variant: 'saga-creature' },
+    regions: {
+      art: pxRectToNormalizedRect(rects.art),
+      nameBar: pxRectToNormalizedRect(rects.nameBar),
+      typeLine: pxRectToNormalizedRect(rects.typeLine),
+      rulesText: pxRectToNormalizedRect(rects.rulesText),
+      metadataStrip: pxRectToNormalizedRect({
+        x: standard.bottomInfoX,
+        y: standard.bottomInfoY,
+        width: standard.bottomInfoW,
+        height: standard.bottomInfoH,
+      }),
+      lowerRight: {
+        kind: 'powerToughness',
+        rect: pxRectToNormalizedRect(rects.lowerRight),
+      },
+    },
+    capabilities: {
+      supportsFlavorText: true,
+      supportsPowerToughnessBox: true,
+      supportsMetadataStrip: true,
+      supportsEdgeToBleedArt: false,
+      supportsFloatingTextTreatment: false,
+      supportsSecondaryStructuralRegions: true,
+      supportsNamePlateBox: true,
+      supportsTypeLineBox: true,
+      supportsHologramSeal: false,
+      supportsRulesTextBoxFrame: true,
+      supportsRulesTextBoxTexture: true,
+      supportsPreModernTextBoxFrame: false,
+      /** Contract P/T slot (same path as Standard Modern). */
+      supportsModernDummyLayout: true,
+      supportsSagaClassChrome: true,
+      /** Creature rules render in the rules box; chapters drawn by chrome. */
+      suppressRulesTextRendering: false,
+    },
+    bleedBehavior: 'trim-contained',
+    compliance: {
+      requiresTrimCompliance: true,
+      requiresSafeZoneCompliance: true,
+    },
+    familyExtensions: recipeExtensionsToFamilyExtensions(SAGA_CREATURE_RECIPE),
+  })
 }
 
 /** Battle / Siege — CC landscape seating mapped into portrait stage. */
@@ -998,6 +1053,7 @@ const rawContracts: readonly LayoutContract[] = [
   buildSpellPreModernContract(),
   buildSagaStandardContract(),
   buildClassStandardContract(),
+  buildSagaCreatureContract(),
   buildBattleModernContract(),
   ...PKMN_FRAME_OPTIONS.map((o) => buildPkmnContract(o.id)),
 ]

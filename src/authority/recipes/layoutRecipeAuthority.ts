@@ -6,6 +6,7 @@ import type { LayoutId } from '../layoutTaxonomy'
 import { BATTLE_REGULAR_RECIPE } from './battleRegularRecipe'
 import { CLASS_REGULAR_RECIPE } from './classRegularRecipe'
 import { M15_REGULAR_CREATURE_RECIPE, M15_REGULAR_MANA_PIP_SIZE_PX } from './m15RegularCreatureRecipe'
+import { SAGA_CREATURE_RECIPE } from './sagaCreatureRecipe'
 import { SAGA_REGULAR_RECIPE } from './sagaRegularRecipe'
 import type { LayoutRecipe, TrimNormRect } from './layoutRecipeTypes'
 
@@ -63,11 +64,16 @@ export function layoutUsesSagaRecipe(layout: Partial<LayoutId> | null | undefine
   return layout?.family === 'spell' && layout?.variant === 'saga'
 }
 
+export function layoutUsesSagaCreatureRecipe(layout: Partial<LayoutId> | null | undefined): boolean {
+  return layout?.family === 'standard' && layout?.variant === 'saga-creature'
+}
+
 export function layoutUsesBattleRecipe(layout: Partial<LayoutId> | null | undefined): boolean {
   return layout?.family === 'battle'
 }
 
 export function getLayoutRecipe(layout: Partial<LayoutId> | null | undefined): LayoutRecipe | null {
+  if (layoutUsesSagaCreatureRecipe(layout)) return SAGA_CREATURE_RECIPE
   if (layoutUsesM15RegularRecipe(layout)) return M15_REGULAR_CREATURE_RECIPE
   if (layoutUsesClassRecipe(layout)) return CLASS_REGULAR_RECIPE
   if (layoutUsesSagaRecipe(layout)) return SAGA_REGULAR_RECIPE
@@ -135,5 +141,6 @@ export {
   M15_REGULAR_MANA_PIP_SIZE_PX,
   CLASS_REGULAR_RECIPE,
   SAGA_REGULAR_RECIPE,
+  SAGA_CREATURE_RECIPE,
   BATTLE_REGULAR_RECIPE,
 }

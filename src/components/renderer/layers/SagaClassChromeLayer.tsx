@@ -1,6 +1,7 @@
 /**
- * Procedural Saga / Class chrome: parchment column, vertical chapter/level banner
- * with top bezier + chevron tip, roman badges, and chapter dividers.
+ * Procedural Saga / Class / Saga Creature chrome:
+ * parchment column, vertical chapter/level banner, roman badges, dividers.
+ * Saga Creature also draws a full-width reminder strip under the name bar.
  */
 import { memo, useMemo } from 'react'
 import { Layer, Shape, Text } from 'react-konva'
@@ -18,9 +19,15 @@ import {
   getSagaClassParchmentRect,
   getSagaClassReminderRect,
   romanNumeral,
+  SAGA_CREATURE_DEFAULT_REMINDER,
   SAGA_DEFAULT_REMINDER,
 } from '../../../authority/sagaClassLayoutAuthority'
-import { isClassLayout, isSagaLayout, type LayoutId } from '../../../authority/layoutTaxonomy'
+import {
+  isClassLayout,
+  isSagaCreatureLayout,
+  isSagaLayout,
+  type LayoutId,
+} from '../../../authority/layoutTaxonomy'
 import { resolveProceduralIdentity, useCardStore } from '../../../store/useCardStore'
 
 function darkenHex(hex: string, amount: number): string {
@@ -41,16 +48,31 @@ function lightenHex(hex: string, amount: number): string {
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
 }
 
-function parseChapterBodies(raw: string, isClass: boolean): { reminder: string; chapters: string[] } {
+function parseChapterBodies(
+  raw: string,
+  mode: 'class' | 'saga' | 'saga-creature',
+): { reminder: string; chapters: string[] } {
+  const defaultReminder =
+    mode === 'class'
+      ? CLASS_DEFAULT_REMINDER
+      : mode === 'saga-creature'
+        ? SAGA_CREATURE_DEFAULT_REMINDER
+        : SAGA_DEFAULT_REMINDER
+  const defaultChapters =
+    mode === 'class'
+      ? ['Level 1 abilities.', 'Level 2 abilities.', 'Level 3 abilities.']
+      : mode === 'saga-creature'
+        ? ['Chapter ability.', 'Chapter ability.', 'Chapter ability.', 'Chapter ability.']
+        : ['Chapter ability.', 'Chapter ability.', 'Chapter ability.']
+
+  // Creature rules live in cardText for saga-creature — chapter chrome uses defaults.
+  if (mode === 'saga-creature') {
+    return { reminder: defaultReminder, chapters: defaultChapters }
+  }
+
   const text = String(raw ?? '').trim()
-  const defaultReminder = isClass ? CLASS_DEFAULT_REMINDER : SAGA_DEFAULT_REMINDER
   if (!text) {
-    return {
-      reminder: defaultReminder,
-      chapters: isClass
-        ? ['Level 1 abilities.', 'Level 2 abilities.', 'Level 3 abilities.']
-        : ['Chapter ability.', 'Chapter ability.', 'Chapter ability.'],
-    }
+    return { reminder: defaultReminder, chapters: defaultChapters }
   }
   const blocks = text.split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean)
   if (blocks.length === 1) {
@@ -111,6 +133,12 @@ function SagaClassChromeLayer() {
   const enabled = caps.supportsSagaClassChrome === true
   const classLayout = isClassLayout(activeLayout)
   const sagaLayout = isSagaLayout(activeLayout)
+  const creatureLayout = isSagaCreatureLayout(activeLayout)
+  const mode: 'class' | 'saga' | 'saga-creature' = classLayout
+    ? 'class'
+    : creatureLayout
+      ? 'saga-creature'
+      : 'saga'
 
   const identity = useMemo(
     () =>
@@ -147,26 +175,44 @@ function SagaClassChromeLayer() {
   const bannerFill = identity.stroke
   const bannerStroke = useMemo(() => darkenHex(bannerFill, 0.35), [bannerFill])
   const bannerHighlight = useMemo(() => lightenHex(bannerFill, 0.25), [bannerFill])
-  // Class badges read metallic/gold on the level ribbon; Saga badges stay parchment.
   const badgeFill = classLayout ? lightenHex(bannerFill, 0.62) : '#e8dcc8'
   const badgeInk = classLayout ? darkenHex(bannerFill, 0.55) : '#1a1210'
 
-  const parchment = getSagaClassParchmentRect()
-  const banner = getSagaClassBannerRect()
-  const reminderRect = getSagaClassReminderRect()
-  const abilityCol = getSagaClassAbilityColumnRect()
-  const badgeMetrics = getSagaClassBadgeMetrics()
-  const parsed = useMemo(() => parseChapterBodies(cardText, classLayout), [cardText, classLayout])
+  const parchment = getSagaClassParchmentRect(activeLayout)
+  const banner = getSagaClassBannerRect(activeLayout)
+  const reminderRect = getSagaClassReminderRect(activeLayout)
+  const abilityCol = getSagaClassAbilityColumnRect(activeLayout)
+  const badgeMetrics = getSagaClassBadgeMetrics(activeLayout)
+  const parsed = useMemo(() => parseChapterBodies(cardText, mode), [cardText, mode])
+  const chapterCount = creatureLayout ? Math.max(4, parsed.chapters.length) : Math.max(3, parsed.chapters.length)
   const bands = useMemo(
-    () => getSagaClassChapterBandRects(Math.max(3, parsed.chapters.length)),
-    [parsed.chapters.length],
+    () => getSagaClassChapterBandRects(chapterCount, activeLayout),
+    [chapterCount, activeLayout],
   )
+  const badgeCount = creatureLayout ? 4 : 3
 
-  if (!enabled || (!sagaLayout && !classLayout)) return null
+  if (!enabled || (!sagaLayout && !classLayout && !creatureLayout)) return null
 
   return (
     <Layer listening={false}>
-      {/* Parchment text column */}
+      {/* Saga Creature: full-width reminder strip under the name bar */}
+      {creatureLayout ? (
+        <Shape
+          listening={false}
+          sceneFunc={(ctx) => {
+            const c = ctx as unknown as CanvasRenderingContext2D
+            c.beginPath()
+            c.rect(reminderRect.x, reminderRect.y, reminderRect.width, reminderRect.height)
+            c.fillStyle = '#f4ebe0'
+            c.fill()
+            c.strokeStyle = 'rgba(80,60,40,0.28)'
+            c.lineWidth = 2
+            c.strokeRect(reminderRect.x + 1, reminderRect.y + 1, reminderRect.width - 2, reminderRect.height - 2)
+          }}
+        />
+      ) : null}
+
+      {/* Parchment text column (chapter/level area) */}
       <Shape
         listening={false}
         sceneFunc={(ctx) => {
@@ -175,7 +221,6 @@ function SagaClassChromeLayer() {
           c.rect(parchment.x, parchment.y, parchment.width, parchment.height)
           c.fillStyle = '#f4ebe0'
           c.fill()
-          // subtle inner edge toward art
           c.strokeStyle = 'rgba(80,60,40,0.22)'
           c.lineWidth = 2
           c.beginPath()
@@ -193,7 +238,7 @@ function SagaClassChromeLayer() {
         sceneFunc={(ctx) => {
           const c = ctx as unknown as CanvasRenderingContext2D
           c.beginPath()
-          addSagaBannerPath(c, banner.width, banner.height)
+          addSagaBannerPath(c, banner.width, banner.height, { flatTop: creatureLayout })
           const grad = c.createLinearGradient(0, 0, banner.width, 0)
           grad.addColorStop(0, bannerHighlight)
           grad.addColorStop(0.45, bannerFill)
@@ -203,9 +248,8 @@ function SagaClassChromeLayer() {
           c.strokeStyle = bannerStroke
           c.lineWidth = 2
           c.stroke()
-          // center spine
           c.beginPath()
-          c.moveTo(banner.width * 0.5, banner.height * 0.2)
+          c.moveTo(banner.width * 0.5, banner.height * 0.12)
           c.lineTo(banner.width * 0.5, banner.height * 0.88)
           c.strokeStyle = 'rgba(0,0,0,0.28)'
           c.lineWidth = 2
@@ -231,7 +275,7 @@ function SagaClassChromeLayer() {
       ))}
 
       {/* Roman badges */}
-      {bands.slice(0, 3).map((band, i) => {
+      {bands.slice(0, badgeCount).map((band, i) => {
         const bw = badgeMetrics.width
         const bh = badgeMetrics.height
         const bx = badgeMetrics.x
@@ -266,7 +310,7 @@ function SagaClassChromeLayer() {
           />
         )
       })}
-      {bands.slice(0, 3).map((band, i) => {
+      {bands.slice(0, badgeCount).map((band, i) => {
         const bw = badgeMetrics.width
         const bh = badgeMetrics.height
         const bx = badgeMetrics.x
@@ -293,17 +337,17 @@ function SagaClassChromeLayer() {
       {/* Reminder */}
       <Text
         listening={false}
-        x={reminderRect.x + 8}
-        y={reminderRect.y + 8}
-        width={reminderRect.width - 16}
-        height={reminderRect.height - 16}
+        x={reminderRect.x + 10}
+        y={reminderRect.y + (creatureLayout ? 12 : 8)}
+        width={reminderRect.width - 20}
+        height={reminderRect.height - (creatureLayout ? 20 : 16)}
         text={parsed.reminder}
         fontFamily="Georgia, 'Times New Roman', serif"
         fontStyle="italic"
-        fontSize={28}
+        fontSize={creatureLayout ? 26 : 28}
         fill="#2a2218"
         wrap="word"
-        verticalAlign="top"
+        verticalAlign={creatureLayout ? 'middle' : 'top'}
       />
 
       {/* Chapter / level bodies */}
@@ -315,12 +359,12 @@ function SagaClassChromeLayer() {
             key={`ch-${i}`}
             listening={false}
             x={band.x + 6}
-            y={band.y + 10}
+            y={band.y + 8}
             width={band.width - 12}
-            height={band.height - 16}
+            height={band.height - 14}
             text={body}
             fontFamily="Georgia, 'Times New Roman', serif"
-            fontSize={30}
+            fontSize={creatureLayout ? 26 : 30}
             fill="#1c1612"
             wrap="word"
             verticalAlign="top"

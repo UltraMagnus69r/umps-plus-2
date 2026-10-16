@@ -4,6 +4,7 @@
  */
 import {
   CLASS_REGULAR_RECIPE,
+  SAGA_CREATURE_RECIPE,
   SAGA_REGULAR_RECIPE,
   buildRecipeCoreStageRects,
   buildRecipeExtensionStageRects,
@@ -13,6 +14,7 @@ import {
   getInnerBorderCornerRadius,
   getInnerBorderStageRect,
   isModernDummyLayout,
+  isSagaCreatureLayout,
 } from '../src/authority/layoutTaxonomy'
 import { BLEED_PX, TRIM_HEIGHT, TRIM_WIDTH } from '../src/authority/geometryAuthority'
 
@@ -45,6 +47,28 @@ console.log('\nClass Regular (same split as Saga — art right, match ground-tru
   check('banner+levels', Boolean(ext?.banner && ext?.levelBand1 && ext?.reminder), JSON.stringify(Object.keys(ext ?? {})))
   const c = getLayoutContract({ family: 'spell', variant: 'class' })
   check('class chrome flag', c.capabilities.supportsSagaClassChrome === true, String(c.capabilities.supportsSagaClassChrome))
+}
+
+console.log('\nStandard / Saga Creature (reminder + split + creature rules + P/T)')
+{
+  const r = buildRecipeCoreStageRects(SAGA_CREATURE_RECIPE)
+  check('art right column', r.art.x > 700, `art.x=${r.art.x}`)
+  check('type mid-lower (above creature rules)', r.typeLine.y > 1400 && r.typeLine.y < 1700, `type.y=${r.typeLine.y}`)
+  check('rules below type', r.rulesText.y > r.typeLine.y + r.typeLine.height - 4, `rules.y=${r.rulesText.y} typeBottom=${r.typeLine.y + r.typeLine.height}`)
+  check('rules full-width vs art', r.rulesText.width > r.art.width + 200, `rules.w=${r.rulesText.width} art.w=${r.art.width}`)
+  check('P/T slot present', r.lowerRight.width > 50 && r.lowerRight.y > 1800, `pt=${JSON.stringify(r.lowerRight)}`)
+  const ext = buildRecipeExtensionStageRects(SAGA_CREATURE_RECIPE)
+  check(
+    'reminderStrip+banner+parchment',
+    Boolean(ext?.reminderStrip && ext?.banner && ext?.parchment && ext?.abilityCol),
+    JSON.stringify(Object.keys(ext ?? {})),
+  )
+  const c = getLayoutContract({ family: 'standard', variant: 'saga-creature' })
+  check('saga-creature id', isSagaCreatureLayout(c.id), JSON.stringify(c.id))
+  check('chrome flag', c.capabilities.supportsSagaClassChrome === true, String(c.capabilities.supportsSagaClassChrome))
+  check('P/T box', c.capabilities.supportsPowerToughnessBox === true, String(c.capabilities.supportsPowerToughnessBox))
+  check('rules frame', c.capabilities.supportsRulesTextBoxFrame === true, String(c.capabilities.supportsRulesTextBoxFrame))
+  check('rules text not suppressed', c.capabilities.suppressRulesTextRendering === false, String(c.capabilities.suppressRulesTextRendering))
 }
 
 console.log('\nSpell Modern inner border matches Standard Modern')

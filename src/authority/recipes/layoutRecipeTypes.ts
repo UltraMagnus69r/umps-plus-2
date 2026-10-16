@@ -30,7 +30,7 @@ export type RecipeTypographyField = {
 export type LayoutRecipe = {
   id: string
   family: 'standard' | 'land' | 'spell' | 'battle'
-  variant: 'modern' | 'class' | 'saga'
+  variant: 'modern' | 'class' | 'saga' | 'saga-creature'
   space: 'trim-1500x2100'
   chrome: {
     mode: 'procedural' | 'sheet'
