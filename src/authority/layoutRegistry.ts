@@ -22,6 +22,10 @@ import {
   getBattleTypeRect,
 } from './battleLayoutAuthority'
 import {
+  getPreparedRulesRect,
+  PREPARED_PANEL_BOTTOM_EXTEND_PX,
+} from './preparedLayoutAuthority'
+import {
   BATTLE_REGULAR_RECIPE,
   buildRecipeCoreStageRects,
   buildRecipeExtensionStageRects,
@@ -956,9 +960,29 @@ function buildSagaCreatureContract(): LayoutContract {
 /** Prepared Creatures — Standard Modern top + split rules / mini-spell chrome. */
 function buildPreparedModernContract(): LayoutContract {
   const modern = buildStandardModernContract()
+  const preparedRules = getPreparedRulesRect()
+  const pt = modern.regions.lowerRight
+  /** Keep P/T seated on the extended column bottom-right corner. */
+  const ptRect = pt?.rect
+    ? {
+        ...pt.rect,
+        top: pt.rect.top + PREPARED_PANEL_BOTTOM_EXTEND_PX / STAGE_HEIGHT,
+      }
+    : undefined
   return normalizeLayoutContract({
     ...modern,
     id: { family: 'prepared', variant: 'modern' },
+    regions: {
+      ...modern.regions,
+      rulesText: pxRectToNormalizedRect(preparedRules),
+      lowerRight:
+        pt && ptRect
+          ? {
+              kind: pt.kind,
+              rect: ptRect,
+            }
+          : pt,
+    },
     capabilities: {
       ...modern.capabilities,
       supportsPreparedChrome: true,

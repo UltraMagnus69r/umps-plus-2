@@ -11,6 +11,8 @@ export type PreparedStageRect = { x: number; y: number; width: number; height: n
 
 const RULES = M15_REGULAR_CREATURE_RECIPE.regions.rules
 const GAP_FRAC = 0.012
+/** Extend both prepared + spell columns downward (stage px). */
+export const PREPARED_PANEL_BOTTOM_EXTEND_PX = 15
 
 function trimNormToStage(rect: { x: number; y: number; w: number; h: number }): PreparedStageRect {
   return {
@@ -21,9 +23,10 @@ function trimNormToStage(rect: { x: number; y: number; w: number; h: number }): 
   }
 }
 
-/** Full rules aperture (same as Standard Modern). */
+/** Full rules aperture — Standard Modern height + bottom extend for both columns. */
 export function getPreparedRulesRect(): PreparedStageRect {
-  return trimNormToStage(RULES)
+  const base = trimNormToStage(RULES)
+  return { ...base, height: base.height + PREPARED_PANEL_BOTTOM_EXTEND_PX }
 }
 
 /** Left ~50% — prepared-side creature rules. */
