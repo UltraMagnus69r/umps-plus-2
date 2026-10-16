@@ -1872,12 +1872,16 @@ colorBlendDirection: 'vertical',
           set((state) => {
             const dirty = nextFieldDirtyAfterScryfallMappedClear(state.isFieldDirty, mapped)
             const normalizedLayout = normalizeRequestedLayoutSwitch(state.cardData.layout, data.inferred_layout)
+            const hidePtForLayout =
+              normalizedLayout.family === 'land' ||
+              normalizedLayout.family === 'planeswalker' ||
+              normalizedLayout.family === 'battle' ||
+              normalizedLayout.variant === 'saga' ||
+              normalizedLayout.variant === 'class'
             let cardData: CardData = {
               ...state.cardData,
               layout: normalizedLayout,
-              ...(normalizedLayout.family === 'land' || normalizedLayout.family === 'planeswalker'
-                ? { showPowerToughness: false }
-                : null),
+              ...(hidePtForLayout ? { showPowerToughness: false } : null),
             }
 
             const systemResult = applySystemUpdateToCardData(cardData, dirty, mapped)
@@ -2250,13 +2254,17 @@ colorBlendDirection: 'vertical',
       setLayout: (layout) => {
         const current = get().cardData.layout
         const normalized = normalizeRequestedLayoutSwitch(current, layout)
+        const hidePtForLayout =
+          normalized.family === 'land' ||
+          normalized.family === 'planeswalker' ||
+          normalized.family === 'battle' ||
+          normalized.variant === 'saga' ||
+          normalized.variant === 'class'
         set((state) => ({
           cardData: {
             ...state.cardData,
             layout: normalized,
-            ...(normalized.family === 'land' || normalized.family === 'planeswalker'
-              ? { showPowerToughness: false }
-              : null),
+            ...(hidePtForLayout ? { showPowerToughness: false } : null),
           },
           currentLayout: layoutToLegacyMode(normalized),
         }))
