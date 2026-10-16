@@ -266,7 +266,7 @@ export function isModernDummyLayout(layout: Partial<LayoutId> | null | undefined
   )
 }
 
-/** Battle / Siege family (landscape CC seating mapped into portrait stage). */
+/** Battle / Siege family (true landscape stage via battleLayoutAuthority). */
 export function isBattleLayout(layout: Partial<LayoutId> | null | undefined): boolean {
   return normalizeLayout(layout).family === 'battle'
 }

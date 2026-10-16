@@ -66,7 +66,13 @@ export function shouldShowFlavorTextField(input: ProgressiveDisclosureSidebarInp
 }
 
 export function shouldShowPowerToughnessCoreBlock(input: ProgressiveDisclosureSidebarInput): boolean {
-  if (input.layoutFamily === 'land' || input.layoutFamily === 'planeswalker') return false
+  if (
+    input.layoutFamily === 'land' ||
+    input.layoutFamily === 'planeswalker' ||
+    input.layoutFamily === 'battle'
+  ) {
+    return false
+  }
   return (
     (input.layoutFamily === 'standard' || input.layoutFamily === 'pkmn') &&
     shouldShowExpandedCoreCardInputs(input.capabilities)
@@ -75,6 +81,11 @@ export function shouldShowPowerToughnessCoreBlock(input: ProgressiveDisclosureSi
 
 export function shouldShowStartingLoyaltyCoreBlock(input: ProgressiveDisclosureSidebarInput): boolean {
   return input.capabilities.supportsStartingLoyaltyBox
+}
+
+/** Battle / Siege — defense shield value next to rules. */
+export function shouldShowBattleDefenseControls(input: ProgressiveDisclosureSidebarInput): boolean {
+  return input.capabilities.supportsBattleChrome === true || input.layoutFamily === 'battle'
 }
 
 export function shouldShowPowerToughnessControls(input: ProgressiveDisclosureSidebarInput): boolean {
