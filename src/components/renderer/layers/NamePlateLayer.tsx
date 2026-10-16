@@ -126,6 +126,7 @@ function NamePlateLayer() {
     supportsNamePlateBox,
     supportsModernDummyLayout,
     supportsPlaneswalkerModernV2Layout,
+    supportsSagaClassChrome,
     useLandFullArtManaCircle,
   } = getActiveLayoutCapabilitiesFromState({
     currentLayout,
@@ -159,7 +160,7 @@ function NamePlateLayer() {
   })
 
   const contractNamePlate = useMemo(() => {
-    if (!supportsModernDummyLayout) return null
+    if (!supportsModernDummyLayout && !supportsSagaClassChrome) return null
     const inner = layoutRegionToStageRect(contractRegions.nameBar)
     return {
       x: inner.x - BEVEL_INSET,
@@ -167,7 +168,7 @@ function NamePlateLayer() {
       w: inner.width + 2 * BEVEL_INSET,
       h: inner.height + 2 * BEVEL_INSET,
     }
-  }, [supportsModernDummyLayout, contractRegions.nameBar])
+  }, [supportsModernDummyLayout, supportsSagaClassChrome, contractRegions.nameBar])
 
   const modernV2ArtOuter = useMemo(() => {
     if (!supportsPlaneswalkerModernV2Layout) return null
@@ -184,11 +185,15 @@ function NamePlateLayer() {
     : barRadius
   const effectiveNameBarShape = resolveEffectiveNameplateShape(bezierPlateEnabled, nameBarShape)
 
-  /** Visible art-frame outer L/R — flat plate runs align to these edges (caps outside). */
+  /** Visible column L/R for plate flats — Saga/Class use full name-bar width. */
   const artAperture = useMemo(() => {
     if (useLandFullArtManaCircle) return null
     if (supportsPlaneswalkerModernV2Layout && modernV2ArtOuter) {
       return { x: modernV2ArtOuter.x, width: modernV2ArtOuter.width }
+    }
+    if (supportsSagaClassChrome) {
+      const nameInner = layoutRegionToStageRect(contractRegions.nameBar)
+      return { x: nameInner.x, width: nameInner.width }
     }
     if (supportsModernDummyLayout && modernDummyArt) {
       return {
@@ -208,9 +213,11 @@ function NamePlateLayer() {
     useLandFullArtManaCircle,
     supportsPlaneswalkerModernV2Layout,
     modernV2ArtOuter,
+    supportsSagaClassChrome,
     supportsModernDummyLayout,
     modernDummyArt,
     contractRegions.art,
+    contractRegions.nameBar,
     artX,
     artW,
   ])

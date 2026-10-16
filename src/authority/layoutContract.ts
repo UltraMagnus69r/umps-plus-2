@@ -62,6 +62,8 @@ export type LayoutCapabilityFlags = {
   supportsPlaneswalkerAbilities: boolean
   /** Planeswalker / Modern V2 — bowed art frame, rounded rules recess, badge gutter outside rules box. */
   supportsPlaneswalkerModernV2Layout: boolean
+  /** Spell Saga/Class — parchment column, vertical banner, chapter/level badges. */
+  supportsSagaClassChrome: boolean
 }
 
 export type BleedBehavior = 'trim-contained' | 'edge-to-bleed'
@@ -107,6 +109,7 @@ const DEFAULT_CAPABILITIES: LayoutCapabilityFlags = {
   supportsStartingLoyaltyBox: false,
   supportsPlaneswalkerAbilities: false,
   supportsPlaneswalkerModernV2Layout: false,
+  supportsSagaClassChrome: false,
 }
 
 const DEFAULT_COMPLIANCE: ComplianceMetadata = {
