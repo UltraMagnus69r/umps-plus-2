@@ -280,7 +280,10 @@ function BattleChromeLayer() {
 
   return (
     <Layer listening={false}>
-      {/* Bleed + trim mat — left arcs start ~50 px later on top/bottom */}
+      {/*
+        Bleed + outer frame. Clear the full inner-face art aperture so ArtLayer
+        (drawn underneath) shows through with no mat gaps; plates/rules paint on top.
+      */}
       <Shape
         listening={false}
         sceneFunc={(ctx) => {
@@ -294,6 +297,7 @@ function BattleChromeLayer() {
           c.strokeStyle = stroke
           c.lineWidth = 4
           c.stroke()
+          // Punch the entire inner content face (not a mid-band inset window).
           c.clearRect(artR.x, artR.y, artR.width, artR.height)
         }}
       />
