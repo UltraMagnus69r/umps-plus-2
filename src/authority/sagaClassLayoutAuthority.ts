@@ -66,8 +66,9 @@ const FACE_CREATURE: Face = {
 export const SAGA_DEFAULT_REMINDER =
   '(As this Saga enters and after your draw step, add a lore counter. Sacrifice after III.)'
 
+/** @deprecated Prefer defaultSagaCreatureReminderForCount(count) — kept for call-site defaults. */
 export const SAGA_CREATURE_DEFAULT_REMINDER =
-  '(As this Saga enters and after your draw step, add a lore counter.)'
+  '(As this Saga enters and after your draw step, add a lore counter. Sacrifice after III.)'
 
 export const CLASS_DEFAULT_REMINDER =
   '(Gain the next level as a sorcery to add its ability.)'
@@ -115,13 +116,13 @@ export function getSagaClassBadgeMetrics(layout?: Partial<LayoutId> | null): {
   }
 }
 
-/** Equal chapter/level bands inside the ability column (3 for saga/class, up to 4 for creature). */
+/** Equal chapter/level bands inside the ability column (2–5). */
 export function getSagaClassChapterBandRects(
   count = 3,
   layout?: Partial<LayoutId> | null,
 ): StageRect[] {
   const col = getSagaClassAbilityColumnRect(layout)
-  const nBands = Math.max(1, Math.min(4, count))
+  const nBands = Math.max(2, Math.min(5, Math.round(count)))
   const h = Math.floor(col.height / nBands)
   const out: StageRect[] = []
   for (let i = 0; i < nBands; i++) {

@@ -52,9 +52,9 @@ export function shouldShowRulesTextEditor(input: ProgressiveDisclosureSidebarInp
   return shouldShowRulesTextAndFlavorBlock(input)
 }
 
-/** Spell Saga / Class — structured reminder + I/II/III stage editors (not Saga Creature). */
+/** Saga / Class / Saga Creature — structured reminder + N stage editors (2–5). */
 export function shouldShowSagaClassCoreInputs(input: ProgressiveDisclosureSidebarInput): boolean {
-  return input.capabilities.supportsSagaClassChrome === true && input.layoutFamily === 'spell'
+  return input.capabilities.supportsSagaClassChrome === true
 }
 
 export function shouldShowFlavorTextField(input: ProgressiveDisclosureSidebarInput): boolean {

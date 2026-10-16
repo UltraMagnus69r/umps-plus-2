@@ -72,7 +72,7 @@ import {
 } from '../../authority/progressiveDisclosureAuthority'
 import PlaneswalkerCoreInputs from './PlaneswalkerCoreInputs'
 import SagaClassCoreInputs from './SagaClassCoreInputs'
-import { isClassLayout } from '../../authority/layoutTaxonomy'
+import { isClassLayout, isSagaCreatureLayout } from '../../authority/layoutTaxonomy'
 import { usePersistedUiState, useUiComplexityMode } from '../../hooks/usePersistedUiState'
 import { useScrollFieldIntoView } from '../../hooks/useScrollFieldIntoView'
 import {
@@ -297,6 +297,7 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
   const planeswalkerAbilities = useCardStore((s) => s.cardData.planeswalkerAbilities)
   const showFlavorTextOnCard = useCardStore((s) => s.cardData.showFlavorTextOnCard)
   const sagaReminderText = useCardStore((s) => s.cardData.sagaReminderText)
+  const sagaChapterCount = useCardStore((s) => s.cardData.sagaChapterCount)
   const sagaStageTexts = useCardStore((s) => s.cardData.sagaStageTexts)
   const currentLayout = useCardStore((s) => s.currentLayout)
   const activeLayout = useCardStore((s) => s.cardData.layout as LayoutId)
@@ -1061,8 +1062,15 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
 
               {shouldShowSagaClassCoreInputs(pdInput) ? (
                 <SagaClassCoreInputs
-                  mode={isClassLayout(activeLayout) ? 'class' : 'saga'}
+                  mode={
+                    isClassLayout(activeLayout)
+                      ? 'class'
+                      : isSagaCreatureLayout(activeLayout)
+                        ? 'saga-creature'
+                        : 'saga'
+                  }
                   sagaReminderText={sagaReminderText}
+                  sagaChapterCount={sagaChapterCount}
                   sagaStageTexts={sagaStageTexts}
                   setField={setField}
                   commitState={commitState}
