@@ -40,6 +40,13 @@ export function shouldShowSecondaryNameFields(input: ProgressiveDisclosureSideba
 }
 
 export function shouldShowRulesTextAndFlavorBlock(input: ProgressiveDisclosureSidebarInput): boolean {
+  /**
+   * Battle chrome owns on-canvas rules draw (`suppressRulesTextRendering`), but the
+   * oracle/reminder editor + rules typography still apply to the tan rules pill.
+   */
+  if (input.capabilities.supportsBattleChrome || input.layoutFamily === 'battle') {
+    return true
+  }
   if (input.capabilities.suppressRulesTextRendering) return false
   if (input.capabilities.supportsPlaneswalkerAbilities) return false
   /** Spell Saga/Class use structured stage editors instead of one rules blob. */

@@ -26,7 +26,19 @@ import {
 } from '../../../authority/battleLayoutAuthority'
 import { getActiveLayoutCapabilitiesFromState } from '../../../authority/layoutRegistry'
 import type { LayoutId } from '../../../authority/layoutTaxonomy'
+import {
+  resolveTypographyFontFace,
+  resolveTypographyInkColor,
+  typographyPtToStagePx,
+  type CardFieldTypography,
+} from '../../../authority/typographyAuthority'
+import { useEffectiveTypographyFontKey } from '../../../hooks/useEffectiveTypographyFontKey'
 import { resolveProceduralIdentity, useCardStore } from '../../../store/useCardStore'
+
+/** sizePt 12 ≈ prior hardcoded ~34 px in the landscape tan rules pill. */
+const BATTLE_RULES_PT_REF_PX = 34
+/** Auto ink on parchment when rules typography color is not manual. */
+const BATTLE_RULES_AUTO_INK = '#1c1612'
 
 function darkenHex(hex: string, amount: number): string {
   const n = hex.replace(/^#/, '')
@@ -122,6 +134,7 @@ function BattleChromeLayer() {
     manaCost,
     typeLine,
     cardText,
+    rulesTypography,
     battleDefense,
     collectorNumber,
     setCode,
@@ -147,6 +160,7 @@ function BattleChromeLayer() {
       manaCost: s.cardData.manaCost,
       typeLine: s.cardData.typeLine,
       cardText: s.cardData.cardText,
+      rulesTypography: s.cardData.rulesTypography as CardFieldTypography,
       battleDefense: s.cardData.battleDefense,
       collectorNumber: s.cardData.collector_number,
       setCode: s.cardData.set,
@@ -173,6 +187,23 @@ function BattleChromeLayer() {
     cardData: { layout: activeLayout },
   })
   const enabled = caps.supportsBattleChrome === true && layoutUsesBattleChrome(activeLayout)
+
+  const effectiveRulesFontKey = useEffectiveTypographyFontKey(
+    'rulesTypography',
+    rulesTypography.fontKey,
+  )
+  const rulesFace = useMemo(
+    () => resolveTypographyFontFace(effectiveRulesFontKey, rulesTypography.weight),
+    [effectiveRulesFontKey, rulesTypography.weight],
+  )
+  const rulesInk = useMemo(
+    () => resolveTypographyInkColor(rulesTypography, BATTLE_RULES_AUTO_INK),
+    [rulesTypography],
+  )
+  const rulesFontSize = useMemo(() => {
+    const fromPt = typographyPtToStagePx(rulesTypography.sizePt, BATTLE_RULES_PT_REF_PX)
+    return Math.max(16, Math.min(56, Math.round(fromPt * 2) / 2))
+  }, [rulesTypography.sizePt])
 
   const identity = useMemo(
     () =>
@@ -416,9 +447,10 @@ function BattleChromeLayer() {
         width={rulesR.width - 170}
         height={rulesR.height - 44}
         text={rulesBody}
-        fontFamily="Plantin, Georgia, serif"
-        fontSize={34}
-        fill="#1c1612"
+        fontFamily={rulesFace.fontStack}
+        fontStyle={rulesFace.fontStyle}
+        fontSize={rulesFontSize}
+        fill={rulesInk}
         align="left"
         verticalAlign="top"
         wrap="word"

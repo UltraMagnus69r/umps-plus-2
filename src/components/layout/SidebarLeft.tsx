@@ -1176,7 +1176,11 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
                 <div className="space-y-2 py-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <label className={LABEL_CLASS}>
-                      {shouldShowPreparedCoreInputs(pdInput) ? 'Prepared rules' : 'Rules Text'}
+                      {shouldShowPreparedCoreInputs(pdInput)
+                        ? 'Prepared rules'
+                        : shouldShowBattleDefenseControls(pdInput)
+                          ? 'Battle rules'
+                          : 'Rules Text'}
                     </label>
                     <ManaSymbolAssistantIcon target="rulesText" />
                   </div>
