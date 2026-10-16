@@ -854,8 +854,12 @@ function buildRecipeDrivenSpellSpecialContract(
       supportsTypeLineBox: true,
       supportsHologramSeal: true,
       supportsRulesTextBoxFrame: false,
-      supportsRulesTextBoxTexture: true,
+      supportsRulesTextBoxTexture: false,
+      supportsPreModernTextBoxFrame: false,
       supportsModernDummyLayout: false,
+      supportsSagaClassChrome: true,
+      /** Chapter/level copy is drawn by SagaClassChromeLayer. */
+      suppressRulesTextRendering: true,
     },
     bleedBehavior: 'trim-contained',
     compliance: {

@@ -85,8 +85,6 @@ function FrameLayer() {
     artY,
     artW,
     artH,
-    artInnerX,
-    artInnerW,
     typeX,
     typeY,
     typeW,
@@ -179,11 +177,13 @@ function FrameLayer() {
     supportsPreModernTextBoxFrame,
     supportsModernDummyLayout,
     supportsPlaneswalkerModernV2Layout,
+    supportsSagaClassChrome,
     useLandFullArtManaCircle,
   } = getActiveLayoutCapabilitiesFromState({
     currentLayout,
     cardData: { layout: activeLayout },
   })
+  const useContractArtChrome = supportsModernDummyLayout || supportsPreModernFaceLayout || supportsSagaClassChrome
   const borderlessLike = isBorderlessArtTreatmentLayout(activeLayout)
   const pkmnStatic = isPkmnLayout(activeLayout)
   const preModernShiftY = isPreModernLayout(activeLayout) ? getPreModernLayoutVerticalShiftPx() : 0
@@ -211,12 +211,12 @@ function FrameLayer() {
   )
 
   const contractTypePlate = useMemo(() => {
-    if (!supportsModernDummyLayout) return null
+    if (!supportsModernDummyLayout && !supportsSagaClassChrome) return null
     return plateOuterFromInner(layoutRegionToStageRect(contractRegions.typeLine))
-  }, [supportsModernDummyLayout, contractRegions.typeLine, plateOuterFromInner])
+  }, [supportsModernDummyLayout, supportsSagaClassChrome, contractRegions.typeLine, plateOuterFromInner])
 
   const contractArtFrame = useMemo(() => {
-    if (!supportsModernDummyLayout && !supportsPreModernFaceLayout) return null
+    if (!useContractArtChrome) return null
     const inner = isStandardModernBorderlessLayout(activeLayout)
       ? buildModernDummyStageRects().art
       : layoutRegionToStageRect(contractRegions.art)
@@ -226,7 +226,7 @@ function FrameLayer() {
       width: inner.width + 2 * BEVEL_INSET,
       height: inner.height + 2 * BEVEL_INSET,
     }
-  }, [supportsModernDummyLayout, supportsPreModernFaceLayout, contractRegions.art, activeLayout])
+  }, [useContractArtChrome, contractRegions.art, activeLayout])
 
   const modernV2ArtOuter = useMemo(() => {
     if (!supportsPlaneswalkerModernV2Layout) return null
@@ -238,7 +238,7 @@ function FrameLayer() {
   const artFrameW = modernV2ArtOuter?.width ?? contractArtFrame?.width ?? artW
   const artFrameH = contractArtFrame?.height ?? artH
   const artFrameOuterStrokePx =
-    supportsPreModernFaceLayout || supportsModernDummyLayout
+    supportsPreModernFaceLayout || supportsModernDummyLayout || supportsSagaClassChrome
       ? FRAME_BOX_OUTER_STROKE_PX * 2
       : FRAME_BOX_OUTER_STROKE_PX
 
@@ -250,12 +250,17 @@ function FrameLayer() {
 
   /**
    * Visible art-window L/R for plate flat-span alignment.
-   * Use the drawn art-frame outer (same chrome corners as the art box), not PKMN.
+   * Saga/Class: align flats to the *full content* column (parchment L → art R),
+   * not the tall art hole alone — name/type bars span the whole face.
    */
   const artAperture = useMemo(() => {
     if (pkmnStatic || useLandFullArtManaCircle) return null
     if (supportsPlaneswalkerModernV2Layout && modernV2ArtOuter) {
       return { x: modernV2ArtOuter.x, width: modernV2ArtOuter.width }
+    }
+    if (supportsSagaClassChrome) {
+      const nameInner = layoutRegionToStageRect(contractRegions.nameBar)
+      return { x: nameInner.x, width: nameInner.width }
     }
     if (contractArtFrame) {
       return { x: contractArtFrame.x, width: contractArtFrame.width }
@@ -273,8 +278,10 @@ function FrameLayer() {
     useLandFullArtManaCircle,
     supportsPlaneswalkerModernV2Layout,
     modernV2ArtOuter,
+    supportsSagaClassChrome,
     contractArtFrame,
     contractRegions.art,
+    contractRegions.nameBar,
     artX,
     artW,
   ])

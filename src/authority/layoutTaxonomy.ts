@@ -249,12 +249,13 @@ export function isPlaneswalkerModernAbilityBoxLayout(layout: Partial<LayoutId> |
   )
 }
 
-/** Standard or Land family Modern or Borderless variant (pre-modern art column + modern plates). */
+/** Standard / Land / Spell / Planeswalker Modern-family chrome (inner-border + plate seating). */
 export function isModernDummyLayout(layout: Partial<LayoutId> | null | undefined): boolean {
   const normalized = normalizeLayout(layout)
   return (
     (normalized.family === 'standard' ||
       normalized.family === 'land' ||
+      normalized.family === 'spell' ||
       normalized.family === 'planeswalker') &&
     (normalized.variant === 'modern' ||
       normalized.variant === 'modern-v2' ||
@@ -273,7 +274,7 @@ export function isSagaLayout(layout: Partial<LayoutId> | null | undefined): bool
   return normalized.family === 'spell' && normalized.variant === 'saga'
 }
 
-/** Spell / Class — left art, right level column. */
+/** Spell / Class — right art, left level column (matches fidelity ground-truth ref). */
 export function isClassLayout(layout: Partial<LayoutId> | null | undefined): boolean {
   const normalized = normalizeLayout(layout)
   return normalized.family === 'spell' && normalized.variant === 'class'

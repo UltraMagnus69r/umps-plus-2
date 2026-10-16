@@ -26,6 +26,7 @@ import WatermarkLayer from './layers/WatermarkLayer'
 import LandSecondaryArtLayer from './layers/LandSecondaryArtLayer'
 import SpellTextBoxLayer from './layers/SpellTextBoxLayer'
 import PreModernRulesTextBoxLayer from './layers/PreModernRulesTextBoxLayer'
+import SagaClassChromeLayer from './layers/SagaClassChromeLayer'
 import TextIconsLayer from './layers/TextIconsLayer'
 import PlaneswalkerAbilitiesLayer from './layers/PlaneswalkerAbilitiesLayer'
 import SetSymbolLayer from './layers/SetSymbolLayer'
@@ -274,6 +275,7 @@ function KonvaStage({
             <ArtLayer />
             <PkmnFrameLayer />
             <FrameLayer />
+            {layoutCaps.supportsSagaClassChrome ? <SagaClassChromeLayer /> : null}
             {showCrown ? <CrownLayer /> : null}
             {layoutCaps.supportsNamePlateBox ? <NamePlateLayer /> : null}
             {showRulesTexture ? <RulesTextBoxTextureLayer /> : null}
