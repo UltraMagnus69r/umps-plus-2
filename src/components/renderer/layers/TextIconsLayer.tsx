@@ -28,7 +28,11 @@ import { PW_MODERN_V2_COLLECTOR_DATA_DOWN_NUDGE_PX, PW_MODERN_V2_HOLOGRAM_DOWN_N
 import { getPreModernTextBoxOuterRect } from '../../../authority/preModernTextBoxAuthority'
 import { resolveCardCopyright } from '../../../authority/collectorDataAuthority'
 import { resolveSetSymbolBoxPx, SYMBOL_BASELINE_OFFSET, getSpellPreModernManaCostIconSizePx } from '../../../authority/symbolAuthority'
-import { layoutPtSlashCenteredText } from '../../../authority/ptTextLayoutAuthority'
+import {
+  layoutPtSlashCenteredText,
+  type PtGlyphInkMetrics,
+} from '../../../authority/ptTextLayoutAuthority'
+import { buildCanvasFont } from '../../../data/fontCatalog'
 import { useEffectiveTypographyFontKey } from '../../../hooks/useEffectiveTypographyFontKey'
 import {
   getPreModernFaceFontStack,
@@ -1692,6 +1696,36 @@ function TextIconsLayer() {
           const boxX = preModernTextBoxOuter?.x ?? rulesRect.x - BEVEL_INSET
           const boxW = preModernTextBoxOuter?.width ?? rulesRect.width + 2 * BEVEL_INSET
           const lineH = Math.max(preModernPtFontSize, Math.round(preModernPtFontSize * 1.15))
+          const measureInk = (
+            text: string,
+            fontFamily: string,
+            fontStyle: string,
+            fontSize: number,
+          ): PtGlyphInkMetrics => {
+            if (!measureCtxRef.current) {
+              const c = document.createElement('canvas')
+              measureCtxRef.current = c.getContext('2d')
+            }
+            const ctx = measureCtxRef.current
+            if (!ctx) {
+              return {
+                ascent: fontSize * 0.7,
+                descent: 0,
+                fontAscent: fontSize * 0.7,
+                fontDescent: fontSize * 0.2,
+              }
+            }
+            ctx.font = buildCanvasFont(fontStyle, fontSize, fontFamily)
+            const m = ctx.measureText(text)
+            const ascent = m.actualBoundingBoxAscent || fontSize * 0.7
+            const descent = m.actualBoundingBoxDescent || 0
+            return {
+              ascent,
+              descent,
+              fontAscent: m.fontBoundingBoxAscent || ascent,
+              fontDescent: m.fontBoundingBoxDescent || descent,
+            }
+          }
           const parts = layoutPtSlashCenteredText({
             power: String(power ?? ''),
             toughness: String(toughness ?? ''),
@@ -1705,6 +1739,7 @@ function TextIconsLayer() {
             align: 'right',
             padX: 0,
             measure: measureTextWidth,
+            measureInk,
           })
           return (
             <Group listening={false}>
