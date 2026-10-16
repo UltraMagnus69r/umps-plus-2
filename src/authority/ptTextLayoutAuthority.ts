@@ -26,8 +26,9 @@ const SLASH = '/'
  * digits on one band while moving optical center up into the capsule.
  */
 export function ptOpticalLiftPx(fontSize: number, boxH: number): number {
-  const fromFont = Math.round(Math.max(1, fontSize) * 0.1)
-  const cap = Math.max(0, Math.floor(Math.max(1, boxH) * 0.14))
+  // ~5% of font size — enough to correct Beleren's low ink without overshooting high.
+  const fromFont = Math.round(Math.max(1, fontSize) * 0.05)
+  const cap = Math.max(0, Math.floor(Math.max(1, boxH) * 0.08))
   return Math.min(fromFont, cap)
 }
 
