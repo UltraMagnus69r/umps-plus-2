@@ -62,7 +62,7 @@ function lightenHex(hex: string, amount: number): string {
  */
 function NamePlateLayer() {
   const layout = getStandardLayoutGeometry()
-  const { nameX, nameY, nameW, nameH, artInnerX, artInnerW, barRadius } = layout
+  const { nameX, nameY, nameW, nameH, artX, artW, barRadius } = layout
 
   const {
     cardTypeLine,
@@ -184,20 +184,26 @@ function NamePlateLayer() {
     : barRadius
   const effectiveNameBarShape = resolveEffectiveNameplateShape(bezierPlateEnabled, nameBarShape)
 
-  /** Visible art aperture (not bevel outer) — flat plate runs align to these L/R edges. */
+  /** Visible art-frame outer L/R — flat plate runs align to these edges (caps outside). */
   const artAperture = useMemo(() => {
     if (useLandFullArtManaCircle) return null
     if (supportsPlaneswalkerModernV2Layout && modernV2ArtOuter) {
       return { x: modernV2ArtOuter.x, width: modernV2ArtOuter.width }
     }
     if (supportsModernDummyLayout && modernDummyArt) {
-      return { x: modernDummyArt.x, width: modernDummyArt.width }
+      return {
+        x: modernDummyArt.x - BEVEL_INSET,
+        width: modernDummyArt.width + 2 * BEVEL_INSET,
+      }
     }
     const contractArt = layoutRegionToStageRect(contractRegions.art)
     if (contractArt.width >= STAGE_WIDTH - 2) {
-      return { x: artInnerX, width: artInnerW }
+      return { x: artX, width: artW }
     }
-    return { x: contractArt.x, width: contractArt.width }
+    return {
+      x: contractArt.x - BEVEL_INSET,
+      width: contractArt.width + 2 * BEVEL_INSET,
+    }
   }, [
     useLandFullArtManaCircle,
     supportsPlaneswalkerModernV2Layout,
@@ -205,8 +211,8 @@ function NamePlateLayer() {
     supportsModernDummyLayout,
     modernDummyArt,
     contractRegions.art,
-    artInnerX,
-    artInnerW,
+    artX,
+    artW,
   ])
 
   const baseNameOuterY =

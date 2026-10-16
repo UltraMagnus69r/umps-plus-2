@@ -3,7 +3,11 @@
  *
  * For raised plates, the flat top/bottom run (where curves begin) must match the
  * art box left/right. Capsule / reverse-Bezier ends sit outside that span.
+ *
+ * Pass the *visible* art aperture (same L/R as the art window the user sees —
+ * typically the art-frame outer, not a further-inset content pad).
  */
+import { BEVEL_INSET } from './geometryAuthority'
 import type { NameplateBoxShape } from './nameplateShapeAuthority'
 import {
   PLATE_BEZIER_DEPTH_RATIO,
@@ -24,19 +28,25 @@ export function reverseBezierPlateEndCapPx(plateOuterH: number): number {
  * - reverseBezierPlate: outward bulge depth
  * - rounded: corner radius (flat = width − 2r)
  * - bezierPlate (inward): top/bottom already full-box; box width = art width
+ *
+ * Always reserve at least {@link BEVEL_INSET} so nested bevel/cream passes are not
+ * clamped inside the art column.
  */
 export function plateEndCapPxForShape(
   shape: NameplateBoxShape,
   plateOuterH: number,
   barRadius: number,
 ): number {
+  let cap = 0
   if (shape === 'reverseBezierPlate') {
-    return Math.ceil(reverseBezierPlateEndCapPx(plateOuterH))
+    cap = Math.ceil(reverseBezierPlateEndCapPx(plateOuterH))
+  } else if (shape === 'rounded') {
+    cap = Math.max(0, Math.min(Math.round(barRadius), Math.floor(plateOuterH / 2)))
+  } else {
+    // bezierPlate (inward): still need room so inner cream flats are not clamped.
+    cap = BEVEL_INSET
   }
-  if (shape === 'rounded') {
-    return Math.max(0, Math.min(Math.round(barRadius), Math.floor(plateOuterH / 2)))
-  }
-  return 0
+  return Math.max(cap, BEVEL_INSET)
 }
 
 /**

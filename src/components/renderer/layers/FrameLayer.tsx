@@ -248,38 +248,35 @@ function FrameLayer() {
   const effectiveTypeBarShape = resolveEffectiveNameplateShape(bezierPlateEnabled, typeBarShape)
   const rulesBoxCornerRadius = supportsPlaneswalkerModernV2Layout ? PW_MODERN_V2_RULES_BOX_CORNER_RADIUS_PX : 0
 
-  /** Visible art aperture for plate flat-span alignment (not bevel outer; not PKMN). */
+  /**
+   * Visible art-window L/R for plate flat-span alignment.
+   * Use the drawn art-frame outer (same chrome corners as the art box), not PKMN.
+   */
   const artAperture = useMemo(() => {
     if (pkmnStatic || useLandFullArtManaCircle) return null
     if (supportsPlaneswalkerModernV2Layout && modernV2ArtOuter) {
       return { x: modernV2ArtOuter.x, width: modernV2ArtOuter.width }
     }
-    if (supportsModernDummyLayout) {
-      const inner = isStandardModernBorderlessLayout(activeLayout)
-        ? buildModernDummyStageRects().art
-        : layoutRegionToStageRect(contractRegions.art)
-      return { x: inner.x, width: inner.width }
-    }
-    if (supportsPreModernFaceLayout) {
-      const inner = layoutRegionToStageRect(contractRegions.art)
-      return { x: inner.x, width: inner.width }
+    if (contractArtFrame) {
+      return { x: contractArtFrame.x, width: contractArtFrame.width }
     }
     const contractArt = layoutRegionToStageRect(contractRegions.art)
     if (contractArt.width >= STAGE_WIDTH - 2) {
-      return { x: artInnerX, width: artInnerW }
+      return { x: artX, width: artW }
     }
-    return { x: contractArt.x, width: contractArt.width }
+    return {
+      x: contractArt.x - BEVEL_INSET,
+      width: contractArt.width + 2 * BEVEL_INSET,
+    }
   }, [
     pkmnStatic,
     useLandFullArtManaCircle,
     supportsPlaneswalkerModernV2Layout,
     modernV2ArtOuter,
-    supportsModernDummyLayout,
-    supportsPreModernFaceLayout,
-    activeLayout,
+    contractArtFrame,
     contractRegions.art,
-    artInnerX,
-    artInnerW,
+    artX,
+    artW,
   ])
 
   const baseTypeOuterX = contractTypePlate?.x ?? typeX

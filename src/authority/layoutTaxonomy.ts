@@ -6,7 +6,7 @@ import {
   SPELL_PRE_MODERN_INNER_BORDER_CORNER_RADIUS_PX,
 } from './geometryAuthority'
 
-export type LayoutFamily = 'standard' | 'land' | 'spell' | 'planeswalker' | 'pkmn'
+export type LayoutFamily = 'standard' | 'land' | 'spell' | 'battle' | 'planeswalker' | 'pkmn'
 
 export type LayoutVariant =
   | 'modern'
@@ -38,6 +38,7 @@ export const layoutCompatibility: Record<LayoutFamily, readonly LayoutVariant[]>
   standard: ['modern', 'pre-modern', 'borderless', 'full-art'],
   land: ['modern', 'pre-modern', 'borderless', 'full-art'],
   spell: ['modern', 'pre-modern', 'saga', 'class'],
+  battle: ['modern'],
   planeswalker: ['modern', 'modern-v2', 'pre-modern', 'borderless', 'full-art'],
   /** PKMN: color = static pre-made frame variant (no Colors recolor). */
   pkmn: ['white', 'blue', 'red', 'green', 'dark', 'multicolor', 'colorless'],
@@ -47,6 +48,7 @@ export const LAYOUT_FAMILY_LABELS: Record<LayoutFamily, string> = {
   standard: 'Standard',
   land: 'Land',
   spell: 'Spell',
+  battle: 'Battle',
   planeswalker: 'Planeswalker',
   pkmn: 'PKMN',
 }
@@ -94,6 +96,7 @@ function normalizeFamily(value: unknown): LayoutFamily {
     value === 'standard' ||
     value === 'land' ||
     value === 'spell' ||
+    value === 'battle' ||
     value === 'planeswalker' ||
     value === 'pkmn'
   )
@@ -259,6 +262,23 @@ export function isModernDummyLayout(layout: Partial<LayoutId> | null | undefined
   )
 }
 
+/** Battle / Siege family (landscape CC seating mapped into portrait stage). */
+export function isBattleLayout(layout: Partial<LayoutId> | null | undefined): boolean {
+  return normalizeLayout(layout).family === 'battle'
+}
+
+/** Spell / Saga — right art, left chapter column. */
+export function isSagaLayout(layout: Partial<LayoutId> | null | undefined): boolean {
+  const normalized = normalizeLayout(layout)
+  return normalized.family === 'spell' && normalized.variant === 'saga'
+}
+
+/** Spell / Class — left art, right level column. */
+export function isClassLayout(layout: Partial<LayoutId> | null | undefined): boolean {
+  const normalized = normalizeLayout(layout)
+  return normalized.family === 'spell' && normalized.variant === 'class'
+}
+
 /** Standard, Land, or Spell with the Pre-Modern variant. */
 export function isPreModernLayout(layout: Partial<LayoutId> | null | undefined): boolean {
   return normalizeLayout(layout).variant === 'pre-modern'
@@ -352,6 +372,7 @@ export function layoutToLegacyMode(layout: LayoutId): Exclude<CardLayoutMode, 'H
   const normalized = normalizeLayout(layout)
   if (normalized.family === 'spell' && normalized.variant === 'saga') return 'Saga'
   if (normalized.family === 'spell' && normalized.variant === 'class') return 'Class'
+  if (normalized.family === 'battle') return 'Standard'
   if (normalized.family === 'planeswalker' && normalized.variant === 'full-art') return 'Full Art'
   if (normalized.family === 'planeswalker' && normalized.variant === 'borderless') return 'Borderless'
   if (normalized.family === 'planeswalker') return 'Standard'

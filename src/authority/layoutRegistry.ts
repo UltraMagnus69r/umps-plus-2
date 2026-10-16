@@ -10,6 +10,13 @@ import { buildModernDummyStageRects } from './modernDummyLayoutAuthority'
 import { buildPlaneswalkerModernV2StageRects } from './planeswalkerModernV2LayoutAuthority'
 import { buildPkmnStageRects } from './pkmnLayoutAuthority'
 import { getPreModernTextBoxInnerRect } from './preModernTextBoxAuthority'
+import {
+  BATTLE_REGULAR_RECIPE,
+  buildRecipeCoreStageRects,
+  buildRecipeExtensionStageRects,
+  CLASS_REGULAR_RECIPE,
+  SAGA_REGULAR_RECIPE,
+} from './recipes/layoutRecipeAuthority'
 import type { LayoutContract, LayoutFamilyRegionExtensions } from './layoutContract'
 import { hasRequiredCoreRegions, normalizeLayoutContract } from './layoutContract'
 import type { LayoutRegionRect } from './layoutContract'
@@ -756,33 +763,14 @@ function buildLandFullArtContract(): LayoutContract {
 
 function buildSpellStandardContract(): LayoutContract {
   const standard = getStandardLayoutGeometry()
+  const rects = buildModernDummyStageRects()
   return normalizeLayoutContract({
     id: { family: 'spell', variant: 'modern' },
     regions: {
-      art: pxRectToNormalizedRect({
-        x: standard.artInnerX,
-        y: standard.artInnerY,
-        width: standard.artInnerW,
-        height: standard.artInnerH,
-      }),
-      nameBar: pxRectToNormalizedRect({
-        x: standard.nameInnerX,
-        y: standard.nameInnerY,
-        width: standard.nameInnerW,
-        height: standard.nameInnerH,
-      }),
-      typeLine: pxRectToNormalizedRect({
-        x: standard.typeInnerX,
-        y: standard.typeInnerY,
-        width: standard.typeInnerW,
-        height: standard.typeInnerH,
-      }),
-      rulesText: pxRectToNormalizedRect({
-        x: standard.rulesInnerX,
-        y: standard.rulesInnerY,
-        width: standard.rulesInnerW,
-        height: standard.rulesInnerH,
-      }),
+      art: pxRectToNormalizedRect(rects.art),
+      nameBar: pxRectToNormalizedRect(rects.nameBar),
+      typeLine: pxRectToNormalizedRect(rects.typeLine),
+      rulesText: pxRectToNormalizedRect(rects.rulesText),
       metadataStrip: pxRectToNormalizedRect({
         x: standard.bottomInfoX,
         y: standard.bottomInfoY,
@@ -791,12 +779,7 @@ function buildSpellStandardContract(): LayoutContract {
       }),
       lowerRight: {
         kind: 'functionalZone',
-        rect: pxRectToNormalizedRect({
-          x: standard.ptInnerX,
-          y: standard.ptInnerY,
-          width: standard.ptInnerW,
-          height: standard.ptInnerH,
-        }),
+        rect: pxRectToNormalizedRect(rects.lowerRight),
       },
     },
     capabilities: {
@@ -806,6 +789,12 @@ function buildSpellStandardContract(): LayoutContract {
       supportsEdgeToBleedArt: false,
       supportsFloatingTextTreatment: false,
       supportsSecondaryStructuralRegions: false,
+      supportsNamePlateBox: true,
+      supportsTypeLineBox: true,
+      supportsRulesTextBoxFrame: false,
+      supportsRulesTextBoxTexture: true,
+      supportsPreModernTextBoxFrame: true,
+      supportsModernDummyLayout: true,
     },
     bleedBehavior: 'trim-contained',
     compliance: {
@@ -820,56 +809,29 @@ function buildSpellPreModernContract(): LayoutContract {
   return buildPreModernSpellStyleContract('spell', buildSpellStandardContract())
 }
 
-function buildSagaStandardContract(): LayoutContract {
+function recipeExtensionsToFamilyExtensions(
+  recipe: typeof SAGA_REGULAR_RECIPE | typeof CLASS_REGULAR_RECIPE | typeof BATTLE_REGULAR_RECIPE,
+): LayoutFamilyRegionExtensions | undefined {
+  const ext = buildRecipeExtensionStageRects(recipe)
+  if (!ext) return undefined
+  return Object.fromEntries(
+    Object.entries(ext).map(([key, rect]) => [key, pxRectToNormalizedRect(rect)]),
+  ) as LayoutFamilyRegionExtensions
+}
+
+function buildRecipeDrivenSpellSpecialContract(
+  id: LayoutId,
+  recipe: typeof SAGA_REGULAR_RECIPE | typeof CLASS_REGULAR_RECIPE,
+): LayoutContract {
+  const rects = buildRecipeCoreStageRects(recipe)
   const standard = getStandardLayoutGeometry()
-  const chapterHeight = Math.round(standard.rulesInnerH / 3)
-  const chapterExtensions: LayoutFamilyRegionExtensions = {
-    chapterRow1: pxRectToNormalizedRect({
-      x: standard.rulesInnerX,
-      y: standard.rulesInnerY,
-      width: standard.rulesInnerW,
-      height: chapterHeight,
-    }),
-    chapterRow2: pxRectToNormalizedRect({
-      x: standard.rulesInnerX,
-      y: standard.rulesInnerY + chapterHeight,
-      width: standard.rulesInnerW,
-      height: chapterHeight,
-    }),
-    chapterRow3: pxRectToNormalizedRect({
-      x: standard.rulesInnerX,
-      y: standard.rulesInnerY + chapterHeight * 2,
-      width: standard.rulesInnerW,
-      height: standard.rulesInnerH - chapterHeight * 2,
-    }),
-  }
   return normalizeLayoutContract({
-    id: { family: 'spell', variant: 'saga' },
+    id,
     regions: {
-      art: pxRectToNormalizedRect({
-        x: standard.artInnerX,
-        y: standard.artInnerY,
-        width: standard.artInnerW,
-        height: standard.artInnerH,
-      }),
-      nameBar: pxRectToNormalizedRect({
-        x: standard.nameInnerX,
-        y: standard.nameInnerY,
-        width: standard.nameInnerW,
-        height: standard.nameInnerH,
-      }),
-      typeLine: pxRectToNormalizedRect({
-        x: standard.typeInnerX,
-        y: standard.typeInnerY,
-        width: standard.typeInnerW,
-        height: standard.typeInnerH,
-      }),
-      rulesText: pxRectToNormalizedRect({
-        x: standard.rulesInnerX,
-        y: standard.rulesInnerY,
-        width: standard.rulesInnerW,
-        height: standard.rulesInnerH,
-      }),
+      art: pxRectToNormalizedRect(rects.art),
+      nameBar: pxRectToNormalizedRect(rects.nameBar),
+      typeLine: pxRectToNormalizedRect(rects.typeLine),
+      rulesText: pxRectToNormalizedRect(rects.rulesText),
       metadataStrip: pxRectToNormalizedRect({
         x: standard.bottomInfoX,
         y: standard.bottomInfoY,
@@ -878,12 +840,7 @@ function buildSagaStandardContract(): LayoutContract {
       }),
       lowerRight: {
         kind: 'functionalZone',
-        rect: pxRectToNormalizedRect({
-          x: standard.ptInnerX,
-          y: standard.ptInnerY,
-          width: standard.ptInnerW,
-          height: standard.ptInnerH,
-        }),
+        rect: pxRectToNormalizedRect(rects.lowerRight),
       },
     },
     capabilities: {
@@ -893,46 +850,47 @@ function buildSagaStandardContract(): LayoutContract {
       supportsEdgeToBleedArt: false,
       supportsFloatingTextTreatment: false,
       supportsSecondaryStructuralRegions: true,
+      supportsNamePlateBox: true,
+      supportsTypeLineBox: true,
+      supportsHologramSeal: true,
+      supportsRulesTextBoxFrame: false,
+      supportsRulesTextBoxTexture: true,
+      supportsModernDummyLayout: false,
     },
     bleedBehavior: 'trim-contained',
     compliance: {
       requiresTrimCompliance: true,
       requiresSafeZoneCompliance: true,
     },
-    familyExtensions: chapterExtensions,
+    familyExtensions: recipeExtensionsToFamilyExtensions(recipe),
   })
 }
 
+function buildSagaStandardContract(): LayoutContract {
+  return buildRecipeDrivenSpellSpecialContract(
+    { family: 'spell', variant: 'saga' },
+    SAGA_REGULAR_RECIPE,
+  )
+}
+
 function buildClassStandardContract(): LayoutContract {
+  return buildRecipeDrivenSpellSpecialContract(
+    { family: 'spell', variant: 'class' },
+    CLASS_REGULAR_RECIPE,
+  )
+}
+
+/** Battle / Siege — CC landscape seating mapped into portrait stage. */
+function buildBattleModernContract(): LayoutContract {
+  const rects = buildRecipeCoreStageRects(BATTLE_REGULAR_RECIPE)
   const standard = getStandardLayoutGeometry()
-  const levelHeight = Math.round(standard.rulesInnerH / 3)
   return normalizeLayoutContract({
-    id: { family: 'spell', variant: 'class' },
+    id: { family: 'battle', variant: 'modern' },
     regions: {
-      art: pxRectToNormalizedRect({
-        x: standard.artInnerX,
-        y: standard.artInnerY,
-        width: standard.artInnerW,
-        height: standard.artInnerH,
-      }),
-      nameBar: pxRectToNormalizedRect({
-        x: standard.nameInnerX,
-        y: standard.nameInnerY,
-        width: standard.nameInnerW,
-        height: standard.nameInnerH,
-      }),
-      typeLine: pxRectToNormalizedRect({
-        x: standard.typeInnerX,
-        y: standard.typeInnerY,
-        width: standard.typeInnerW,
-        height: standard.typeInnerH,
-      }),
-      rulesText: pxRectToNormalizedRect({
-        x: standard.rulesInnerX,
-        y: standard.rulesInnerY,
-        width: standard.rulesInnerW,
-        height: standard.rulesInnerH,
-      }),
+      art: pxRectToNormalizedRect(rects.art),
+      nameBar: pxRectToNormalizedRect(rects.nameBar),
+      typeLine: pxRectToNormalizedRect(rects.typeLine),
+      rulesText: pxRectToNormalizedRect(rects.rulesText),
       metadataStrip: pxRectToNormalizedRect({
         x: standard.bottomInfoX,
         y: standard.bottomInfoY,
@@ -941,47 +899,29 @@ function buildClassStandardContract(): LayoutContract {
       }),
       lowerRight: {
         kind: 'functionalZone',
-        rect: pxRectToNormalizedRect({
-          x: standard.ptInnerX,
-          y: standard.ptInnerY,
-          width: standard.ptInnerW,
-          height: standard.ptInnerH,
-        }),
+        rect: pxRectToNormalizedRect(rects.lowerRight),
       },
     },
     capabilities: {
-      supportsFlavorText: false,
+      supportsFlavorText: true,
       supportsPowerToughnessBox: false,
       supportsMetadataStrip: true,
       supportsEdgeToBleedArt: false,
       supportsFloatingTextTreatment: false,
       supportsSecondaryStructuralRegions: true,
+      supportsNamePlateBox: true,
+      supportsTypeLineBox: true,
+      supportsHologramSeal: true,
+      supportsRulesTextBoxFrame: true,
+      supportsRulesTextBoxTexture: true,
+      supportsModernDummyLayout: false,
     },
     bleedBehavior: 'trim-contained',
     compliance: {
       requiresTrimCompliance: true,
       requiresSafeZoneCompliance: true,
     },
-    familyExtensions: {
-      levelBand1: pxRectToNormalizedRect({
-        x: standard.rulesInnerX,
-        y: standard.rulesInnerY,
-        width: standard.rulesInnerW,
-        height: levelHeight,
-      }),
-      levelBand2: pxRectToNormalizedRect({
-        x: standard.rulesInnerX,
-        y: standard.rulesInnerY + levelHeight,
-        width: standard.rulesInnerW,
-        height: levelHeight,
-      }),
-      levelBand3: pxRectToNormalizedRect({
-        x: standard.rulesInnerX,
-        y: standard.rulesInnerY + levelHeight * 2,
-        width: standard.rulesInnerW,
-        height: standard.rulesInnerH - levelHeight * 2,
-      }),
-    },
+    familyExtensions: recipeExtensionsToFamilyExtensions(BATTLE_REGULAR_RECIPE),
   })
 }
 
@@ -1054,6 +994,7 @@ const rawContracts: readonly LayoutContract[] = [
   buildSpellPreModernContract(),
   buildSagaStandardContract(),
   buildClassStandardContract(),
+  buildBattleModernContract(),
   ...PKMN_FRAME_OPTIONS.map((o) => buildPkmnContract(o.id)),
 ]
 

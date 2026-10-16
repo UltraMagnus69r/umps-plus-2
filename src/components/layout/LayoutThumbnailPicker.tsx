@@ -21,6 +21,14 @@ function FamilyGlyph({ family }: { family: LayoutFamily }) {
           <rect x="6" y="24" width="28" height="24" rx="1" className={`${common} opacity-50`} />
         </svg>
       )
+    case 'battle':
+      return (
+        <svg viewBox="0 0 40 56" className="h-10 w-7" aria-hidden>
+          <rect x="2" y="2" width="36" height="52" rx="3" className={`${common} opacity-25`} />
+          <rect x="5" y="10" width="30" height="22" rx="1" className={common} />
+          <rect x="8" y="36" width="24" height="12" rx="1" className={`${common} opacity-55`} />
+        </svg>
+      )
     case 'planeswalker':
       return (
         <svg viewBox="0 0 40 56" className="h-10 w-7" aria-hidden>
