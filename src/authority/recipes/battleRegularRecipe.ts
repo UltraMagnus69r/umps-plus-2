@@ -1,5 +1,5 @@
 /**
- * Battle / Siege — true landscape face (CC packBattle).
+ * Battle / Siege — landscape stack face (name → art → type → upright rules).
  * Regions are trim-norm of 2100×1500; BattleChromeLayer + battleLayoutAuthority own seating.
  */
 import type { LayoutRecipe } from './layoutRecipeTypes'
@@ -7,22 +7,20 @@ import { M15_REGULAR_MANA_PIP_SIZE_PX } from './m15RegularCreatureRecipe'
 
 const CC_PIP_SIZE_FRAC = 71 / 1638
 
-/** CC Battle landscape fractions (x/w ÷2100, y/h ÷1500). */
-/** Visible aperture between name strip and right column (not under type/rules chrome). */
-const L_ART = { x: 167 / 2100, y: 60 / 1500, w: (1680 - 167) / 2100, h: 1371 / 1500 }
-const L_TITLE = { x: 48 / 2100, y: 70 / 1500, w: 110 / 2100, h: 1260 / 1500 }
-const L_MANA = { x: 48 / 2100, y: 78 / 1500, w: 110 / 2100, h: 200 / 1500 }
-const L_TYPE = { x: 1680 / 2100, y: 70 / 1500, w: 360 / 2100, h: 100 / 1500 }
-const L_RULES = { x: 1680 / 2100, y: 180 / 1500, w: 360 / 2100, h: 1180 / 1500 }
-const L_DEFENSE = { x: 1920 / 2100, y: 60 / 1500, w: 120 / 2100, h: 140 / 1500 }
-const L_SET = { x: 1945 / 2100, y: 78 / 1500, w: 90 / 2100, h: 86 / 1500 }
-const L_COLLECTOR = { x: 180 / 2100, y: 1410 / 1500, w: 1740 / 2100, h: 70 / 1500 }
+const L_COLLECTOR = { x: 28 / 2100, y: 70 / 1500, w: 70 / 2100, h: 1360 / 1500 }
+const L_TITLE = { x: 120 / 2100, y: 55 / 1500, w: 1860 / 2100, h: 110 / 1500 }
+const L_MANA = { x: 1500 / 2100, y: 68 / 1500, w: 460 / 2100, h: 84 / 1500 }
+const L_ART = { x: 120 / 2100, y: 180 / 1500, w: 1860 / 2100, h: 620 / 1500 }
+const L_TYPE = { x: 120 / 2100, y: 815 / 1500, w: 1860 / 2100, h: 95 / 1500 }
+const L_SET = { x: 1860 / 2100, y: 825 / 1500, w: 100 / 2100, h: 75 / 1500 }
+const L_RULES = { x: 120 / 2100, y: 925 / 1500, w: 1860 / 2100, h: 500 / 1500 }
+const L_DEFENSE = { x: 1840 / 2100, y: 1280 / 1500, w: 130 / 2100, h: 150 / 1500 }
 
 export const BATTLE_REGULAR_RECIPE: LayoutRecipe = {
   id: 'magic.battle.regular',
   family: 'battle',
   variant: 'modern',
-  /** Landscape trim; consumers that assume portrait must use battleLayoutAuthority. */
+  /** Landscape trim; BattleChromeLayer owns upright stack seating. */
   space: 'trim-1500x2100',
   chrome: {
     mode: 'procedural',
@@ -32,7 +30,7 @@ export const BATTLE_REGULAR_RECIPE: LayoutRecipe = {
   regions: {
     art: L_ART,
     name: L_TITLE,
-    mana: { ...L_MANA, align: 'center' },
+    mana: { ...L_MANA, align: 'right' },
     type: L_TYPE,
     setSymbol: { ...L_SET, anchor: 'right-center' },
     rules: L_RULES,
@@ -54,6 +52,7 @@ export const BATTLE_REGULAR_RECIPE: LayoutRecipe = {
   },
   extensions: {
     defense: L_DEFENSE,
+    collectorStrip: L_COLLECTOR,
   },
   acceptancePxAt600: {
     nameTop: 6,

@@ -1,6 +1,7 @@
 /**
- * Battle / Siege — true landscape face (CC packBattle + Invasion of Ikoria ground truth).
- * Trim 2100×1500 inside stage 2250×1650 (75 px bleed).
+ * Battle / Siege — landscape stack face (wider than tall).
+ * Ground truth: fidelity-battle/battle-landscape-stack-reference.png
+ * Top→bottom: nameplate, art, type, upright rules, defense; collector on left edge.
  */
 import { BLEED_PX } from './geometryAuthority'
 import type { LayoutId } from './layoutTaxonomy'
@@ -24,24 +25,27 @@ function n(rect: { x: number; y: number; w: number; h: number }): BattleStageRec
 }
 
 /**
- * CC packBattle landscape fractions (x/w ÷2100, y/h ÷1500).
- * Tuned slightly so name strip / type / rules / defense match the Ikoria reference.
+ * Landscape stack seating (trim-norm of 2100×1500).
+ * Content reads upright; collector strip along the left edge is drawn rotated.
  */
 const FACE = {
-  /**
-   * Visible art aperture between name strip and right column.
-   * (CC packBattle art is wider under chrome; we seat the hole so ArtLayer cannot cover type/rules.)
-   */
-  art: { x: 167 / 2100, y: 60 / 1500, w: (1680 - 167) / 2100, h: 1371 / 1500 },
-  /** Vertical name pill — text drawn 90° CCW (bottom → top). */
-  name: { x: 48 / 2100, y: 70 / 1500, w: 110 / 2100, h: 1260 / 1500 },
-  mana: { x: 48 / 2100, y: 78 / 1500, w: 110 / 2100, h: 200 / 1500 },
-  transform: { x: 58 / 2100, y: 1280 / 1500, w: 90 / 2100, h: 90 / 1500 },
-  type: { x: 1680 / 2100, y: 70 / 1500, w: 360 / 2100, h: 100 / 1500 },
-  setSymbol: { x: 1945 / 2100, y: 78 / 1500, w: 90 / 2100, h: 86 / 1500 },
-  rules: { x: 1680 / 2100, y: 180 / 1500, w: 360 / 2100, h: 1180 / 1500 },
-  defense: { x: 1920 / 2100, y: 60 / 1500, w: 120 / 2100, h: 140 / 1500 },
-  collector: { x: 180 / 2100, y: 1410 / 1500, w: 1740 / 2100, h: 70 / 1500 },
+  /** Vertical collector / credit strip (text rotated 90° CW). */
+  collector: { x: 28 / 2100, y: 70 / 1500, w: 70 / 2100, h: 1360 / 1500 },
+  /** Horizontal nameplate — name left, mana right. */
+  name: { x: 120 / 2100, y: 55 / 1500, w: 1860 / 2100, h: 110 / 1500 },
+  /** DFC / transform mark on the left of the nameplate. */
+  transform: { x: 135 / 2100, y: 72 / 1500, w: 76 / 2100, h: 76 / 1500 },
+  /** Mana chips along the right of the nameplate. */
+  mana: { x: 1500 / 2100, y: 68 / 1500, w: 460 / 2100, h: 84 / 1500 },
+  /** Wide art aperture under the nameplate. */
+  art: { x: 120 / 2100, y: 180 / 1500, w: 1860 / 2100, h: 620 / 1500 },
+  /** Type line under art. */
+  type: { x: 120 / 2100, y: 815 / 1500, w: 1860 / 2100, h: 95 / 1500 },
+  setSymbol: { x: 1860 / 2100, y: 825 / 1500, w: 100 / 2100, h: 75 / 1500 },
+  /** Tan parchment rules — upright text. */
+  rules: { x: 120 / 2100, y: 925 / 1500, w: 1860 / 2100, h: 500 / 1500 },
+  /** Defense shield overlapping bottom-right of rules. */
+  defense: { x: 1840 / 2100, y: 1280 / 1500, w: 130 / 2100, h: 150 / 1500 },
 } as const
 
 export function layoutUsesBattleChrome(layout: Partial<LayoutId> | null | undefined): boolean {

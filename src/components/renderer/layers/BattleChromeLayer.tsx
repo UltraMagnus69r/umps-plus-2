@@ -1,6 +1,7 @@
 /**
- * Battle / Siege landscape chrome — name strip, art aperture, type pill,
- * tan rules (90° CW), defense shield, bottom collector strip.
+ * Battle / Siege landscape stack chrome —
+ * top nameplate (name + mana), art aperture, type line, upright tan rules,
+ * defense shield, left-edge collector strip (rotated).
  */
 import { memo, useMemo } from 'react'
 import { Group, Layer, Shape, Text } from 'react-konva'
@@ -181,11 +182,15 @@ function BattleChromeLayer() {
     rarityLetter,
     `${String(setCode ?? 'SET').toUpperCase()} · ${String(language ?? 'EN').toUpperCase()}`,
     String(artist ?? '').trim().toUpperCase(),
+    String(copyright ?? '').trim() || '™ & © Wizards of the Coast',
   ]
     .filter(Boolean)
-    .join('  ')
+    .join('  ·  ')
 
   if (!enabled) return null
+
+  const nameTextLeft = transformR.x + transformR.width + 16
+  const nameTextWidth = Math.max(40, manaR.x - nameTextLeft - 12)
 
   return (
     <Layer listening={false}>
@@ -209,12 +214,12 @@ function BattleChromeLayer() {
           c.strokeStyle = stroke
           c.lineWidth = 4
           c.stroke()
-          // Punch art aperture so ArtLayer shows through above this fill.
+          // Punch art aperture so ArtLayer shows through.
           c.clearRect(artR.x, artR.y, artR.width, artR.height)
         }}
       />
 
-      {/* Left name pill */}
+      {/* Top nameplate pill */}
       <Shape
         x={nameR.x}
         y={nameR.y}
@@ -223,7 +228,7 @@ function BattleChromeLayer() {
           const c = ctx as unknown as CanvasRenderingContext2D
           c.beginPath()
           addPillPath(c, nameR.width, nameR.height)
-          const g = c.createLinearGradient(0, 0, nameR.width, 0)
+          const g = c.createLinearGradient(0, 0, 0, nameR.height)
           g.addColorStop(0, highlight)
           g.addColorStop(0.45, fill)
           g.addColorStop(1, stroke)
@@ -235,43 +240,7 @@ function BattleChromeLayer() {
         }}
       />
 
-      {/* Name — 90° CCW (bottom → top) */}
-      <Text
-        listening={false}
-        x={nameR.x + nameR.width / 2}
-        y={nameR.y + nameR.height - 24}
-        width={nameR.height - 48}
-        height={nameR.width - 16}
-        offsetX={0}
-        offsetY={0}
-        rotation={-90}
-        text={String(name ?? '').trim() || 'Battle'}
-        fontFamily="Beleren, Georgia, serif"
-        fontStyle="bold"
-        fontSize={42}
-        fill="#f7f2e8"
-        align="left"
-        verticalAlign="middle"
-        wrap="none"
-        ellipsis
-      />
-
-      {/* Mana along top of name strip (horizontal chips) */}
-      <Text
-        listening={false}
-        x={manaR.x}
-        y={manaR.y + 8}
-        width={manaR.width}
-        height={manaR.height - 16}
-        text={manaLabel || '{0}'}
-        fontFamily="Plantin, Georgia, serif"
-        fontSize={28}
-        fill="#f7f2e8"
-        align="center"
-        verticalAlign="top"
-      />
-
-      {/* Transform / DFC mark */}
+      {/* Transform / DFC mark (left of name) */}
       <Shape
         x={transformR.x}
         y={transformR.y}
@@ -297,7 +266,40 @@ function BattleChromeLayer() {
         }}
       />
 
-      {/* Type pill (right column top) */}
+      {/* Name — upright, left */}
+      <Text
+        listening={false}
+        x={nameTextLeft}
+        y={nameR.y}
+        width={nameTextWidth}
+        height={nameR.height}
+        text={String(name ?? '').trim() || 'Battle'}
+        fontFamily="Beleren, Georgia, serif"
+        fontStyle="bold"
+        fontSize={44}
+        fill="#f7f2e8"
+        align="left"
+        verticalAlign="middle"
+        wrap="none"
+        ellipsis
+      />
+
+      {/* Mana — upright, right */}
+      <Text
+        listening={false}
+        x={manaR.x}
+        y={manaR.y}
+        width={manaR.width}
+        height={manaR.height}
+        text={manaLabel || '{0}'}
+        fontFamily="Plantin, Georgia, serif"
+        fontSize={32}
+        fill="#f7f2e8"
+        align="right"
+        verticalAlign="middle"
+      />
+
+      {/* Type line pill */}
       <Shape
         x={typeR.x}
         y={typeR.y}
@@ -319,14 +321,14 @@ function BattleChromeLayer() {
       />
       <Text
         listening={false}
-        x={typeR.x + 16}
+        x={typeR.x + 28}
         y={typeR.y}
-        width={typeR.width - 32}
+        width={typeR.width - 140}
         height={typeR.height}
         text={typeLabel}
         fontFamily="Beleren, Georgia, serif"
         fontStyle="bold"
-        fontSize={32}
+        fontSize={34}
         fill="#f7f2e8"
         align="left"
         verticalAlign="middle"
@@ -334,7 +336,7 @@ function BattleChromeLayer() {
         ellipsis
       />
 
-      {/* Tan parchment rules — text rotated 90° CW so upright when card is turned */}
+      {/* Tan parchment rules — upright */}
       <Shape
         listening={false}
         sceneFunc={(ctx) => {
@@ -354,29 +356,22 @@ function BattleChromeLayer() {
           c.stroke()
         }}
       />
-      <Group
-        x={rulesR.x + rulesR.width - 14}
-        y={rulesR.y + 16}
-        rotation={90}
+      <Text
         listening={false}
-      >
-        <Text
-          listening={false}
-          x={0}
-          y={0}
-          width={rulesR.height - 32}
-          height={rulesR.width - 28}
-          text={rulesBody}
-          fontFamily="Plantin, Georgia, serif"
-          fontSize={34}
-          fill="#1c1612"
-          align="left"
-          verticalAlign="top"
-          wrap="word"
-        />
-      </Group>
+        x={rulesR.x + 28}
+        y={rulesR.y + 22}
+        width={rulesR.width - 170}
+        height={rulesR.height - 44}
+        text={rulesBody}
+        fontFamily="Plantin, Georgia, serif"
+        fontSize={34}
+        fill="#1c1612"
+        align="left"
+        verticalAlign="top"
+        wrap="word"
+      />
 
-      {/* Defense shield (top-right of landscape face) */}
+      {/* Defense shield (bottom-right of rules) */}
       <Shape
         x={defenseR.x}
         y={defenseR.y}
@@ -407,35 +402,26 @@ function BattleChromeLayer() {
         verticalAlign="middle"
       />
 
-      {/* Collector along bottom long edge */}
-      <Text
-        listening={false}
-        x={collectorR.x}
-        y={collectorR.y}
-        width={collectorR.width * 0.62}
-        height={collectorR.height}
-        text={collectorLine}
-        fontFamily="Gill Sans, Arial, sans-serif"
-        fontSize={22}
-        fill="#f0ebe3"
-        align="left"
-        verticalAlign="middle"
-      />
-      <Text
-        listening={false}
-        x={collectorR.x + collectorR.width * 0.55}
-        y={collectorR.y}
-        width={collectorR.width * 0.45}
-        height={collectorR.height}
-        text={String(copyright ?? '').trim() || '™ & © Wizards of the Coast'}
-        fontFamily="Gill Sans, Arial, sans-serif"
-        fontSize={18}
-        fill="#d8d2c8"
-        align="right"
-        verticalAlign="middle"
-      />
+      {/* Collector along left edge — rotated 90° CW so it reads bottom → top when card is upright */}
+      <Group x={collectorR.x + collectorR.width} y={collectorR.y} rotation={90} listening={false}>
+        <Text
+          listening={false}
+          x={0}
+          y={0}
+          width={collectorR.height}
+          height={collectorR.width}
+          text={collectorLine}
+          fontFamily="Gill Sans, Arial, sans-serif"
+          fontSize={20}
+          fill="#f0ebe3"
+          align="left"
+          verticalAlign="middle"
+          wrap="none"
+          ellipsis
+        />
+      </Group>
 
-{/* Inner black frame line around art aperture (chrome only; art is ArtLayer) */}
+      {/* Inner black frame line around art aperture */}
       <Shape
         listening={false}
         sceneFunc={(ctx) => {

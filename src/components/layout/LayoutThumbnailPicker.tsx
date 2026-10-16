@@ -23,10 +23,11 @@ function FamilyGlyph({ family }: { family: LayoutFamily }) {
       )
     case 'battle':
       return (
-        <svg viewBox="0 0 40 56" className="h-10 w-7" aria-hidden>
-          <rect x="2" y="2" width="36" height="52" rx="3" className={`${common} opacity-25`} />
-          <rect x="5" y="10" width="30" height="22" rx="1" className={common} />
-          <rect x="8" y="36" width="24" height="12" rx="1" className={`${common} opacity-55`} />
+        <svg viewBox="0 0 56 40" className="h-7 w-10" aria-hidden>
+          <rect x="2" y="2" width="52" height="36" rx="3" className={`${common} opacity-25`} />
+          <rect x="6" y="5" width="44" height="6" rx="1" className={common} />
+          <rect x="6" y="13" width="44" height="12" rx="1" className={`${common} opacity-70`} />
+          <rect x="6" y="27" width="44" height="8" rx="1" className={`${common} opacity-45`} />
         </svg>
       )
     case 'prepared':
