@@ -6,7 +6,7 @@ import {
   SPELL_PRE_MODERN_INNER_BORDER_CORNER_RADIUS_PX,
 } from './geometryAuthority'
 
-export type LayoutFamily = 'standard' | 'land' | 'spell' | 'battle' | 'planeswalker' | 'pkmn'
+export type LayoutFamily = 'standard' | 'land' | 'spell' | 'battle' | 'prepared' | 'planeswalker' | 'pkmn'
 
 export type LayoutVariant =
   | 'modern'
@@ -40,6 +40,7 @@ export const layoutCompatibility: Record<LayoutFamily, readonly LayoutVariant[]>
   land: ['modern', 'pre-modern', 'borderless', 'full-art'],
   spell: ['modern', 'pre-modern', 'saga', 'class'],
   battle: ['modern'],
+  prepared: ['modern'],
   planeswalker: ['modern', 'modern-v2', 'pre-modern', 'borderless', 'full-art'],
   /** PKMN: color = static pre-made frame variant (no Colors recolor). */
   pkmn: ['white', 'blue', 'red', 'green', 'dark', 'multicolor', 'colorless'],
@@ -50,6 +51,7 @@ export const LAYOUT_FAMILY_LABELS: Record<LayoutFamily, string> = {
   land: 'Land',
   spell: 'Spell',
   battle: 'Battle',
+  prepared: 'Prepared',
   planeswalker: 'Planeswalker',
   pkmn: 'PKMN',
 }
@@ -99,6 +101,7 @@ function normalizeFamily(value: unknown): LayoutFamily {
     value === 'land' ||
     value === 'spell' ||
     value === 'battle' ||
+    value === 'prepared' ||
     value === 'planeswalker' ||
     value === 'pkmn'
   )
@@ -259,6 +262,7 @@ export function isModernDummyLayout(layout: Partial<LayoutId> | null | undefined
     (normalized.family === 'standard' ||
       normalized.family === 'land' ||
       normalized.family === 'spell' ||
+      normalized.family === 'prepared' ||
       normalized.family === 'planeswalker') &&
     (normalized.variant === 'modern' ||
       normalized.variant === 'modern-v2' ||
@@ -269,6 +273,11 @@ export function isModernDummyLayout(layout: Partial<LayoutId> | null | undefined
 /** Battle / Siege family (true landscape stage via battleLayoutAuthority). */
 export function isBattleLayout(layout: Partial<LayoutId> | null | undefined): boolean {
   return normalizeLayout(layout).family === 'battle'
+}
+
+/** Prepared Creatures — split rules + nested mini-spell. */
+export function isPreparedLayout(layout: Partial<LayoutId> | null | undefined): boolean {
+  return normalizeLayout(layout).family === 'prepared'
 }
 
 /** Spell / Saga — right art, left chapter column. */
@@ -386,6 +395,7 @@ export function layoutToLegacyMode(layout: LayoutId): Exclude<CardLayoutMode, 'H
   if (normalized.family === 'standard' && normalized.variant === 'saga-creature') return 'Saga Creature'
   if (normalized.family === 'spell' && normalized.variant === 'class') return 'Class'
   if (normalized.family === 'battle') return 'Standard'
+  if (normalized.family === 'prepared') return 'Standard'
   if (normalized.family === 'planeswalker' && normalized.variant === 'full-art') return 'Full Art'
   if (normalized.family === 'planeswalker' && normalized.variant === 'borderless') return 'Borderless'
   if (normalized.family === 'planeswalker') return 'Standard'

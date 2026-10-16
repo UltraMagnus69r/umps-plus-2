@@ -43,6 +43,10 @@ export function shouldShowRulesTextAndFlavorBlock(input: ProgressiveDisclosureSi
   if (input.capabilities.supportsPlaneswalkerAbilities) return false
   /** Spell Saga/Class use structured stage editors instead of one rules blob. */
   if (input.capabilities.supportsSagaClassChrome && input.layoutFamily === 'spell') return false
+  /** Prepared still edits left-side rules via cardText; flavor is off. */
+  if (input.capabilities.supportsPreparedChrome) {
+    return shouldShowExpandedCoreCardInputs(input.capabilities)
+  }
   return (
     shouldShowExpandedCoreCardInputs(input.capabilities) &&
     !input.capabilities.supportsLandSecondaryArtInRulesRegion
@@ -74,7 +78,9 @@ export function shouldShowPowerToughnessCoreBlock(input: ProgressiveDisclosureSi
     return false
   }
   return (
-    (input.layoutFamily === 'standard' || input.layoutFamily === 'pkmn') &&
+    (input.layoutFamily === 'standard' ||
+      input.layoutFamily === 'prepared' ||
+      input.layoutFamily === 'pkmn') &&
     shouldShowExpandedCoreCardInputs(input.capabilities)
   )
 }
@@ -86,6 +92,11 @@ export function shouldShowStartingLoyaltyCoreBlock(input: ProgressiveDisclosureS
 /** Battle / Siege — defense shield value next to rules. */
 export function shouldShowBattleDefenseControls(input: ProgressiveDisclosureSidebarInput): boolean {
   return input.capabilities.supportsBattleChrome === true || input.layoutFamily === 'battle'
+}
+
+/** Prepared Creatures — nested mini-spell fields (name/mana/type/text). */
+export function shouldShowPreparedCoreInputs(input: ProgressiveDisclosureSidebarInput): boolean {
+  return input.capabilities.supportsPreparedChrome === true || input.layoutFamily === 'prepared'
 }
 
 export function shouldShowPowerToughnessControls(input: ProgressiveDisclosureSidebarInput): boolean {

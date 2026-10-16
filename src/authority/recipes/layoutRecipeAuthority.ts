@@ -6,9 +6,12 @@ import type { LayoutId } from '../layoutTaxonomy'
 import { BATTLE_REGULAR_RECIPE } from './battleRegularRecipe'
 import { CLASS_REGULAR_RECIPE } from './classRegularRecipe'
 import { M15_REGULAR_CREATURE_RECIPE, M15_REGULAR_MANA_PIP_SIZE_PX } from './m15RegularCreatureRecipe'
+import { PREPARED_REGULAR_RECIPE } from './preparedRegularRecipe'
 import { SAGA_CREATURE_RECIPE } from './sagaCreatureRecipe'
 import { SAGA_REGULAR_RECIPE } from './sagaRegularRecipe'
 import type { LayoutRecipe, TrimNormRect } from './layoutRecipeTypes'
+
+export { PREPARED_REGULAR_RECIPE } from './preparedRegularRecipe'
 
 export type RecipeStageRect = {
   x: number
@@ -72,8 +75,13 @@ export function layoutUsesBattleRecipe(layout: Partial<LayoutId> | null | undefi
   return layout?.family === 'battle'
 }
 
+export function layoutUsesPreparedRecipe(layout: Partial<LayoutId> | null | undefined): boolean {
+  return layout?.family === 'prepared'
+}
+
 export function getLayoutRecipe(layout: Partial<LayoutId> | null | undefined): LayoutRecipe | null {
   if (layoutUsesSagaCreatureRecipe(layout)) return SAGA_CREATURE_RECIPE
+  if (layoutUsesPreparedRecipe(layout)) return PREPARED_REGULAR_RECIPE
   if (layoutUsesM15RegularRecipe(layout)) return M15_REGULAR_CREATURE_RECIPE
   if (layoutUsesClassRecipe(layout)) return CLASS_REGULAR_RECIPE
   if (layoutUsesSagaRecipe(layout)) return SAGA_REGULAR_RECIPE

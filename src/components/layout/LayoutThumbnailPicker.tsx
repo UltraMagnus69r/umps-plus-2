@@ -29,6 +29,16 @@ function FamilyGlyph({ family }: { family: LayoutFamily }) {
           <rect x="8" y="36" width="24" height="12" rx="1" className={`${common} opacity-55`} />
         </svg>
       )
+    case 'prepared':
+      return (
+        <svg viewBox="0 0 40 56" className="h-10 w-7" aria-hidden>
+          <rect x="2" y="2" width="36" height="52" rx="3" className={`${common} opacity-25`} />
+          <rect x="6" y="6" width="28" height="16" rx="1" className={common} />
+          <rect x="6" y="26" width="13" height="18" rx="1" className={`${common} opacity-45`} />
+          <rect x="21" y="26" width="13" height="6" rx="1" className={`${common} opacity-70`} />
+          <rect x="21" y="34" width="13" height="10" rx="1" className={`${common} opacity-50`} />
+        </svg>
+      )
     case 'planeswalker':
       return (
         <svg viewBox="0 0 40 56" className="h-10 w-7" aria-hidden>

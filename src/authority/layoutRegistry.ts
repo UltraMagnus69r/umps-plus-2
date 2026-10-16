@@ -25,6 +25,7 @@ import {
   buildRecipeCoreStageRects,
   buildRecipeExtensionStageRects,
   CLASS_REGULAR_RECIPE,
+  PREPARED_REGULAR_RECIPE,
   SAGA_CREATURE_RECIPE,
   SAGA_REGULAR_RECIPE,
 } from './recipes/layoutRecipeAuthority'
@@ -826,7 +827,8 @@ function recipeExtensionsToFamilyExtensions(
     | typeof SAGA_REGULAR_RECIPE
     | typeof CLASS_REGULAR_RECIPE
     | typeof SAGA_CREATURE_RECIPE
-    | typeof BATTLE_REGULAR_RECIPE,
+    | typeof BATTLE_REGULAR_RECIPE
+    | typeof PREPARED_REGULAR_RECIPE,
 ): LayoutFamilyRegionExtensions | undefined {
   const ext = buildRecipeExtensionStageRects(recipe)
   if (!ext) return undefined
@@ -950,6 +952,29 @@ function buildSagaCreatureContract(): LayoutContract {
   })
 }
 
+/** Prepared Creatures — Standard Modern top + split rules / mini-spell chrome. */
+function buildPreparedModernContract(): LayoutContract {
+  const modern = buildStandardModernContract()
+  return normalizeLayoutContract({
+    ...modern,
+    id: { family: 'prepared', variant: 'modern' },
+    capabilities: {
+      ...modern.capabilities,
+      supportsPreparedChrome: true,
+      /** Left/right split copy is drawn by PreparedChromeLayer. */
+      suppressRulesTextRendering: true,
+      supportsFlavorText: false,
+      supportsPowerToughnessBox: true,
+      supportsModernDummyLayout: true,
+      /** Chrome owns the split rules surfaces; skip monolithic panel/texture. */
+      supportsRulesTextBoxTexture: false,
+      supportsPreModernTextBoxFrame: false,
+      supportsRulesTextBoxFrame: false,
+    },
+    familyExtensions: recipeExtensionsToFamilyExtensions(PREPARED_REGULAR_RECIPE),
+  })
+}
+
 /** Battle / Siege — true landscape stage (2250×1650); chrome owns plates/text. */
 function buildBattleModernContract(): LayoutContract {
   const toNorm = (r: { x: number; y: number; width: number; height: number }) => ({
@@ -1068,6 +1093,7 @@ const rawContracts: readonly LayoutContract[] = [
   buildClassStandardContract(),
   buildSagaCreatureContract(),
   buildBattleModernContract(),
+  buildPreparedModernContract(),
   ...PKMN_FRAME_OPTIONS.map((o) => buildPkmnContract(o.id)),
 ]
 
