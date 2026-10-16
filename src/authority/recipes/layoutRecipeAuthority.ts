@@ -3,7 +3,10 @@
  */
 import { BLEED_PX, TRIM_HEIGHT, TRIM_WIDTH } from '../geometryAuthority'
 import type { LayoutId } from '../layoutTaxonomy'
+import { BATTLE_REGULAR_RECIPE } from './battleRegularRecipe'
+import { CLASS_REGULAR_RECIPE } from './classRegularRecipe'
 import { M15_REGULAR_CREATURE_RECIPE, M15_REGULAR_MANA_PIP_SIZE_PX } from './m15RegularCreatureRecipe'
+import { SAGA_REGULAR_RECIPE } from './sagaRegularRecipe'
 import type { LayoutRecipe, TrimNormRect } from './layoutRecipeTypes'
 
 export type RecipeStageRect = {
@@ -52,9 +55,24 @@ export function layoutUsesM15RegularRecipe(layout: Partial<LayoutId> | null | un
   )
 }
 
+export function layoutUsesClassRecipe(layout: Partial<LayoutId> | null | undefined): boolean {
+  return layout?.family === 'spell' && layout?.variant === 'class'
+}
+
+export function layoutUsesSagaRecipe(layout: Partial<LayoutId> | null | undefined): boolean {
+  return layout?.family === 'spell' && layout?.variant === 'saga'
+}
+
+export function layoutUsesBattleRecipe(layout: Partial<LayoutId> | null | undefined): boolean {
+  return layout?.family === 'battle'
+}
+
 export function getLayoutRecipe(layout: Partial<LayoutId> | null | undefined): LayoutRecipe | null {
-  if (!layoutUsesM15RegularRecipe(layout)) return null
-  return M15_REGULAR_CREATURE_RECIPE
+  if (layoutUsesM15RegularRecipe(layout)) return M15_REGULAR_CREATURE_RECIPE
+  if (layoutUsesClassRecipe(layout)) return CLASS_REGULAR_RECIPE
+  if (layoutUsesSagaRecipe(layout)) return SAGA_REGULAR_RECIPE
+  if (layoutUsesBattleRecipe(layout)) return BATTLE_REGULAR_RECIPE
+  return null
 }
 
 export function buildRecipeCoreStageRects(recipe: LayoutRecipe): RecipeCoreStageRects {
@@ -68,6 +86,17 @@ export function buildRecipeCoreStageRects(recipe: LayoutRecipe): RecipeCoreStage
     ? trimNormToStageRect(recipe.regions.collector)
     : undefined
   return { nameBar, art, typeLine, rulesText, lowerRight, mana, metadataStrip }
+}
+
+export function buildRecipeExtensionStageRects(
+  recipe: LayoutRecipe,
+): Record<string, RecipeStageRect> | undefined {
+  if (!recipe.extensions) return undefined
+  const out: Record<string, RecipeStageRect> = {}
+  for (const [key, rect] of Object.entries(recipe.extensions)) {
+    out[key] = trimNormToStageRect(rect)
+  }
+  return out
 }
 
 export function getRecipeManaPipSizePx(recipe: LayoutRecipe): number {
@@ -104,4 +133,7 @@ export function getRecipeTypographyMinSizePx(
 export {
   M15_REGULAR_CREATURE_RECIPE,
   M15_REGULAR_MANA_PIP_SIZE_PX,
+  CLASS_REGULAR_RECIPE,
+  SAGA_REGULAR_RECIPE,
+  BATTLE_REGULAR_RECIPE,
 }

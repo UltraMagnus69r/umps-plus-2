@@ -29,8 +29,8 @@ export type RecipeTypographyField = {
 
 export type LayoutRecipe = {
   id: string
-  family: 'standard' | 'land'
-  variant: 'modern'
+  family: 'standard' | 'land' | 'spell' | 'battle'
+  variant: 'modern' | 'class' | 'saga'
   space: 'trim-1500x2100'
   chrome: {
     mode: 'procedural' | 'sheet'
@@ -63,6 +63,8 @@ export type LayoutRecipe = {
     shadowX?: number
     shadowY?: number
   }
+  /** Optional family-specific bands (Saga chapters, Class levels, Battle defense). */
+  extensions?: Record<string, TrimNormRect>
   acceptancePxAt600?: {
     nameTop?: number
     artEdge?: number

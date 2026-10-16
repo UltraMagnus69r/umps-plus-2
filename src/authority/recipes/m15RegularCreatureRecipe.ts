@@ -29,7 +29,8 @@ export const M15_REGULAR_CREATURE_RECIPE: LayoutRecipe = {
     mana: { x: 0.0, y: 0.0613, w: 0.9292, h: 71 / 2100, align: 'right' },
     type: { x: 0.0854, y: 0.5664, w: 0.8292, h: 0.0543 },
     setSymbol: { x: 0.9213, y: 0.591, w: 0.12, h: 0.041, anchor: 'right-center' },
-    rules: { x: 0.086, y: 0.6303, w: 0.828, h: 0.2875 },
+    /** PipMint: rules L/R match art aperture (CC pack is inset; forced to art width). */
+    rules: { x: 0.0767, y: 0.6303, w: 0.8476, h: 0.2875 },
     ptFrame: { x: 0.7573, y: 0.8848, w: 0.188, h: 0.0733 },
     ptText: { x: 0.7928, y: 0.902, w: 0.1367, h: 0.0372 },
     collector: { x: 0.06, y: 0.94, w: 0.88, h: 0.05 },

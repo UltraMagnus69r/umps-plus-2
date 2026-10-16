@@ -12,7 +12,8 @@ const TARGETS = {
   nameBar: { x: 203, y: 185, width: 1244, height: 114 },
   art: { x: 190, y: 312, width: 1271, height: 930 },
   typeLine: { x: 203, y: 1264, width: 1244, height: 114 },
-  rulesText: { x: 204, y: 1399, width: 1242, height: 604 },
+  /** Rules L/R forced to art aperture (PipMint fidelity; CC pack was inset). */
+  rulesText: { x: 190, y: 1399, width: 1271, height: 604 },
   lowerRight: { x: 1264, y: 1969, width: 205, height: 78 },
 } as const
 
