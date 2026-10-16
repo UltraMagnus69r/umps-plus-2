@@ -34,6 +34,14 @@ import {
   type LayoutId,
 } from '../../../authority/layoutTaxonomy'
 import { SYMBOL_BASELINE_OFFSET } from '../../../authority/symbolAuthority'
+import {
+  resolveTypographyFontFace,
+  resolveTypographyInkColor,
+  typographyPtToStagePx,
+  TYPO_SAGA_CHAPTER_PT_REF_PX,
+  type CardFieldTypography,
+} from '../../../authority/typographyAuthority'
+import { useEffectiveTypographyFontKey } from '../../../hooks/useEffectiveTypographyFontKey'
 import { resolveProceduralIdentity, useCardStore } from '../../../store/useCardStore'
 import {
   fitRichTextItemsInBand,
@@ -61,9 +69,7 @@ function lightenHex(hex: string, amount: number): string {
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
 }
 
-const STAGE_FONT_FAMILY = "Georgia, 'Times New Roman', serif"
-const STAGE_FONT_STYLE = 'normal'
-const STAGE_INK = '#1c1612'
+const SAGA_CHAPTER_AUTO_INK = '#1c1612'
 
 function SagaClassChromeLayer() {
   const {
@@ -72,6 +78,7 @@ function SagaClassChromeLayer() {
     sagaReminderText,
     sagaChapterCount,
     sagaStageTexts,
+    sagaChapterTypography,
     cardTypeLine,
     colorIdentity,
     cardName,
@@ -91,6 +98,7 @@ function SagaClassChromeLayer() {
       sagaReminderText: s.cardData.sagaReminderText,
       sagaChapterCount: s.cardData.sagaChapterCount,
       sagaStageTexts: s.cardData.sagaStageTexts,
+      sagaChapterTypography: s.cardData.sagaChapterTypography as CardFieldTypography,
       cardTypeLine: s.cardData.typeLine,
       colorIdentity: s.cardData.colorIdentity,
       cardName: s.cardData.name,
@@ -107,6 +115,16 @@ function SagaClassChromeLayer() {
     shallow,
   )
 
+  const effectiveChapterFontKey = useEffectiveTypographyFontKey(
+    'sagaChapterTypography',
+    sagaChapterTypography.fontKey,
+  )
+  const chapterFace = useMemo(
+    () => resolveTypographyFontFace(effectiveChapterFontKey, sagaChapterTypography.weight),
+    [effectiveChapterFontKey, sagaChapterTypography.weight],
+  )
+  const chapterInk = resolveTypographyInkColor(sagaChapterTypography, SAGA_CHAPTER_AUTO_INK)
+
   const caps = getActiveLayoutCapabilitiesFromState({
     currentLayout,
     cardData: { layout: activeLayout },
@@ -115,6 +133,13 @@ function SagaClassChromeLayer() {
   const classLayout = isClassLayout(activeLayout)
   const sagaLayout = isSagaLayout(activeLayout)
   const creatureLayout = isSagaCreatureLayout(activeLayout)
+
+  const chapterSizeMax = useMemo(() => {
+    const fromPt = typographyPtToStagePx(sagaChapterTypography.sizePt, TYPO_SAGA_CHAPTER_PT_REF_PX)
+    // Creature parchment is shorter — keep a modest height cap vs. full Saga/Class.
+    const heightCap = creatureLayout ? 26 : 36
+    return Math.max(10, Math.min(heightCap, Math.round(fromPt * 2) / 2))
+  }, [sagaChapterTypography.sizePt, creatureLayout])
 
   const identity = useMemo(
     () =>
@@ -182,10 +207,14 @@ function SagaClassChromeLayer() {
     [chapterCount, activeLayout],
   )
   const badgeCount = chapterCount
-  const reminderFontMax = creatureLayout ? 26 : 36
-  const stageFontMax = creatureLayout ? 26 : 30
-  const stageFontMin = creatureLayout ? 14 : 16
-  const reminderFontMin = creatureLayout ? 14 : 16
+  /** Reminder shares family/color; italic keeps it slightly distinct from chapter bodies. */
+  const reminderFontMax = Math.max(12, Math.min(chapterSizeMax + (creatureLayout ? 0 : 4), creatureLayout ? 26 : 36))
+  const stageFontMax = chapterSizeMax
+  const stageFontMin = creatureLayout ? 12 : 14
+  const reminderFontMin = creatureLayout ? 12 : 14
+  const stageFontFamily = chapterFace.fontStack
+  const stageFontStyle = chapterFace.fontStyle
+  const stageInk = chapterInk
 
   const measureCtxRef = useRef<CanvasRenderingContext2D | null>(null)
   const ensureMeasureCtx = useCallback(() => {
@@ -233,7 +262,7 @@ function SagaClassChromeLayer() {
         ctx,
         reminderText,
         reminderInnerW,
-        STAGE_FONT_FAMILY,
+        stageFontFamily,
         'italic',
         size,
         lineH,
@@ -249,6 +278,7 @@ function SagaClassChromeLayer() {
     reminderInnerH,
     reminderFontMax,
     reminderFontMin,
+    stageFontFamily,
   ])
 
   type StageBandRender = { items: RichItem[]; fontSize: number; lineHeightPx: number }
@@ -267,13 +297,13 @@ function SagaClassChromeLayer() {
         maxHeight: Math.max(8, band.height - padY * 2),
         maxFontSize: stageFontMax,
         minFontSize: stageFontMin,
-        fontFamily: STAGE_FONT_FAMILY,
-        fontStyle: STAGE_FONT_STYLE,
+        fontFamily: stageFontFamily,
+        fontStyle: stageFontStyle,
         measure: measureTextWidth,
         iconBaselineOffset: SYMBOL_BASELINE_OFFSET,
       })
     })
-  }, [bands, stages, stageFontMax, stageFontMin, measureTextWidth])
+  }, [bands, stages, stageFontMax, stageFontMin, stageFontFamily, stageFontStyle, measureTextWidth])
 
   if (!enabled || (!sagaLayout && !classLayout && !creatureLayout)) return null
 
@@ -438,10 +468,10 @@ function SagaClassChromeLayer() {
           width={reminderInnerW}
           height={reminderInnerH}
           text={reminderText}
-          fontFamily="Georgia, 'Times New Roman', serif"
+          fontFamily={stageFontFamily}
           fontStyle="italic"
           fontSize={reminderFontSize}
-          fill="#2a2218"
+          fill={stageInk}
           wrap="word"
           verticalAlign="middle"
         />
@@ -470,10 +500,10 @@ function SagaClassChromeLayer() {
                       y={it.y}
                       width={it.size}
                       height={it.size}
-                      fontFamily={STAGE_FONT_FAMILY}
-                      fontStyle={STAGE_FONT_STYLE}
+                      fontFamily={stageFontFamily}
+                      fontStyle={stageFontStyle}
                       fontSize={bandRender.fontSize}
-                      fill={STAGE_INK}
+                      fill={stageInk}
                     />
                   ) : (
                     <Fragment key={`ch-${bandIdx}-icon-${idx}-${it.key}`}>
@@ -497,10 +527,10 @@ function SagaClassChromeLayer() {
                   y={it.y}
                   width={it.width}
                   height={bandRender.lineHeightPx}
-                  fontFamily={STAGE_FONT_FAMILY}
-                  fontStyle={STAGE_FONT_STYLE}
+                  fontFamily={stageFontFamily}
+                  fontStyle={stageFontStyle}
                   fontSize={bandRender.fontSize}
-                  fill={STAGE_INK}
+                  fill={stageInk}
                 />
               ),
           ),

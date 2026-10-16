@@ -1,4 +1,4 @@
-import { memo, useCallback } from 'react'
+import { lazy, memo, Suspense, useCallback } from 'react'
 import {
   normalizeSagaChapterCount,
   normalizeSagaStageTexts,
@@ -12,6 +12,8 @@ import { useCardStore } from '../../store/useCardStore'
 import { manaTargetForSagaStage, type ManaTextTarget } from '../../utils/manaTextTarget'
 import FieldRow from '../ui/FieldRow'
 import { Plus, Sparkles } from 'lucide-react'
+
+const FontMenu = lazy(() => import('../ui/FontMenu'))
 
 const INPUT_CLASS =
   'w-full h-10 rounded-xl border border-neutral-200 bg-white px-3 ui-text-control outline-none ui-focus-ring-control dark:border-[var(--sb-border)] dark:bg-[var(--sb-surface-soft)]'
@@ -72,6 +74,7 @@ function SagaClassCoreInputs({
   const stages = normalizeSagaStageTexts(sagaStageTexts, count)
   const stageLabel = mode === 'class' ? 'Level' : 'Chapter'
   const countLabel = mode === 'class' ? 'Levels' : 'Chapters'
+  const styleLegend = mode === 'class' ? 'Level text style' : 'Chapter text style'
   const reminderPlaceholder =
     mode === 'class'
       ? '(Gain the next level as a sorcery to add its ability.)'
@@ -132,6 +135,15 @@ function SagaClassCoreInputs({
           rows={2}
           aria-label={`${mode === 'class' ? 'Class' : 'Saga'} reminder text`}
         />
+      </FieldRow>
+
+      <FieldRow label={styleLegend} layout="stacked">
+        <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+          Applies to every {stageLabel.toLowerCase()} I…{romanNumeral(count)} together.
+        </p>
+        <Suspense fallback={null}>
+          <FontMenu typographyKey="sagaChapterTypography" legend={styleLegend} compact />
+        </Suspense>
       </FieldRow>
 
       <div className="space-y-3 border-l-2 border-neutral-200 pl-3 dark:border-[color-mix(in_srgb,var(--sb-border)_70%,transparent)]">
