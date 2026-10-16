@@ -270,7 +270,10 @@ function buildStandardClassicModernTemplate(): LayoutContract {
   })
 }
 
-/** Standard / Modern — pre-modern art/rules column + modern plates, metadata, and P/T box. */
+/**
+ * Standard / Modern — Card Conjurer M15 Regular LayoutRecipe regions
+ * (`buildModernDummyStageRects` → recipe trim-norm + bleed). Procedural chrome.
+ */
 function buildStandardModernContract(): LayoutContract {
   const template = buildStandardClassicModernTemplate()
   const rects = buildModernDummyStageRects()
@@ -429,7 +432,10 @@ function buildClassicModernTemplate(): LayoutContract {
   })
 }
 
-/** Land / Modern — pre-modern art/rules column + modern plates and metadata (no P/T). */
+/**
+ * Land / Modern — same M15 Regular recipe seating as Standard / Modern
+ * (shared `buildModernDummyStageRects`); no P/T box.
+ */
 function buildLandModernContract(): LayoutContract {
   const template = buildClassicModernTemplate()
   const rects = buildModernDummyStageRects()
