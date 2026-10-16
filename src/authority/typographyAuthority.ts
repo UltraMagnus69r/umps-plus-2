@@ -193,6 +193,17 @@ export function defaultRulesTypography(): CardFieldTypography {
   }
 }
 
+/** Shared Saga / Class / Saga Creature chapter (level) body style. */
+export function defaultSagaChapterTypography(): CardFieldTypography {
+  return {
+    fontKey: 'plantin',
+    weight: 'normal',
+    color: '#1c1612',
+    colorManual: false,
+    sizePt: 12,
+  }
+}
+
 export function defaultFlavorTypography(): CardFieldTypography {
   return {
     fontKey: 'plantinItalic',
@@ -228,6 +239,8 @@ export const TYPO_RULES_PT_REF_PX = 45
 export const TYPO_FLAVOR_PT_REF_PX = 38
 export const TYPO_PT_BOX_REF_PX = 110
 export const TYPO_METADATA_PT_REF_PX = 18
+/** Saga/Class chapter bodies at sizePt 12 ≈ previous hardcoded ~30px. */
+export const TYPO_SAGA_CHAPTER_PT_REF_PX = 30
 
 // —— Phase 9.3 — UI shell typography roles (see `index.css` .ui-text-*) ——
 

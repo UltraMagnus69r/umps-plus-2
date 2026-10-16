@@ -122,6 +122,7 @@ import {
   defaultNameTypography,
   defaultPtTypography,
   defaultRulesTypography,
+  defaultSagaChapterTypography,
   defaultTypeTypography,
   migrateTypographyColorManual,
   sanitizeCardFieldTypography,
@@ -336,6 +337,8 @@ export interface CardData {
   flavorTypography: CardFieldTypography
   ptTypography: CardFieldTypography
   metadataTypography: CardFieldTypography
+  /** Saga / Class / Saga Creature — one style for all chapter/level bodies. */
+  sagaChapterTypography: CardFieldTypography
 
   /** Planeswalker — starting loyalty in lower-right slot. */
   startingLoyalty: string
@@ -362,6 +365,7 @@ export type CardTypographyKey = keyof Pick<
   | 'flavorTypography'
   | 'ptTypography'
   | 'metadataTypography'
+  | 'sagaChapterTypography'
 >
 
 export type SettingsState = {
@@ -1142,6 +1146,7 @@ export const defaultCardData: CardData = {
   flavorTypography: defaultFlavorTypography(),
   ptTypography: defaultPtTypography(),
   metadataTypography: defaultMetadataTypography(),
+  sagaChapterTypography: defaultSagaChapterTypography(),
   ...DEFAULT_PLANESWALKER_CARD_FIELDS,
   sagaReminderText: '',
   sagaChapterCount: SAGA_CHAPTER_COUNT_DEFAULT,
@@ -1321,6 +1326,10 @@ function normalizeSnapshot(s: Snapshot): Snapshot {
     flavorTypography: migrateTypographyColorManual(anyS?.flavorTypography, defaultFlavorTypography()),
     ptTypography: migrateTypographyColorManual(anyS?.ptTypography, defaultPtTypography()),
     metadataTypography: migrateTypographyColorManual(anyS?.metadataTypography, defaultMetadataTypography()),
+    sagaChapterTypography: migrateTypographyColorManual(
+      anyS?.sagaChapterTypography,
+      defaultSagaChapterTypography(),
+    ),
     copyright: normalizeCardCopyright(anyS?.copyright),
     manaSymbolSet: normalizeManaSymbolSetId(anyS?.manaSymbolSet),
     secondaryNameFontSize: normalizeSecondaryNameFontSize(anyS?.secondaryNameFontSize),
@@ -1857,7 +1866,9 @@ colorBlendDirection: 'vertical',
                     ? defaultFlavorTypography()
                     : key === 'ptTypography'
                       ? defaultPtTypography()
-                      : defaultMetadataTypography()
+                      : key === 'sagaChapterTypography'
+                        ? defaultSagaChapterTypography()
+                        : defaultMetadataTypography()
           const cur = state.cardData[key]
           const merged: CardFieldTypography = { ...sanitizeCardFieldTypography(cur, fallback), ...patch }
           const sanitized = sanitizeCardFieldTypography(merged, fallback)
