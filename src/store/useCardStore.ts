@@ -1824,16 +1824,16 @@ colorBlendDirection: 'vertical',
             next.battleDefense = normalizeBattleDefense(value)
           }
           if (key === 'preparedSpellName') {
-            next.preparedSpellName = normalizePreparedSpellName(value)
+            next.preparedSpellName = String(value ?? '')
           }
           if (key === 'preparedSpellManaCost') {
-            next.preparedSpellManaCost = normalizePreparedSpellMana(value)
+            next.preparedSpellManaCost = String(value ?? '')
           }
           if (key === 'preparedSpellType') {
-            next.preparedSpellType = normalizePreparedSpellType(value)
+            next.preparedSpellType = String(value ?? '')
           }
           if (key === 'preparedSpellText') {
-            next.preparedSpellText = normalizePreparedSpellText(value)
+            next.preparedSpellText = String(value ?? '')
           }
           if (key === 'sagaReminderText') {
             next.sagaReminderText = normalizeSagaReminderText(value)
