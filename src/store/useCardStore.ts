@@ -77,8 +77,11 @@ import {
 } from '../authority/planeswalkerAbilityAuthority'
 import {
   defaultSagaStageTexts,
+  normalizeSagaChapterCount,
   normalizeSagaReminderText,
   normalizeSagaStageTexts,
+  reminderAfterChapterCountChange,
+  SAGA_CHAPTER_COUNT_DEFAULT,
 } from '../authority/sagaClassStageAuthority'
 import {
   normalizeLandFullArtManaCircleKey,
@@ -86,6 +89,9 @@ import {
 } from '../authority/landFullArtManaCircle'
 import {
   DEFAULT_LAYOUT_ID,
+  isClassLayout,
+  isSagaCreatureLayout,
+  isSagaLayout,
   layoutFromLegacyMode,
   layoutToLegacyMode,
   normalizeLayout,
@@ -326,10 +332,12 @@ export interface CardData {
   /** When false, flavor is editable but not rendered on card (planeswalker default OFF). */
   showFlavorTextOnCard: boolean
 
-  /** Saga / Class — reminder strip text (structured; not cardText blob). */
+  /** Saga / Class / Saga Creature — reminder strip text (structured; not cardText blob). */
   sagaReminderText: string
-  /** Saga / Class — stage I / II / III (or level) bodies seated in equal bands. */
-  sagaStageTexts: [string, string, string]
+  /** Number of chapter/level bands (2–5). Default 3. */
+  sagaChapterCount: number
+  /** Stage I…V bodies seated in equal bands (length = sagaChapterCount). */
+  sagaStageTexts: string[]
 }
 
 /** Keys for `updateCardTypography` — face text fields only (not metadata strip). */
@@ -1089,7 +1097,8 @@ export const defaultCardData: CardData = {
   metadataTypography: defaultMetadataTypography(),
   ...DEFAULT_PLANESWALKER_CARD_FIELDS,
   sagaReminderText: '',
-  sagaStageTexts: defaultSagaStageTexts(),
+  sagaChapterCount: SAGA_CHAPTER_COUNT_DEFAULT,
+  sagaStageTexts: defaultSagaStageTexts(SAGA_CHAPTER_COUNT_DEFAULT),
 }
 
 export const defaultSettings: SettingsState = {
@@ -1285,7 +1294,13 @@ function normalizeSnapshot(s: Snapshot): Snapshot {
       anyS?.sagaReminderText,
       defaultCardData.sagaReminderText,
     ),
-    sagaStageTexts: normalizeSagaStageTexts(anyS?.sagaStageTexts, defaultCardData.sagaStageTexts),
+    sagaChapterCount: normalizeSagaChapterCount(
+      anyS?.sagaChapterCount ?? defaultCardData.sagaChapterCount,
+    ),
+    sagaStageTexts: normalizeSagaStageTexts(
+      anyS?.sagaStageTexts,
+      anyS?.sagaChapterCount ?? defaultCardData.sagaChapterCount,
+    ),
   } as Snapshot
 }
 
@@ -1711,8 +1726,25 @@ colorBlendDirection: 'vertical',
           if (key === 'sagaReminderText') {
             next.sagaReminderText = normalizeSagaReminderText(value)
           }
+          if (key === 'sagaChapterCount') {
+            const count = normalizeSagaChapterCount(value)
+            const mode = isClassLayout(next.layout)
+              ? 'class'
+              : isSagaCreatureLayout(next.layout)
+                ? 'saga-creature'
+                : isSagaLayout(next.layout)
+                  ? 'saga'
+                  : 'saga'
+            next.sagaChapterCount = count
+            next.sagaStageTexts = normalizeSagaStageTexts(next.sagaStageTexts, count)
+            next.sagaReminderText = reminderAfterChapterCountChange(
+              next.sagaReminderText,
+              count,
+              mode,
+            )
+          }
           if (key === 'sagaStageTexts') {
-            next.sagaStageTexts = normalizeSagaStageTexts(value)
+            next.sagaStageTexts = normalizeSagaStageTexts(value, next.sagaChapterCount)
           }
 
           const dirtyKey = CARD_KEY_TO_DIRTY_KEY[key]

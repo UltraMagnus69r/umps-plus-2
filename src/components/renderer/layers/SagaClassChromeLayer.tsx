@@ -19,10 +19,13 @@ import {
   getSagaClassParchmentRect,
   getSagaClassReminderRect,
   romanNumeral,
-  SAGA_CREATURE_DEFAULT_REMINDER,
-  SAGA_DEFAULT_REMINDER,
 } from '../../../authority/sagaClassLayoutAuthority'
-import { normalizeSagaStageTexts } from '../../../authority/sagaClassStageAuthority'
+import {
+  defaultSagaCreatureReminderForCount,
+  defaultSagaReminderForCount,
+  normalizeSagaChapterCount,
+  normalizeSagaStageTexts,
+} from '../../../authority/sagaClassStageAuthority'
 import {
   isClassLayout,
   isSagaCreatureLayout,
@@ -54,6 +57,7 @@ function SagaClassChromeLayer() {
     currentLayout,
     activeLayout,
     sagaReminderText,
+    sagaChapterCount,
     sagaStageTexts,
     cardTypeLine,
     colorIdentity,
@@ -72,6 +76,7 @@ function SagaClassChromeLayer() {
       currentLayout: s.currentLayout,
       activeLayout: s.cardData.layout as LayoutId,
       sagaReminderText: s.cardData.sagaReminderText,
+      sagaChapterCount: s.cardData.sagaChapterCount,
       sagaStageTexts: s.cardData.sagaStageTexts,
       cardTypeLine: s.cardData.typeLine,
       colorIdentity: s.cardData.colorIdentity,
@@ -142,26 +147,23 @@ function SagaClassChromeLayer() {
   const abilityCol = getSagaClassAbilityColumnRect(activeLayout)
   const badgeMetrics = getSagaClassBadgeMetrics(activeLayout)
 
+  const chapterCount = normalizeSagaChapterCount(sagaChapterCount)
   const defaultReminder = classLayout
     ? CLASS_DEFAULT_REMINDER
     : creatureLayout
-      ? SAGA_CREATURE_DEFAULT_REMINDER
-      : SAGA_DEFAULT_REMINDER
+      ? defaultSagaCreatureReminderForCount(chapterCount)
+      : defaultSagaReminderForCount(chapterCount)
   const reminderText = String(sagaReminderText ?? '').trim() || defaultReminder
 
   const stages = useMemo(() => {
-    if (creatureLayout) {
-      return ['Chapter ability.', 'Chapter ability.', 'Chapter ability.', 'Chapter ability.']
-    }
-    const normalized = normalizeSagaStageTexts(sagaStageTexts)
+    const normalized = normalizeSagaStageTexts(sagaStageTexts, chapterCount)
     return normalized.map((t, i) => {
       const trimmed = t.trim()
       if (trimmed) return trimmed
       return classLayout ? `Level ${i + 1} abilities.` : 'Chapter ability.'
     })
-  }, [creatureLayout, sagaStageTexts, classLayout])
+  }, [sagaStageTexts, chapterCount, classLayout])
 
-  const chapterCount = creatureLayout ? 4 : 3
   const bands = useMemo(
     () => getSagaClassChapterBandRects(chapterCount, activeLayout),
     [chapterCount, activeLayout],

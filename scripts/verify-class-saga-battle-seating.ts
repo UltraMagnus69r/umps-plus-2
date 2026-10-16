@@ -17,6 +17,14 @@ import {
   isSagaCreatureLayout,
 } from '../src/authority/layoutTaxonomy'
 import { BLEED_PX, TRIM_HEIGHT, TRIM_WIDTH } from '../src/authority/geometryAuthority'
+import { getSagaClassChapterBandRects } from '../src/authority/sagaClassLayoutAuthority'
+import {
+  defaultSagaReminderForCount,
+  normalizeSagaChapterCount,
+  normalizeSagaStageTexts,
+  SAGA_CHAPTER_COUNT_MAX,
+  SAGA_CHAPTER_COUNT_MIN,
+} from '../src/authority/sagaClassStageAuthority'
 
 let failed = 0
 function check(name: string, ok: boolean, detail: string) {
@@ -87,6 +95,29 @@ console.log('\nStandard / Saga Creature (reminder + split + creature rules + P/T
   check('P/T box', c.capabilities.supportsPowerToughnessBox === true, String(c.capabilities.supportsPowerToughnessBox))
   check('rules frame', c.capabilities.supportsRulesTextBoxFrame === true, String(c.capabilities.supportsRulesTextBoxFrame))
   check('rules text not suppressed', c.capabilities.suppressRulesTextRendering === false, String(c.capabilities.suppressRulesTextRendering))
+}
+
+console.log('\nDynamic chapter count 2–5')
+{
+  check('min', normalizeSagaChapterCount(1) === SAGA_CHAPTER_COUNT_MIN, String(normalizeSagaChapterCount(1)))
+  check('max', normalizeSagaChapterCount(9) === SAGA_CHAPTER_COUNT_MAX, String(normalizeSagaChapterCount(9)))
+  check('default', normalizeSagaChapterCount(undefined) === 3, String(normalizeSagaChapterCount(undefined)))
+  for (const n of [2, 3, 4, 5] as const) {
+    const bands = getSagaClassChapterBandRects(n, { family: 'spell', variant: 'saga' })
+    check(`saga bands N=${n}`, bands.length === n, `len=${bands.length}`)
+    const heights = bands.map((b) => b.height)
+    const equal = Math.max(...heights) - Math.min(...heights) <= n
+    check(`saga equal heights N=${n}`, equal, heights.join(','))
+    const stages = normalizeSagaStageTexts(['a', 'b', 'c', 'd', 'e'], n)
+    check(`stage texts len N=${n}`, stages.length === n, String(stages.length))
+    check(
+      `reminder Sacrifice after N=${n}`,
+      defaultSagaReminderForCount(n).includes(`Sacrifice after ${['', 'I', 'II', 'III', 'IV', 'V'][n]}.`),
+      defaultSagaReminderForCount(n),
+    )
+  }
+  const creatureBands = getSagaClassChapterBandRects(5, { family: 'standard', variant: 'saga-creature' })
+  check('creature N=5 bands', creatureBands.length === 5, `len=${creatureBands.length}`)
 }
 
 console.log('\nSpell Modern inner border matches Standard Modern')
