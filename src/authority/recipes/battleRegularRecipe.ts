@@ -15,12 +15,12 @@ const BOTTOM = 40 / 1500
 const PLATE_H = 92 / 1500
 const RULES_H = 528 / 1500
 const NAME_Y = TOP
-const ART_Y = NAME_Y + PLATE_H
 const RULES_BOTTOM = 1 - BOTTOM
 const RULES_Y = RULES_BOTTOM - RULES_H
 const TYPE_Y = RULES_Y - PLATE_H
-const ART_H = TYPE_Y - ART_Y
 const RULES_RIGHT = CONTENT_X + CONTENT_W
+const ART_FACE_Y = 32 / 1500
+const ART_FACE_BOTTOM = 1 - 32 / 1500
 const DEFENSE_W = 138 / 2100
 const DEFENSE_H = 158 / 1500
 const TRANSFORM_SIZE = 108 / 2100
@@ -34,7 +34,12 @@ const L_MANA = {
   w: 440 / 2100,
   h: 72 / 1500,
 }
-const L_ART = { x: CONTENT_X, y: ART_Y, w: CONTENT_W, h: ART_H }
+const L_ART = {
+  x: CONTENT_X,
+  y: ART_FACE_Y,
+  w: CONTENT_W,
+  h: ART_FACE_BOTTOM - ART_FACE_Y,
+}
 const L_TYPE = { x: CONTENT_X, y: TYPE_Y, w: CONTENT_W, h: PLATE_H }
 const L_SET = {
   x: CONTENT_X + CONTENT_W - 120 / 2100,
@@ -51,7 +56,7 @@ const L_DEFENSE = {
 }
 const L_HOLOGRAM = {
   x: 10 / 2100,
-  y: ART_Y + ART_H / 2 - 55 / 1500,
+  y: (NAME_Y + RULES_BOTTOM) / 2 - 55 / 1500,
   w: 68 / 2100,
   h: 110 / 1500,
 }

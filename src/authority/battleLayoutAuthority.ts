@@ -1,9 +1,8 @@
 /**
  * Battle / Siege — landscape stack face (wider than tall).
  * Ground truth: fidelity-battle/battle-no-inner-border-ref.png (Invasion of Ikoria)
- * + battle-landscape-stack-reference.png
- * Top→bottom: nameplate, flush art (no inset stroke), type, upright rules, defense;
- * collector + hologram on left edge.
+ * Art fills the full inner content face underneath name/type/rules/defense chrome.
+ * Collector + hologram on left edge.
  */
 import { BLEED_PX, INNER_BORDER_CORNER_RADIUS_MODERN } from './geometryAuthority'
 import type { LayoutId } from './layoutTaxonomy'
@@ -36,8 +35,8 @@ function n(rect: { x: number; y: number; w: number; h: number }): BattleStageRec
 const WIDEN_RIGHT = 24 / BATTLE_TRIM_WIDTH
 
 /**
- * Flush stack seating (MotM / no-inner-border ref):
- * name → art → type → rules with zero gaps; art touches plates and content edges.
+ * Stack chrome seating + full inner-face art (under plates/rules).
+ * Art fills the entire content bay (where the old mat showed); chrome draws on top.
  */
 const CONTENT_X = 108 / 2100
 const CONTENT_W = 1930 / 2100 + WIDEN_RIGHT
@@ -46,12 +45,13 @@ const BOTTOM = 40 / 1500
 const PLATE_H = 92 / 1500
 const RULES_H = 528 / 1500
 const NAME_Y = TOP
-const ART_Y = NAME_Y + PLATE_H
 const RULES_BOTTOM = 1 - BOTTOM
 const RULES_Y = RULES_BOTTOM - RULES_H
 const TYPE_Y = RULES_Y - PLATE_H
-const ART_H = TYPE_Y - ART_Y
 const RULES_RIGHT = CONTENT_X + CONTENT_W
+/** Full inner face behind name → rules (no mid-band inset window). */
+const ART_FACE_Y = 32 / 1500
+const ART_FACE_BOTTOM = 1 - 32 / 1500
 const DEFENSE_W = 138 / 2100
 const DEFENSE_H = 158 / 1500
 /** Transform mark — covers left end of name plate. */
@@ -65,7 +65,7 @@ const TRANSFORM_SIZE_Y = 108 / 1500
 const FACE = {
   /** Vertical collector / credit strip (text rotated 90° CW). */
   collector: { x: 22 / 2100, y: 56 / 1500, w: 72 / 2100, h: 1390 / 1500 },
-  /** Horizontal nameplate — flush above art. */
+  /** Horizontal nameplate — drawn over art. */
   name: { x: CONTENT_X, y: NAME_Y, w: CONTENT_W, h: PLATE_H },
   /** DFC / transform mark covering the left end of the nameplate. */
   transform: {
@@ -81,9 +81,17 @@ const FACE = {
     w: 440 / 2100,
     h: 72 / 1500,
   },
-  /** Art aperture — flush to name/type and content left/right (no inset mat/stroke). */
-  art: { x: CONTENT_X, y: ART_Y, w: CONTENT_W, h: ART_H },
-  /** Type line — flush between art and rules. */
+  /**
+   * Art — full inner content face (under name/type/rules/defense).
+   * Not a mid-band inset; chrome punches this aperture then draws plates on top.
+   */
+  art: {
+    x: CONTENT_X,
+    y: ART_FACE_Y,
+    w: CONTENT_W,
+    h: ART_FACE_BOTTOM - ART_FACE_Y,
+  },
+  /** Type line — drawn over art. */
   type: { x: CONTENT_X, y: TYPE_Y, w: CONTENT_W, h: PLATE_H },
   setSymbol: {
     x: CONTENT_X + CONTENT_W - 120 / 2100,
@@ -91,7 +99,7 @@ const FACE = {
     w: 96 / 2100,
     h: 68 / 1500,
   },
-  /** Tan parchment rules — flush under type. */
+  /** Tan parchment rules — drawn over art. */
   rules: { x: CONTENT_X, y: RULES_Y, w: CONTENT_W, h: RULES_H },
   /** Defense shield centered on lower-right corner of rules (half in / half out). */
   defense: {
@@ -100,10 +108,10 @@ const FACE = {
     w: DEFENSE_W,
     h: DEFENSE_H,
   },
-  /** Security / hologram stamp — left vertical frame beside art. */
+  /** Security / hologram stamp — left vertical frame. */
   hologram: {
     x: 10 / 2100,
-    y: ART_Y + ART_H / 2 - 55 / 1500,
+    y: (NAME_Y + RULES_BOTTOM) / 2 - 55 / 1500,
     w: 68 / 2100,
     h: 110 / 1500,
   },

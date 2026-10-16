@@ -280,8 +280,9 @@ function KonvaStage({
           <>
             {layoutCaps.supportsBattleChrome ? (
               <>
-                <BattleChromeLayer />
+                {/* Art fills the full inner face; chrome (plates/rules) draws on top. */}
                 <ArtLayer />
+                <BattleChromeLayer />
               </>
             ) : layoutCaps.printOnlyStaticFrame ? (
               /** PKMN basic lands — print-as-is frame PNG only (no art/text/chrome overlays). */
