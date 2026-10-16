@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo } from 'react'
+import { memo, useCallback, useMemo, useRef } from 'react'
 import { Group, Layer, Shape, Text } from 'react-konva'
 import type Konva from 'konva'
 import { shallow } from 'zustand/shallow'
@@ -8,6 +8,8 @@ import {
   getStandardLayoutGeometry,
   reverseBezierPlatePathInLocalRect,
 } from '../../../authority/geometryAuthority'
+import { layoutPtSlashCenteredText } from '../../../authority/ptTextLayoutAuthority'
+import { buildCanvasFont } from '../../../data/fontCatalog'
 import {
   getActiveLayoutCapabilitiesFromState,
   getActiveLayoutRegionsFromState,
@@ -352,7 +354,85 @@ function PowerToughnessOverlayLayer() {
     return floorToHalfPx(Math.min(target, Math.max(28, heightCap)))
   }, [ptTypography.sizePt, ptInnerHEff, floorToHalfPx])
   const ptTextPadX = 6
-  const ptTextPadY = 2
+
+  const measureCtxRef = useRef<CanvasRenderingContext2D | null>(null)
+  const measurePtTextWidth = useCallback(
+    (text: string, fontFamily: string, fontStyle: string, fontSize: number) => {
+      if (!measureCtxRef.current) {
+        const c = document.createElement('canvas')
+        measureCtxRef.current = c.getContext('2d')
+      }
+      const ctx = measureCtxRef.current
+      if (!ctx) return 0
+      ctx.font = buildCanvasFont(fontStyle, fontSize, fontFamily)
+      return ctx.measureText(text).width
+    },
+    [],
+  )
+
+  const boxedPtLayout = useMemo(() => {
+    if (pkmnPtSplit || supportsFloatingTextTreatment) return null
+    return layoutPtSlashCenteredText({
+      power: String(cardPower ?? ''),
+      toughness: String(cardToughness ?? ''),
+      boxX: ptInnerXEff,
+      boxY: ptInnerYEff,
+      boxW: ptInnerWEff,
+      boxH: ptInnerHEff,
+      fontFamily: ptStack,
+      fontStyle: ptFontStyleKonva,
+      fontSize: ptDisplayFontSize,
+      align: 'center',
+      padX: ptTextPadX,
+      measure: measurePtTextWidth,
+    })
+  }, [
+    pkmnPtSplit,
+    supportsFloatingTextTreatment,
+    cardPower,
+    cardToughness,
+    ptInnerXEff,
+    ptInnerYEff,
+    ptInnerWEff,
+    ptInnerHEff,
+    ptStack,
+    ptFontStyleKonva,
+    ptDisplayFontSize,
+    measurePtTextWidth,
+  ])
+
+  const floatingPtLayout = useMemo(() => {
+    if (!supportsFloatingTextTreatment || pkmnPtSplit) return null
+    const fontStyle = standardFullArt ? 'bold' : ptFontStyleKonva
+    return layoutPtSlashCenteredText({
+      power: String(cardPower ?? ''),
+      toughness: String(cardToughness ?? ''),
+      boxX: ptInnerXEff,
+      boxY: ptInnerYEff,
+      boxW: ptInnerWEff,
+      boxH: ptInnerHEff,
+      fontFamily: ptStack,
+      fontStyle,
+      fontSize: ptDisplayFontSize,
+      align: 'center',
+      padX: 6,
+      measure: measurePtTextWidth,
+    })
+  }, [
+    supportsFloatingTextTreatment,
+    pkmnPtSplit,
+    standardFullArt,
+    ptFontStyleKonva,
+    cardPower,
+    cardToughness,
+    ptInnerXEff,
+    ptInnerYEff,
+    ptInnerWEff,
+    ptInnerHEff,
+    ptStack,
+    ptDisplayFontSize,
+    measurePtTextWidth,
+  ])
 
   if (!showPowerToughnessEffective) {
     return null
@@ -362,7 +442,7 @@ function PowerToughnessOverlayLayer() {
 
   return (
     <Layer listening={false}>
-      {/* PKMN: frame PNG already has the pill + divider — ink only, P and T in each half. */}
+      {/* PKMN: frame PNG already has the pill + divider — ink only, P and T in each half. Untouched. */}
       {showPowerToughnessEffective && pkmnPtSplit && (
         <Group listening={false}>
           <Text
@@ -395,7 +475,7 @@ function PowerToughnessOverlayLayer() {
           />
         </Group>
       )}
-      {showPowerToughnessEffective && !supportsFloatingTextTreatment && !pkmnPtSplit && (
+      {showPowerToughnessEffective && !supportsFloatingTextTreatment && !pkmnPtSplit && boxedPtLayout && (
         <Group
           x={applyProxyPtScale ? proxyPtScale.centerX : 0}
           y={applyProxyPtScale ? proxyPtScale.centerY : 0}
@@ -415,20 +495,23 @@ function PowerToughnessOverlayLayer() {
             shadowOffset={FRAME_SHADOW_OFFSET}
             shadowOpacity={FRAME_SHADOW_OPACITY}
           />
-          <Text
-            text={`${cardPower}/${cardToughness}`}
-            x={ptInnerXEff + ptTextPadX}
-            y={ptInnerYEff + ptTextPadY}
-            width={ptInnerWEff - ptTextPadX * 2}
-            height={ptInnerHEff - ptTextPadY * 2}
-            fontFamily={ptStack}
-            fontStyle={ptFontStyleKonva}
-            fontSize={ptDisplayFontSize}
-            fill={ptFill}
-            verticalAlign="middle"
-            align="center"
-            listening={false}
-          />
+          {([boxedPtLayout.power, boxedPtLayout.slash, boxedPtLayout.toughness] as const).map((part, i) => (
+            <Text
+              key={`pt-part-${i}`}
+              text={part.text}
+              x={part.x}
+              y={part.y}
+              width={part.width}
+              height={part.height}
+              fontFamily={ptStack}
+              fontStyle={ptFontStyleKonva}
+              fontSize={ptDisplayFontSize}
+              fill={ptFill}
+              verticalAlign="middle"
+              align="center"
+              listening={false}
+            />
+          ))}
           <Shape
             x={ptFrameX}
             y={ptFrameY}
@@ -444,26 +527,33 @@ function PowerToughnessOverlayLayer() {
           />
         </Group>
       )}
-      {showPowerToughnessEffective && supportsFloatingTextTreatment && !pkmnPtSplit && (
-        <Text
-          text={`${cardPower}/${cardToughness}`}
-          x={ptInnerXEff + 6}
-          y={ptInnerYEff + 2}
-          width={ptInnerWEff - 12}
-          height={ptInnerHEff - 4}
-          fontFamily={ptStack}
-          fontStyle={standardFullArt ? 'bold' : ptFontStyleKonva}
-          fontSize={ptDisplayFontSize}
-          fill={standardFullArt ? secondaryStyleFill : ptFill}
-          stroke={standardFullArt ? secondaryStyleStroke : undefined}
-          strokeWidth={standardFullArt ? SECONDARY_STYLE_STROKE_WIDTH : 0}
-          shadowColor={standardFullArt ? secondaryStyleShadow : undefined}
-          shadowBlur={standardFullArt ? SECONDARY_STYLE_SHADOW_BLUR : 0}
-          shadowOffset={standardFullArt ? FRAME_SHADOW_OFFSET : undefined}
-          verticalAlign="middle"
-          align="center"
-          listening={false}
-        />
+      {showPowerToughnessEffective && supportsFloatingTextTreatment && !pkmnPtSplit && floatingPtLayout && (
+        <Group listening={false}>
+          {([floatingPtLayout.power, floatingPtLayout.slash, floatingPtLayout.toughness] as const).map(
+            (part, i) => (
+              <Text
+                key={`pt-float-${i}`}
+                text={part.text}
+                x={part.x}
+                y={part.y}
+                width={part.width}
+                height={part.height}
+                fontFamily={ptStack}
+                fontStyle={standardFullArt ? 'bold' : ptFontStyleKonva}
+                fontSize={ptDisplayFontSize}
+                fill={standardFullArt ? secondaryStyleFill : ptFill}
+                stroke={standardFullArt ? secondaryStyleStroke : undefined}
+                strokeWidth={standardFullArt ? SECONDARY_STYLE_STROKE_WIDTH : 0}
+                shadowColor={standardFullArt ? secondaryStyleShadow : undefined}
+                shadowBlur={standardFullArt ? SECONDARY_STYLE_SHADOW_BLUR : 0}
+                shadowOffset={standardFullArt ? FRAME_SHADOW_OFFSET : undefined}
+                verticalAlign="middle"
+                align="center"
+                listening={false}
+              />
+            ),
+          )}
+        </Group>
       )}
     </Layer>
   )

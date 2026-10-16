@@ -28,6 +28,7 @@ import { PW_MODERN_V2_COLLECTOR_DATA_DOWN_NUDGE_PX, PW_MODERN_V2_HOLOGRAM_DOWN_N
 import { getPreModernTextBoxOuterRect } from '../../../authority/preModernTextBoxAuthority'
 import { resolveCardCopyright } from '../../../authority/collectorDataAuthority'
 import { resolveSetSymbolBoxPx, SYMBOL_BASELINE_OFFSET, getSpellPreModernManaCostIconSizePx } from '../../../authority/symbolAuthority'
+import { layoutPtSlashCenteredText } from '../../../authority/ptTextLayoutAuthority'
 import { useEffectiveTypographyFontKey } from '../../../hooks/useEffectiveTypographyFontKey'
 import {
   getPreModernFaceFontStack,
@@ -1686,20 +1687,47 @@ function TextIconsLayer() {
           </>
         )
         })()}
-      {showPreModernPowerToughness && (
-        <Text
-          text={`${power ?? ''}/${toughness ?? ''}`}
-          x={preModernTextBoxOuter?.x ?? rulesRect.x - BEVEL_INSET}
-          y={preModernPtY}
-          width={preModernTextBoxOuter?.width ?? rulesRect.width + 2 * BEVEL_INSET}
-          fontFamily={ptStack}
-          fontStyle={ptFontStyle}
-          fontSize={preModernPtFontSize}
-          fill={preModernPtInk}
-          align="right"
-          listening={false}
-        />
-      )}
+      {showPreModernPowerToughness &&
+        (() => {
+          const boxX = preModernTextBoxOuter?.x ?? rulesRect.x - BEVEL_INSET
+          const boxW = preModernTextBoxOuter?.width ?? rulesRect.width + 2 * BEVEL_INSET
+          const lineH = Math.max(preModernPtFontSize, Math.round(preModernPtFontSize * 1.15))
+          const parts = layoutPtSlashCenteredText({
+            power: String(power ?? ''),
+            toughness: String(toughness ?? ''),
+            boxX,
+            boxY: preModernPtY,
+            boxW,
+            boxH: lineH,
+            fontFamily: ptStack,
+            fontStyle: ptFontStyle,
+            fontSize: preModernPtFontSize,
+            align: 'right',
+            padX: 0,
+            measure: measureTextWidth,
+          })
+          return (
+            <Group listening={false}>
+              {([parts.power, parts.slash, parts.toughness] as const).map((part, i) => (
+                <Text
+                  key={`pre-modern-pt-${i}`}
+                  text={part.text}
+                  x={part.x}
+                  y={part.y}
+                  width={part.width}
+                  height={part.height}
+                  fontFamily={ptStack}
+                  fontStyle={ptFontStyle}
+                  fontSize={preModernPtFontSize}
+                  fill={preModernPtInk}
+                  verticalAlign="middle"
+                  align="center"
+                  listening={false}
+                />
+              ))}
+            </Group>
+          )
+        })()}
       {supportsPreModernFooterLayout && preModernFooter ? (
         <>
           {preModernFooter.hasCollector && preModernFooter.collectorY != null ? (
