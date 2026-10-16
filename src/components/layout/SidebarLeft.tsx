@@ -66,12 +66,14 @@ import {
   shouldShowLandPanelArtSelector,
   shouldShowPlaneswalkerCoreInputs,
   shouldShowPowerToughnessControls,
+  shouldShowPreparedCoreInputs,
   shouldShowPtTypographySubsection,
   shouldShowRulesTextEditor,
   shouldShowSagaClassCoreInputs,
   shouldShowSecondaryNameFields,
 } from '../../authority/progressiveDisclosureAuthority'
 import PlaneswalkerCoreInputs from './PlaneswalkerCoreInputs'
+import PreparedCoreInputs from './PreparedCoreInputs'
 import SagaClassCoreInputs from './SagaClassCoreInputs'
 import { isClassLayout, isSagaCreatureLayout } from '../../authority/layoutTaxonomy'
 import { usePersistedUiState, useUiComplexityMode } from '../../hooks/usePersistedUiState'
@@ -303,6 +305,10 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
   const toughness = useCardStore((s) => s.cardData.toughness)
   const showPowerToughness = useCardStore((s) => s.cardData.showPowerToughness)
   const battleDefense = useCardStore((s) => s.cardData.battleDefense)
+  const preparedSpellName = useCardStore((s) => s.cardData.preparedSpellName)
+  const preparedSpellManaCost = useCardStore((s) => s.cardData.preparedSpellManaCost)
+  const preparedSpellType = useCardStore((s) => s.cardData.preparedSpellType)
+  const preparedSpellText = useCardStore((s) => s.cardData.preparedSpellText)
   const startingLoyalty = useCardStore((s) => s.cardData.startingLoyalty)
   const planeswalkerStaticText = useCardStore((s) => s.cardData.planeswalkerStaticText)
   const planeswalkerAbilityCount = useCardStore((s) => s.cardData.planeswalkerAbilityCount)
@@ -1141,10 +1147,23 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
                 </FieldRow>
               ) : null}
 
+              {shouldShowPreparedCoreInputs(pdInput) ? (
+                <PreparedCoreInputs
+                  preparedSpellName={preparedSpellName}
+                  preparedSpellManaCost={preparedSpellManaCost}
+                  preparedSpellType={preparedSpellType}
+                  preparedSpellText={preparedSpellText}
+                  setField={setField}
+                  commitState={commitState}
+                />
+              ) : null}
+
               {shouldShowRulesTextEditor(pdInput) ? (
                 <div className="space-y-2 py-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <label className={LABEL_CLASS}>Rules Text</label>
+                    <label className={LABEL_CLASS}>
+                      {shouldShowPreparedCoreInputs(pdInput) ? 'Prepared rules' : 'Rules Text'}
+                    </label>
                     <ManaSymbolAssistantIcon target="rulesText" />
                   </div>
                   <div className="min-w-0 space-y-2">

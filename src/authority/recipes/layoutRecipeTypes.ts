@@ -29,7 +29,7 @@ export type RecipeTypographyField = {
 
 export type LayoutRecipe = {
   id: string
-  family: 'standard' | 'land' | 'spell' | 'battle'
+  family: 'standard' | 'land' | 'spell' | 'battle' | 'prepared'
   variant: 'modern' | 'class' | 'saga' | 'saga-creature'
   space: 'trim-1500x2100'
   chrome: {

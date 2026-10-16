@@ -92,6 +92,12 @@ import {
 } from '../authority/sagaClassStageAuthority'
 import { normalizeBattleDefense } from '../authority/battleLayoutAuthority'
 import {
+  normalizePreparedSpellMana,
+  normalizePreparedSpellName,
+  normalizePreparedSpellText,
+  normalizePreparedSpellType,
+} from '../authority/preparedLayoutAuthority'
+import {
   normalizeSecondaryNameAlign,
   normalizeSecondaryNameFontSize,
 } from '../authority/secondaryNameAuthority'
@@ -351,6 +357,12 @@ export interface CardData {
 
   /** Battle / Siege — defense value in the shield (top-right of landscape face). */
   battleDefense: string
+
+  /** Prepared Creatures — nested mini-spell (right half of split rules). */
+  preparedSpellName: string
+  preparedSpellManaCost: string
+  preparedSpellType: string
+  preparedSpellText: string
 
   /** Saga / Class / Saga Creature — reminder strip text (structured; not cardText blob). */
   sagaReminderText: string
@@ -1158,6 +1170,10 @@ export const defaultCardData: CardData = {
   sagaChapterTypography: defaultSagaChapterTypography(),
   ...DEFAULT_PLANESWALKER_CARD_FIELDS,
   battleDefense: '',
+  preparedSpellName: '',
+  preparedSpellManaCost: '',
+  preparedSpellType: '',
+  preparedSpellText: '',
   sagaReminderText: '',
   sagaChapterCount: SAGA_CHAPTER_COUNT_DEFAULT,
   sagaStageTexts: defaultSagaStageTexts(SAGA_CHAPTER_COUNT_DEFAULT),
@@ -1359,6 +1375,18 @@ function normalizeSnapshot(s: Snapshot): Snapshot {
         ? anyS.showFlavorTextOnCard
         : defaultCardData.showFlavorTextOnCard,
     battleDefense: normalizeBattleDefense(anyS?.battleDefense ?? defaultCardData.battleDefense),
+    preparedSpellName: normalizePreparedSpellName(
+      anyS?.preparedSpellName ?? defaultCardData.preparedSpellName,
+    ),
+    preparedSpellManaCost: normalizePreparedSpellMana(
+      anyS?.preparedSpellManaCost ?? defaultCardData.preparedSpellManaCost,
+    ),
+    preparedSpellType: normalizePreparedSpellType(
+      anyS?.preparedSpellType ?? defaultCardData.preparedSpellType,
+    ),
+    preparedSpellText: normalizePreparedSpellText(
+      anyS?.preparedSpellText ?? defaultCardData.preparedSpellText,
+    ),
     sagaReminderText: normalizeSagaReminderText(
       anyS?.sagaReminderText,
       defaultCardData.sagaReminderText,
@@ -1794,6 +1822,18 @@ colorBlendDirection: 'vertical',
           }
           if (key === 'battleDefense') {
             next.battleDefense = normalizeBattleDefense(value)
+          }
+          if (key === 'preparedSpellName') {
+            next.preparedSpellName = String(value ?? '')
+          }
+          if (key === 'preparedSpellManaCost') {
+            next.preparedSpellManaCost = String(value ?? '')
+          }
+          if (key === 'preparedSpellType') {
+            next.preparedSpellType = String(value ?? '')
+          }
+          if (key === 'preparedSpellText') {
+            next.preparedSpellText = String(value ?? '')
           }
           if (key === 'sagaReminderText') {
             next.sagaReminderText = normalizeSagaReminderText(value)

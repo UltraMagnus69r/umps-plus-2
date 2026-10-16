@@ -68,6 +68,8 @@ export type LayoutCapabilityFlags = {
   supportsBattleChrome: boolean
   /** Battle — landscape stage (2250×1650) instead of portrait. */
   usesLandscapeStage: boolean
+  /** Prepared Creatures — split rules + nested mini-spell chrome. */
+  supportsPreparedChrome: boolean
 }
 
 export type BleedBehavior = 'trim-contained' | 'edge-to-bleed'
@@ -116,6 +118,7 @@ const DEFAULT_CAPABILITIES: LayoutCapabilityFlags = {
   supportsSagaClassChrome: false,
   supportsBattleChrome: false,
   usesLandscapeStage: false,
+  supportsPreparedChrome: false,
 }
 
 const DEFAULT_COMPLIANCE: ComplianceMetadata = {

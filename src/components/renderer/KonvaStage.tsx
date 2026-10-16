@@ -28,6 +28,7 @@ import LandSecondaryArtLayer from './layers/LandSecondaryArtLayer'
 import SpellTextBoxLayer from './layers/SpellTextBoxLayer'
 import PreModernRulesTextBoxLayer from './layers/PreModernRulesTextBoxLayer'
 import SagaClassChromeLayer from './layers/SagaClassChromeLayer'
+import PreparedChromeLayer from './layers/PreparedChromeLayer'
 import BattleChromeLayer from './layers/BattleChromeLayer'
 import TextIconsLayer from './layers/TextIconsLayer'
 import PlaneswalkerAbilitiesLayer from './layers/PlaneswalkerAbilitiesLayer'
@@ -298,6 +299,7 @@ function KonvaStage({
                 {layoutCaps.supportsLandSecondaryArtInRulesRegion ? <LandSecondaryArtLayer /> : null}
                 {layoutCaps.supportsSpellTextBoxPanel ? <SpellTextBoxLayer /> : null}
                 {showBundledRulesPanel ? <PreModernRulesTextBoxLayer /> : null}
+                {layoutCaps.supportsPreparedChrome ? <PreparedChromeLayer /> : null}
                 {layoutCaps.useLandFullArtManaCircle ? <LandFullArtManaCircleLayer /> : null}
                 <TextIconsLayer />
                 {layoutCaps.supportsPlaneswalkerAbilities ? <PlaneswalkerAbilitiesLayer /> : null}
