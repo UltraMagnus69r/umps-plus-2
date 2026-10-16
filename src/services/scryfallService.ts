@@ -74,6 +74,8 @@ type ScryfallRawCard = {
   border_color?: string | null
   full_art?: boolean
   frame_effects?: string[] | null
+  oracle_id?: string | null
+  promo?: boolean
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -137,14 +139,27 @@ function readPrimaryImageUris(
   return null
 }
 
-/** Full-card PNG for clone workflow (fallback: first face PNG). */
-function extractPngUrl(data: ScryfallRawCard): string | null {
+/** Full-card PNG for clone workflow (prefer import face, then card, then first face). */
+function extractPngUrl(data: ScryfallRawCard, preferredFace?: ScryfallCardFace | null): string | null {
+  const facePng = preferredFace?.image_uris?.png
+  if (typeof facePng === 'string' && facePng.length > 0) return facePng
   const direct = data.image_uris?.png
   if (typeof direct === 'string' && direct.length > 0) return direct
   const faces = data.card_faces
   if (Array.isArray(faces) && faces.length > 0) {
     const first = faces[0]?.image_uris?.png
     if (typeof first === 'string' && first.length > 0) return first
+  }
+  return null
+}
+
+function readFaceSmallImage(item: Record<string, unknown>): string | null {
+  const faces = item.card_faces
+  if (!Array.isArray(faces)) return null
+  for (const face of faces) {
+    if (!isRecord(face) || !isRecord(face.image_uris)) continue
+    const small = face.image_uris.small
+    if (typeof small === 'string' && small.length > 0) return small
   }
   return null
 }
@@ -275,7 +290,7 @@ function mapRawCardToFields(card: ScryfallRawCard): ScryfallCardFields {
       (face?.watermark != null ? toStr(face.watermark) : null) ??
       (card.watermark != null ? toStr(card.watermark) : null),
     art_crop_uri: resolveScryfallImportArtUri(imageUris, faceInferred.variant),
-    png_uri: extractPngUrl(card),
+    png_uri: extractPngUrl(card, face),
     color_identity: Array.isArray(card.color_identity)
       ? (card.color_identity.filter((x): x is string => typeof x === 'string') as string[])
       : null,
@@ -305,7 +320,7 @@ export function parseScryfallCardUrl(input: string): { set: string; collectorNum
   } catch {
     return null
   }
-  if (!/scryfall\.com$/i.test(url.hostname)) return null
+  if (!/(^|\.)scryfall\.com$/i.test(url.hostname)) return null
   const m = url.pathname.match(/^\/card\/([^/]+)\/([^/]+)/i)
   if (!m) return null
   return { set: String(m[1]).toLowerCase(), collectorNumber: String(m[2]) }
@@ -370,7 +385,9 @@ function mapSearchItemToPrintCandidate(item: unknown): ScryfallPrintCandidate | 
   const nameValue = toStr((item.name as string | null | undefined) ?? null)
   if (!set || !collector || !nameValue) return null
   const imageUris = isRecord(item.image_uris) ? item.image_uris : null
-  const smallImage = imageUris && typeof imageUris.small === 'string' ? imageUris.small : null
+  const cardSmall = imageUris && typeof imageUris.small === 'string' ? imageUris.small : null
+  // DFCs (Battle // Creature, etc.) only expose image_uris on faces.
+  const smallImage = cardSmall ?? readFaceSmallImage(item)
   return {
     id: item.id,
     name: nameValue,
@@ -384,6 +401,19 @@ function mapSearchItemToPrintCandidate(item: unknown): ScryfallPrintCandidate | 
   }
 }
 
+function mergePrintCandidates(
+  ...lists: Array<ScryfallPrintCandidate[] | null | undefined>
+): ScryfallPrintCandidate[] {
+  const byId = new Map<string, ScryfallPrintCandidate>()
+  for (const list of lists) {
+    if (!list) continue
+    for (const print of list) {
+      if (!byId.has(print.id)) byId.set(print.id, print)
+    }
+  }
+  return Array.from(byId.values())
+}
+
 function mapRawCardToPrintCandidate(card: ScryfallRawCard): ScryfallPrintCandidate | null {
   return mapSearchItemToPrintCandidate(card)
 }
@@ -393,7 +423,19 @@ async function searchScryfallPrintList(query: string): Promise<ScryfallPrintCand
   const res = await scryfallFetch(searchUrl)
   const raw = await parseJsonResponse(res)
   if (res.status === 404) return null
-  if (!res.ok) throw new Error(readScryfallError(raw, res.status))
+  // Soft-fail optional queries (bad face: syntax, ignored terms, etc.) so merges can continue.
+  if (!res.ok) {
+    const details = readScryfallError(raw, res.status).toLowerCase()
+    if (
+      details.includes('ignored') ||
+      details.includes('didn\'t match') ||
+      details.includes('did not match') ||
+      details.includes('syntax')
+    ) {
+      return null
+    }
+    throw new Error(readScryfallError(raw, res.status))
+  }
   if (!isRecord(raw) || !Array.isArray(raw.data)) throw new Error('Unexpected Scryfall search response')
   const out: ScryfallPrintCandidate[] = []
   for (const item of raw.data) {
@@ -407,9 +449,9 @@ async function searchScryfallPrintList(query: string): Promise<ScryfallPrintCand
  * Resolve every print of a card name for the import/clone picker.
  *
  * Strategy:
- * 1. Exact name (`!"Name"`) — normal catalog prints
- * 2. Exact name + `include:extras` — Heroes of the Realm / promo-only names (e.g. War of the Spark ph19)
- * 3. `/cards/named?fuzzy=` → retry exact (+extras) on the canonical name; else return that single print
+ * 1. Exact name (`!"Name"`) merged with `include:extras` (promos / pmom / etc.)
+ * 2. Face-name query (`face:"Name"`) for DFC fronts (e.g. Invasion of Ikoria)
+ * 3. `/cards/named?fuzzy=` → oracle_id / canonical exact (+extras) / single print
  */
 export async function searchScryfallPrintsByName(name: string): Promise<ScryfallPrintCandidate[]> {
   const q = String(name ?? '').trim()
@@ -417,24 +459,34 @@ export async function searchScryfallPrintsByName(name: string): Promise<Scryfall
 
   const exact = `!"${q}"`
   const primary = await searchScryfallPrintList(exact)
-  if (primary && primary.length > 0) return primary
-
   const withExtras = await searchScryfallPrintList(`${exact} include:extras`)
-  if (withExtras && withExtras.length > 0) return withExtras
+  // DFC front-face names (e.g. Invasion of Ikoria) — `face:` alone is ignored by Scryfall.
+  const faceOrExact = await searchScryfallPrintList(`${exact} or face:"${q}" include:extras`)
+  const merged = mergePrintCandidates(primary, withExtras, faceOrExact)
+  if (merged.length > 0) return merged
 
-  // Fuzzy named resolves typos / near-matches; then re-run exact print search on the oracle name.
+  // Fuzzy named resolves typos / near-matches / DFC face names.
   const namedUrl = `${SCRYFALL_NAMED_FUZZY}?fuzzy=${encodeURIComponent(q)}`
   const namedRes = await scryfallFetch(namedUrl)
   const namedRaw = await parseJsonResponse(namedRes)
   if (!namedRes.ok) throw new Error(readScryfallError(namedRaw, namedRes.status))
   const card = assertValidCardResponse(namedRaw)
+
+  const oracleId = typeof card.oracle_id === 'string' ? card.oracle_id.trim() : ''
+  if (oracleId) {
+    const byOracle = await searchScryfallPrintList(`oracleid:${oracleId} include:extras`)
+    if (byOracle && byOracle.length > 0) return byOracle
+  }
+
   const canonical = toStr(card.name)?.trim()
   if (canonical && canonical.toLowerCase() !== q.toLowerCase()) {
     const canonExact = `!"${canonical}"`
-    const canonPrimary = await searchScryfallPrintList(canonExact)
-    if (canonPrimary && canonPrimary.length > 0) return canonPrimary
-    const canonExtras = await searchScryfallPrintList(`${canonExact} include:extras`)
-    if (canonExtras && canonExtras.length > 0) return canonExtras
+    const canonMerged = mergePrintCandidates(
+      await searchScryfallPrintList(canonExact),
+      await searchScryfallPrintList(`${canonExact} include:extras`),
+      await searchScryfallPrintList(`${canonExact} or face:"${q}" include:extras`),
+    )
+    if (canonMerged.length > 0) return canonMerged
   }
   const single = mapRawCardToPrintCandidate(card)
   if (single) return [single]

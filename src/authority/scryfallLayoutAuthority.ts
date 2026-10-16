@@ -130,8 +130,14 @@ export function inferScryfallLayoutId(hints: ScryfallLayoutHints): LayoutId {
   const scryLayout = hints.layout
   const treatment = inferScryfallPrintTreatmentVariant(hints)
 
-  // Battle (Siege) — Scryfall layout may be `battle` or a DFC (`transform`) with Battle on a face.
-  if (scryLayout === 'battle' || scryfallTypeLineIsBattle(typeLine)) {
+  // Battle (Siege) — layout `battle`, or DFC (`transform` / modal) with Battle on a face.
+  // Front-face names like "Invasion of Ikoria" resolve via type_line "Battle — Siege // …".
+  if (
+    scryLayout === 'battle' ||
+    scryfallTypeLineIsBattle(typeLine) ||
+    ((scryLayout === 'transform' || scryLayout === 'modal_dfc' || scryLayout === 'double_faced_token') &&
+      scryfallTypeLineIsBattle(typeLine))
+  ) {
     return { family: 'battle', variant: 'modern' }
   }
 
