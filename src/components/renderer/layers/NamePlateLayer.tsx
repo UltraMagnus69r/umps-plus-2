@@ -6,6 +6,7 @@ import {
   getPreModernLayoutVerticalShiftPx,
   getStandardLayoutGeometry,
   M15_PAINTED_FRAME_ACTIVE,
+  STAGE_WIDTH,
 } from '../../../authority/geometryAuthority'
 import {
   getM15ProxyPanelShadowProps,
@@ -19,6 +20,7 @@ import {
   PW_MODERN_V2_PLATE_RADIUS_MULTIPLIER,
 } from '../../../authority/planeswalkerModernV2LayoutAuthority'
 import { resolveEffectiveNameplateShape } from '../../../authority/nameplateShapeAuthority'
+import { resolveArtAlignedPlateOuterRect } from '../../../authority/plateArtAlignmentAuthority'
 import {
   getActiveLayoutCapabilitiesFromState,
   getActiveLayoutRegionsFromState,
@@ -60,7 +62,7 @@ function lightenHex(hex: string, amount: number): string {
  */
 function NamePlateLayer() {
   const layout = getStandardLayoutGeometry()
-  const { nameX, nameY, nameW, nameH, artX, artW, barRadius } = layout
+  const { nameX, nameY, nameW, nameH, artInnerX, artInnerW, barRadius } = layout
 
   const {
     cardTypeLine,
@@ -177,23 +179,61 @@ function NamePlateLayer() {
     return buildModernDummyStageRects().art
   }, [supportsModernDummyLayout])
 
-  const artFrameX = modernV2ArtOuter?.x ?? (modernDummyArt ? modernDummyArt.x - BEVEL_INSET : artX)
-  const artFrameW =
-    modernV2ArtOuter?.width ?? (modernDummyArt ? modernDummyArt.width + 2 * BEVEL_INSET : artW)
-
-  const nameOuterX =
-    contractNamePlate?.x ?? (useLandFullArtManaCircle && landFullArtNameOuter ? landFullArtNameOuter.x : nameX)
-  const nameOuterY =
-    contractNamePlate?.y ?? (useLandFullArtManaCircle && landFullArtNameOuter ? landFullArtNameOuter.y : nameYEff)
-  const nameOuterW =
-    contractNamePlate?.w ?? (useLandFullArtManaCircle && landFullArtNameOuter ? landFullArtNameOuter.w : nameW)
-  const nameOuterH =
-    contractNamePlate?.h ?? (useLandFullArtManaCircle && landFullArtNameOuter ? landFullArtNameOuter.h : nameH)
-
   const plateBarRadius = supportsPlaneswalkerModernV2Layout
     ? Math.round(barRadius * PW_MODERN_V2_PLATE_RADIUS_MULTIPLIER)
     : barRadius
   const effectiveNameBarShape = resolveEffectiveNameplateShape(bezierPlateEnabled, nameBarShape)
+
+  /** Visible art aperture (not bevel outer) — flat plate runs align to these L/R edges. */
+  const artAperture = useMemo(() => {
+    if (useLandFullArtManaCircle) return null
+    if (supportsPlaneswalkerModernV2Layout && modernV2ArtOuter) {
+      return { x: modernV2ArtOuter.x, width: modernV2ArtOuter.width }
+    }
+    if (supportsModernDummyLayout && modernDummyArt) {
+      return { x: modernDummyArt.x, width: modernDummyArt.width }
+    }
+    const contractArt = layoutRegionToStageRect(contractRegions.art)
+    if (contractArt.width >= STAGE_WIDTH - 2) {
+      return { x: artInnerX, width: artInnerW }
+    }
+    return { x: contractArt.x, width: contractArt.width }
+  }, [
+    useLandFullArtManaCircle,
+    supportsPlaneswalkerModernV2Layout,
+    modernV2ArtOuter,
+    supportsModernDummyLayout,
+    modernDummyArt,
+    contractRegions.art,
+    artInnerX,
+    artInnerW,
+  ])
+
+  const baseNameOuterY =
+    contractNamePlate?.y ?? (useLandFullArtManaCircle && landFullArtNameOuter ? landFullArtNameOuter.y : nameYEff)
+  const baseNameOuterH =
+    contractNamePlate?.h ?? (useLandFullArtManaCircle && landFullArtNameOuter ? landFullArtNameOuter.h : nameH)
+  const baseNameOuterX =
+    contractNamePlate?.x ?? (useLandFullArtManaCircle && landFullArtNameOuter ? landFullArtNameOuter.x : nameX)
+  const baseNameOuterW =
+    contractNamePlate?.w ?? (useLandFullArtManaCircle && landFullArtNameOuter ? landFullArtNameOuter.w : nameW)
+
+  const artAlignedNamePlate = useMemo(() => {
+    if (!artAperture) return null
+    return resolveArtAlignedPlateOuterRect({
+      artX: artAperture.x,
+      artW: artAperture.width,
+      plateY: baseNameOuterY,
+      plateH: baseNameOuterH,
+      shape: effectiveNameBarShape,
+      barRadius: plateBarRadius,
+    })
+  }, [artAperture, baseNameOuterY, baseNameOuterH, effectiveNameBarShape, plateBarRadius])
+
+  const nameOuterX = artAlignedNamePlate?.x ?? baseNameOuterX
+  const nameOuterY = artAlignedNamePlate?.y ?? baseNameOuterY
+  const nameOuterW = artAlignedNamePlate?.width ?? baseNameOuterW
+  const nameOuterH = artAlignedNamePlate?.height ?? baseNameOuterH
 
   const resolvedIdentity = useMemo(
     () =>
@@ -245,32 +285,14 @@ function NamePlateLayer() {
 
   const nameReversePlateSpan = useMemo(
     () =>
-      effectiveNameBarShape === 'reverseBezierPlate'
+      effectiveNameBarShape === 'reverseBezierPlate' && artAperture
         ? {
             boxLeftStage: nameOuterX,
-            artColumnLeftStage: supportsPlaneswalkerModernV2Layout
-              ? (modernV2ArtOuter?.x ?? artX)
-              : supportsModernDummyLayout
-                ? artFrameX
-                : artX,
-            artColumnWidthStage: supportsPlaneswalkerModernV2Layout
-              ? (modernV2ArtOuter?.width ?? artW)
-              : supportsModernDummyLayout
-                ? artFrameW
-                : artW,
+            artColumnLeftStage: artAlignedNamePlate?.flatX ?? artAperture.x,
+            artColumnWidthStage: artAlignedNamePlate?.flatW ?? artAperture.width,
           }
         : undefined,
-    [
-      effectiveNameBarShape,
-      nameOuterX,
-      supportsPlaneswalkerModernV2Layout,
-      supportsModernDummyLayout,
-      modernV2ArtOuter,
-      artFrameX,
-      artFrameW,
-      artX,
-      artW,
-    ],
+    [effectiveNameBarShape, nameOuterX, artAperture, artAlignedNamePlate],
   )
 
   const useM15PanelStyle = proxyPanelsUseM15Style(M15_PAINTED_FRAME_ACTIVE)

@@ -1,7 +1,14 @@
 import { memo, useMemo } from 'react'
 import { Layer, Rect, Shape } from 'react-konva'
 import { shallow } from 'zustand/shallow'
-import { BEVEL_INSET, getPreModernLayoutVerticalShiftPx, getStandardLayoutGeometry, M15_PAINTED_FRAME_ACTIVE } from '../../../authority/geometryAuthority'
+import {
+  BEVEL_INSET,
+  getPreModernLayoutVerticalShiftPx,
+  getStandardLayoutGeometry,
+  M15_PAINTED_FRAME_ACTIVE,
+  STAGE_WIDTH,
+} from '../../../authority/geometryAuthority'
+import { resolveArtAlignedPlateOuterRect } from '../../../authority/plateArtAlignmentAuthority'
 import {
   getM15ProxyPanelShadowProps,
   proxyPanelsUseM15Style,
@@ -78,6 +85,8 @@ function FrameLayer() {
     artY,
     artW,
     artH,
+    artInnerX,
+    artInnerW,
     typeX,
     typeY,
     typeW,
@@ -233,22 +242,80 @@ function FrameLayer() {
       ? FRAME_BOX_OUTER_STROKE_PX * 2
       : FRAME_BOX_OUTER_STROKE_PX
 
-  const typeOuterX = contractTypePlate?.x ?? typeX
-  const typeOuterY = contractTypePlate?.y ?? typeYEff
-  const typeOuterW = contractTypePlate?.w ?? typeW
-  const typeOuterH = contractTypePlate?.h ?? typeH
+  const plateBarRadius = supportsPlaneswalkerModernV2Layout
+    ? Math.round(barRadius * PW_MODERN_V2_PLATE_RADIUS_MULTIPLIER)
+    : barRadius
+  const effectiveTypeBarShape = resolveEffectiveNameplateShape(bezierPlateEnabled, typeBarShape)
+  const rulesBoxCornerRadius = supportsPlaneswalkerModernV2Layout ? PW_MODERN_V2_RULES_BOX_CORNER_RADIUS_PX : 0
+
+  /** Visible art aperture for plate flat-span alignment (not bevel outer; not PKMN). */
+  const artAperture = useMemo(() => {
+    if (pkmnStatic || useLandFullArtManaCircle) return null
+    if (supportsPlaneswalkerModernV2Layout && modernV2ArtOuter) {
+      return { x: modernV2ArtOuter.x, width: modernV2ArtOuter.width }
+    }
+    if (supportsModernDummyLayout) {
+      const inner = isStandardModernBorderlessLayout(activeLayout)
+        ? buildModernDummyStageRects().art
+        : layoutRegionToStageRect(contractRegions.art)
+      return { x: inner.x, width: inner.width }
+    }
+    if (supportsPreModernFaceLayout) {
+      const inner = layoutRegionToStageRect(contractRegions.art)
+      return { x: inner.x, width: inner.width }
+    }
+    const contractArt = layoutRegionToStageRect(contractRegions.art)
+    if (contractArt.width >= STAGE_WIDTH - 2) {
+      return { x: artInnerX, width: artInnerW }
+    }
+    return { x: contractArt.x, width: contractArt.width }
+  }, [
+    pkmnStatic,
+    useLandFullArtManaCircle,
+    supportsPlaneswalkerModernV2Layout,
+    modernV2ArtOuter,
+    supportsModernDummyLayout,
+    supportsPreModernFaceLayout,
+    activeLayout,
+    contractRegions.art,
+    artInnerX,
+    artInnerW,
+  ])
+
+  const baseTypeOuterX = contractTypePlate?.x ?? typeX
+  const baseTypeOuterY = contractTypePlate?.y ?? typeYEff
+  const baseTypeOuterW = contractTypePlate?.w ?? typeW
+  const baseTypeOuterH = contractTypePlate?.h ?? typeH
+
+  const artAlignedTypePlate = useMemo(() => {
+    if (!artAperture || !supportsTypeLineBox) return null
+    return resolveArtAlignedPlateOuterRect({
+      artX: artAperture.x,
+      artW: artAperture.width,
+      plateY: baseTypeOuterY,
+      plateH: baseTypeOuterH,
+      shape: effectiveTypeBarShape,
+      barRadius: plateBarRadius,
+    })
+  }, [
+    artAperture,
+    supportsTypeLineBox,
+    baseTypeOuterY,
+    baseTypeOuterH,
+    effectiveTypeBarShape,
+    plateBarRadius,
+  ])
+
+  const typeOuterX = artAlignedTypePlate?.x ?? baseTypeOuterX
+  const typeOuterY = artAlignedTypePlate?.y ?? baseTypeOuterY
+  const typeOuterW = artAlignedTypePlate?.width ?? baseTypeOuterW
+  const typeOuterH = artAlignedTypePlate?.height ?? baseTypeOuterH
 
   const preModernTextBoxFrame = useMemo(() => {
     if (!supportsPreModernTextBoxFrame) return null
     if (supportsPlaneswalkerModernV2Layout) return getPlaneswalkerModernV2TextBoxOuterRect()
     return supportsModernDummyLayout ? getModernDummyTextBoxOuterRect() : getPreModernTextBoxOuterRect()
   }, [supportsPreModernTextBoxFrame, supportsModernDummyLayout, supportsPlaneswalkerModernV2Layout])
-
-  const plateBarRadius = supportsPlaneswalkerModernV2Layout
-    ? Math.round(barRadius * PW_MODERN_V2_PLATE_RADIUS_MULTIPLIER)
-    : barRadius
-  const effectiveTypeBarShape = resolveEffectiveNameplateShape(bezierPlateEnabled, typeBarShape)
-  const rulesBoxCornerRadius = supportsPlaneswalkerModernV2Layout ? PW_MODERN_V2_RULES_BOX_CORNER_RADIUS_PX : 0
 
   const modernV2RulesOuter = useMemo(() => {
     if (!supportsPlaneswalkerModernV2Layout) return null
@@ -313,22 +380,14 @@ function FrameLayer() {
 
   const typeReversePlateSpan = useMemo(
     () =>
-      effectiveTypeBarShape === 'reverseBezierPlate'
+      effectiveTypeBarShape === 'reverseBezierPlate' && artAperture
         ? {
             boxLeftStage: typeOuterX,
-            artColumnLeftStage: supportsPlaneswalkerModernV2Layout
-              ? (modernV2ArtOuter?.x ?? artX)
-              : supportsModernDummyLayout
-                ? artFrameX
-                : artX,
-            artColumnWidthStage: supportsPlaneswalkerModernV2Layout
-              ? (modernV2ArtOuter?.width ?? artW)
-              : supportsModernDummyLayout
-                ? artFrameW
-                : artW,
+            artColumnLeftStage: artAlignedTypePlate?.flatX ?? artAperture.x,
+            artColumnWidthStage: artAlignedTypePlate?.flatW ?? artAperture.width,
           }
         : undefined,
-    [effectiveTypeBarShape, typeOuterX, supportsPlaneswalkerModernV2Layout, supportsModernDummyLayout, modernV2ArtOuter, artFrameX, artFrameW, artX, artW],
+    [effectiveTypeBarShape, typeOuterX, artAperture, artAlignedTypePlate],
   )
 
   /**
