@@ -1,7 +1,8 @@
 /**
  * Saga / Class / Saga Creature split-frame chrome.
  *
- * Regular Saga/Class: tall art RIGHT, parchment + banner LEFT (fidelity refs).
+ * Saga: tall art RIGHT, parchment + banner LEFT.
+ * Class: opposite — tall art LEFT, parchment + banner RIGHT (CC Class orientation).
  * Saga Creature: full-width reminder under name, shorter split, creature rules + P/T below type.
  */
 import { BLEED_PX, TRIM_HEIGHT, TRIM_WIDTH } from './geometryAuthority'
@@ -20,31 +21,47 @@ function n(rect: { x: number; y: number; w: number; h: number }): StageRect {
   }
 }
 
-/**
- * Shared face geometry (Saga Regular / Class-as-ref).
- * Banner + parchment from sagaMaskBanner + sagaFrame hole; art from pack artBounds.
- */
-const FACE = {
-  art: { x: 0.5015, y: 0.1137, w: 0.4199, h: 0.7221 },
-  name: { x: 0.0854, y: 0.0522, w: 0.8292, h: 0.0543 },
-  type: { x: 0.0854, y: 0.8481, w: 0.8292, h: 0.0543 },
-  parchment: { x: 0.11, y: 0.1137, w: 0.388, h: 0.7221 },
-  banner: { x: 0.044, y: 0.1714, w: 0.068, h: 0.661 },
-  reminder: { x: 0.0867, y: 0.1129, w: 0.404, h: 0.1772 },
-  abilityCol: { x: 0.1334, y: 0.2896, w: 0.35, h: 0.535 },
-  badge: { x: 0.0386, w: 0.0787, h: 0.0629 },
-} as const
+type Face = {
+  art: { x: number; y: number; w: number; h: number }
+  parchment: { x: number; y: number; w: number; h: number }
+  banner: { x: number; y: number; w: number; h: number }
+  reminder: { x: number; y: number; w: number; h: number }
+  abilityCol: { x: number; y: number; w: number; h: number }
+  badge: { x: number; w: number; h: number }
+}
 
-/** Esper Terra–style Saga Creature face (measured from fidelity reference). */
-const FACE_CREATURE = {
+/**
+ * Saga Regular — text left / art right.
+ * Reminder band kept short so I–III get equal remaining height.
+ */
+const FACE_SAGA: Face = {
+  art: { x: 0.5015, y: 0.1137, w: 0.4199, h: 0.7221 },
+  parchment: { x: 0.11, y: 0.1137, w: 0.388, h: 0.7221 },
+  banner: { x: 0.044, y: 0.160, w: 0.068, h: 0.665 },
+  reminder: { x: 0.0867, y: 0.1137, w: 0.404, h: 0.078 },
+  abilityCol: { x: 0.1334, y: 0.200, w: 0.35, h: 0.625 },
+  badge: { x: 0.0386, w: 0.0787, h: 0.0629 },
+}
+
+/** Class — art left / text right (mirror of Saga). */
+const FACE_CLASS: Face = {
+  art: { x: 0.0786, y: 0.1137, w: 0.4199, h: 0.7221 },
+  parchment: { x: 0.502, y: 0.1137, w: 0.388, h: 0.7221 },
+  banner: { x: 0.888, y: 0.160, w: 0.068, h: 0.665 },
+  reminder: { x: 0.5093, y: 0.1137, w: 0.404, h: 0.078 },
+  abilityCol: { x: 0.5166, y: 0.200, w: 0.35, h: 0.625 },
+  badge: { x: 0.8827, w: 0.0787, h: 0.0629 },
+}
+
+/** Esper Terra–style Saga Creature face. */
+const FACE_CREATURE: Face = {
   art: { x: 0.5015, y: 0.198, w: 0.4218, h: 0.528 },
   parchment: { x: 0.0767, y: 0.198, w: 0.421, h: 0.528 },
   banner: { x: 0.044, y: 0.215, w: 0.068, h: 0.492 },
-  /** Full-width strip under the name bar. */
   reminder: { x: 0.0767, y: 0.1129, w: 0.8476, h: 0.078 },
   abilityCol: { x: 0.118, y: 0.215, w: 0.368, h: 0.498 },
   badge: { x: 0.0386, w: 0.0787, h: 0.052 },
-} as const
+}
 
 export const SAGA_DEFAULT_REMINDER =
   '(As this Saga enters and after your draw step, add a lore counter. Sacrifice after III.)'
@@ -59,8 +76,10 @@ export function layoutUsesSagaClassChrome(layout: Partial<LayoutId> | null | und
   return isSagaLayout(layout) || isClassLayout(layout) || isSagaCreatureLayout(layout)
 }
 
-function faceFor(layout: Partial<LayoutId> | null | undefined) {
-  return isSagaCreatureLayout(layout) ? FACE_CREATURE : FACE
+function faceFor(layout: Partial<LayoutId> | null | undefined): Face {
+  if (isSagaCreatureLayout(layout)) return FACE_CREATURE
+  if (isClassLayout(layout)) return FACE_CLASS
+  return FACE_SAGA
 }
 
 export function getSagaClassArtRect(layout?: Partial<LayoutId> | null): StageRect {
@@ -96,7 +115,7 @@ export function getSagaClassBadgeMetrics(layout?: Partial<LayoutId> | null): {
   }
 }
 
-/** Chapter/level bands inside the ability column (3 for saga/class, 4 for saga-creature). */
+/** Equal chapter/level bands inside the ability column (3 for saga/class, up to 4 for creature). */
 export function getSagaClassChapterBandRects(
   count = 3,
   layout?: Partial<LayoutId> | null,
@@ -134,16 +153,23 @@ export function romanNumeral(n: number): string {
 
 /**
  * Banner silhouette in local coords (0,0 = banner rect top-left).
- * Top: soft rising curve (left high under name plate → right lower into parchment).
- * Bottom: chevron tip (matches sagaMaskBanner / fidelity refs).
+ * Top: soft rising curve; bottom: chevron tip.
+ * Pass `mirrorX` for Class (banner on the right).
  */
 export function addSagaBannerPath(
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number,
-  opts?: { flatTop?: boolean },
+  opts?: { flatTop?: boolean; mirrorX?: boolean },
 ): void {
   const flatTop = opts?.flatTop === true
+  const mirrorX = opts?.mirrorX === true
+  if (mirrorX) {
+    ctx.save()
+    ctx.translate(w, 0)
+    ctx.scale(-1, 1)
+  }
+
   const topLeftY = 0
   const topRightY = flatTop ? 0 : h * 0.168
   const tipY = h
@@ -161,4 +187,6 @@ export function addSagaBannerPath(
   ctx.lineTo(tipX, tipY)
   ctx.lineTo(0, botLeftY)
   ctx.closePath()
+
+  if (mirrorX) ctx.restore()
 }

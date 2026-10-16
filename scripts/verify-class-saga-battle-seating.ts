@@ -32,19 +32,37 @@ console.log('Saga Regular (right art / left parchment + banner)')
   check('type at bottom', r.typeLine.y > 1700, `type.y=${r.typeLine.y}`)
   const ext = buildRecipeExtensionStageRects(SAGA_REGULAR_RECIPE)
   check('banner+chapters', Boolean(ext?.banner && ext?.chapterRow1 && ext?.reminder), JSON.stringify(Object.keys(ext ?? {})))
+  check('short reminder band', (ext?.reminder?.height ?? 999) < 200, `reminder.h=${ext?.reminder?.height}`)
+  const bandH1 = ext?.chapterRow1?.height ?? 0
+  const bandH2 = ext?.chapterRow2?.height ?? 0
+  const bandH3 = ext?.chapterRow3?.height ?? 0
+  check(
+    'three equal chapter bands',
+    Math.abs(bandH1 - bandH2) <= 2 && Math.abs(bandH2 - bandH3) <= 2,
+    `h=${bandH1},${bandH2},${bandH3}`,
+  )
   const c = getLayoutContract({ family: 'spell', variant: 'saga' })
   check('saga chrome flag', c.capabilities.supportsSagaClassChrome === true, String(c.capabilities.supportsSagaClassChrome))
   check('suppress rules text', c.capabilities.suppressRulesTextRendering === true, String(c.capabilities.suppressRulesTextRendering))
 }
 
-console.log('\nClass Regular (same split as Saga — art right, match ground-truth ref)')
+console.log('\nClass Regular (opposite of Saga — art left / text right)')
 {
   const r = buildRecipeCoreStageRects(CLASS_REGULAR_RECIPE)
-  check('art right column', r.art.x > 700, `art.x=${r.art.x}`)
-  check('rules left of art', r.rulesText.x + r.rulesText.width <= r.art.x + 20, `rulesR=${r.rulesText.x + r.rulesText.width} art.x=${r.art.x}`)
+  check('art left column', r.art.x < 400, `art.x=${r.art.x}`)
+  check('rules right of art', r.rulesText.x >= r.art.x + r.art.width - 20, `rules.x=${r.rulesText.x} artR=${r.art.x + r.art.width}`)
   check('type at bottom', r.typeLine.y > 1700, `type.y=${r.typeLine.y}`)
   const ext = buildRecipeExtensionStageRects(CLASS_REGULAR_RECIPE)
   check('banner+levels', Boolean(ext?.banner && ext?.levelBand1 && ext?.reminder), JSON.stringify(Object.keys(ext ?? {})))
+  check('short reminder band', (ext?.reminder?.height ?? 999) < 200, `reminder.h=${ext?.reminder?.height}`)
+  const bandH1 = ext?.levelBand1?.height ?? 0
+  const bandH2 = ext?.levelBand2?.height ?? 0
+  const bandH3 = ext?.levelBand3?.height ?? 0
+  check(
+    'three equal level bands',
+    Math.abs(bandH1 - bandH2) <= 2 && Math.abs(bandH2 - bandH3) <= 2,
+    `h=${bandH1},${bandH2},${bandH3}`,
+  )
   const c = getLayoutContract({ family: 'spell', variant: 'class' })
   check('class chrome flag', c.capabilities.supportsSagaClassChrome === true, String(c.capabilities.supportsSagaClassChrome))
 }

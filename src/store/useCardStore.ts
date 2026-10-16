@@ -76,6 +76,11 @@ import {
   type PlaneswalkerAbility,
 } from '../authority/planeswalkerAbilityAuthority'
 import {
+  defaultSagaStageTexts,
+  normalizeSagaReminderText,
+  normalizeSagaStageTexts,
+} from '../authority/sagaClassStageAuthority'
+import {
   normalizeLandFullArtManaCircleKey,
   type LandFullArtManaCircleKey,
 } from '../authority/landFullArtManaCircle'
@@ -320,6 +325,11 @@ export interface CardData {
   planeswalkerAbilities: PlaneswalkerAbility[]
   /** When false, flavor is editable but not rendered on card (planeswalker default OFF). */
   showFlavorTextOnCard: boolean
+
+  /** Saga / Class — reminder strip text (structured; not cardText blob). */
+  sagaReminderText: string
+  /** Saga / Class — stage I / II / III (or level) bodies seated in equal bands. */
+  sagaStageTexts: [string, string, string]
 }
 
 /** Keys for `updateCardTypography` — face text fields only (not metadata strip). */
@@ -1078,6 +1088,8 @@ export const defaultCardData: CardData = {
   ptTypography: defaultPtTypography(),
   metadataTypography: defaultMetadataTypography(),
   ...DEFAULT_PLANESWALKER_CARD_FIELDS,
+  sagaReminderText: '',
+  sagaStageTexts: defaultSagaStageTexts(),
 }
 
 export const defaultSettings: SettingsState = {
@@ -1269,6 +1281,11 @@ function normalizeSnapshot(s: Snapshot): Snapshot {
       typeof anyS?.showFlavorTextOnCard === 'boolean'
         ? anyS.showFlavorTextOnCard
         : defaultCardData.showFlavorTextOnCard,
+    sagaReminderText: normalizeSagaReminderText(
+      anyS?.sagaReminderText,
+      defaultCardData.sagaReminderText,
+    ),
+    sagaStageTexts: normalizeSagaStageTexts(anyS?.sagaStageTexts, defaultCardData.sagaStageTexts),
   } as Snapshot
 }
 
@@ -1690,6 +1707,12 @@ colorBlendDirection: 'vertical',
               }
             }
             next = applyPlaneswalkerStructuredSync(next)
+          }
+          if (key === 'sagaReminderText') {
+            next.sagaReminderText = normalizeSagaReminderText(value)
+          }
+          if (key === 'sagaStageTexts') {
+            next.sagaStageTexts = normalizeSagaStageTexts(value)
           }
 
           const dirtyKey = CARD_KEY_TO_DIRTY_KEY[key]

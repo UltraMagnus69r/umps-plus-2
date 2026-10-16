@@ -283,7 +283,7 @@ export function isSagaCreatureLayout(layout: Partial<LayoutId> | null | undefine
   return normalized.family === 'standard' && normalized.variant === 'saga-creature'
 }
 
-/** Spell / Class — right art, left level column (matches fidelity ground-truth ref). */
+/** Spell / Class — left art, right level column (CC Class orientation; opposite of Saga). */
 export function isClassLayout(layout: Partial<LayoutId> | null | undefined): boolean {
   const normalized = normalizeLayout(layout)
   return normalized.family === 'spell' && normalized.variant === 'class'
