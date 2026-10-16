@@ -3,7 +3,12 @@
  * Keeps layer logic in one place without duplicating in KonvaStage.
  */
 import { buildCanvasFont } from '../../../data/fontCatalog'
-import { getSymbolDataUrl } from '../../../authority/symbolAuthority'
+import {
+  getSymbolDataUrl,
+  MANA_COST_ICON_GAP,
+  MANA_COST_ICON_SIZE,
+  scaleManaPipDisplaySizePx,
+} from '../../../authority/symbolAuthority'
 import { splitPrefixedManaTokenInner, type ManaSymbolSetId } from '../../../authority/manaSymbolSetAuthority'
 import { normalizeManaTokenInner } from '../../../utils/manaCanonical'
 
@@ -102,6 +107,78 @@ export function measureTextWidth(
   return ctx.measureText(text).width
 }
 
+/**
+ * Lay out resolved rich chunks (text + mana icons) into positioned RichItems.
+ * Shared by rules text and Saga/Class chapter bands.
+ */
+export function layoutRichTextItems(opts: {
+  chunks: RichChunk[]
+  originX: number
+  originY: number
+  maxWidth: number
+  maxHeight: number
+  fontSize: number
+  lineHeightPx: number
+  iconSize: number
+  fontFamily: string
+  fontStyle: string
+  measure: (text: string, fontFamily: string, fontStyle: string, fontSize: number) => number
+  /** Applied to icon Y after vertical centering within the line (rules use SYMBOL_BASELINE_OFFSET). */
+  iconBaselineOffset?: number
+}): RichItem[] {
+  const items: RichItem[] = []
+  const maxW = Math.max(1, opts.maxWidth)
+  const maxH = Math.max(1, opts.maxHeight)
+  const lineH = Math.max(1, opts.lineHeightPx)
+  const maxX = opts.originX + maxW
+  const maxY = opts.originY + maxH
+  const baseline = opts.iconBaselineOffset ?? 0
+  let x = opts.originX
+  let y = opts.originY
+  const lineTopForText = () => y + Math.max(0, (lineH - opts.fontSize) / 2)
+  const lineTopForIcon = (displaySize: number) =>
+    y + Math.max(0, (lineH - displaySize) / 2) + baseline
+  const newLine = () => {
+    x = opts.originX
+    y += lineH
+  }
+  for (const c of opts.chunks) {
+    if (y + lineH > maxY) break
+    if (c.kind === 'text') {
+      const tokens = splitPreserveWhitespaceAndNewlines(c.value)
+      for (const t of tokens) {
+        if (y + lineH > maxY) break
+        if (t === '\n') {
+          newLine()
+          continue
+        }
+        const wTok = opts.measure(t, opts.fontFamily, opts.fontStyle, opts.fontSize)
+        const isSpace = /^\s+$/.test(t)
+        if (!isSpace && x + wTok > maxX) newLine()
+        if (y + lineH > maxY) break
+        if (isSpace && x === opts.originX) continue
+        items.push({ kind: 'text', text: t, x, y: lineTopForText(), width: wTok })
+        x += wTok
+      }
+    } else {
+      const iconSize = scaleManaPipDisplaySizePx(opts.iconSize, c.symbolSet)
+      if (x + iconSize > maxX) newLine()
+      if (y + lineH > maxY) break
+      items.push({
+        kind: 'icon',
+        key: c.key,
+        dataUrl: c.dataUrl,
+        rawToken: c.token,
+        x,
+        y: lineTopForIcon(iconSize),
+        size: iconSize,
+      })
+      x += iconSize
+    }
+  }
+  return items
+}
+
 /** Line count for plain text with Konva-style word wrap (`wrap="word"`). */
 export function measureWrappedTextLineCount(
   ctx: CanvasRenderingContext2D | null,
@@ -191,7 +268,7 @@ export {
   MANA_COST_ICON_SIZE,
   MANA_COST_ICON_GAP,
   scaleManaPipDisplaySizePx,
-} from '../../../authority/symbolAuthority'
+}
 export const NAME_MIN_FONT = 40
 export const TYPE_MIN_FONT = 35
 export {

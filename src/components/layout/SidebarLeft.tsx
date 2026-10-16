@@ -81,6 +81,7 @@ import {
   resetStudioFlowToStart,
   type StudioFlowStepId,
 } from '../../authority/studioFlowAuthority'
+import type { ManaTextTarget } from '../../utils/manaTextTarget'
 
 const FontMenu = lazy(() => import('../ui/FontMenu'))
 const ScryfallImportSection = lazy(() => import('./ScryfallImportSection'))
@@ -104,7 +105,7 @@ type LeftSectionKey =
   | 'collector'
   | 'font-styling'
   | 'art'
-function ManaSymbolAssistantIcon({ target }: { target: 'manaCost' | 'rulesText' }) {
+function ManaSymbolAssistantIcon({ target }: { target: ManaTextTarget }) {
   const manaPopupOpen = useCardStore((s) => s.manaPopupOpen)
   const manaPopupHost = useCardStore((s) => s.manaPopupHost)
   const openManaPopup = useCardStore((s) => s.openManaPopup)
@@ -463,7 +464,14 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
 
   useEffect(() => {
     setRegisterManaInputFocus((target, caret) => {
-      const el = target === 'manaCost' ? manaCostRef.current : rulesTextRef.current
+      const el =
+        target === 'manaCost'
+          ? manaCostRef.current
+          : target === 'rulesText'
+            ? rulesTextRef.current
+            : (document.querySelector(
+                `[data-mana-input="${target}"]`,
+              ) as HTMLTextAreaElement | null)
       if (!el) return
       requestAnimationFrame(() => {
         const ae = document.activeElement
@@ -793,6 +801,7 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
                           setActiveInputId(null)
                           commitState()
                         }}
+                        data-mana-input="manaCost"
                         className={INPUT_CLASS}
                         placeholder="e.g., {R} or tap + Mana"
                         aria-label="Mana cost text"
@@ -1115,6 +1124,7 @@ export default function SidebarLeft({ inspectorSegment, flowStepId = null }: Sid
                         setActiveInputId(null)
                         commitState()
                       }}
+                      data-mana-input="rulesText"
                       className={`${TEXTAREA_CLASS} h-28`}
                       placeholder="Card rules text..."
                     />

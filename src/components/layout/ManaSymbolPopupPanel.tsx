@@ -21,6 +21,11 @@ import {
 import { getSymbolDataUrl, scaleManaPipDisplaySizePx } from '../../authority/symbolAuthority'
 import { useCardStore } from '../../store/useCardStore'
 import { normalizeStoreManaCost } from '../../utils/manaCanonical'
+import {
+  isSagaStageManaTarget,
+  sagaStageIndexFromTarget,
+  type ManaTextTarget,
+} from '../../utils/manaTextTarget'
 import { UI_TEXT_SECTION_HEADER } from '../../authority/typographyAuthority'
 import {
   collectManaKeepClearRects,
@@ -28,6 +33,10 @@ import {
   findManaAnchorRect,
   type ManaPopoverPlacement,
 } from '../../utils/manaPopoverPlacement'
+import {
+  normalizeSagaChapterCount,
+  normalizeSagaStageTexts,
+} from '../../authority/sagaClassStageAuthority'
 
 const PIP_PREVIEW_PX = 32
 
@@ -76,9 +85,29 @@ export default function ManaSymbolPopupPanel() {
   const commitState = useCardStore((s) => s.commitState)
   const manaCost = useCardStore((s) => s.cardData.manaCost)
   const cardText = useCardStore((s) => s.cardData.cardText)
+  const sagaStageTexts = useCardStore((s) => s.cardData.sagaStageTexts)
+  const sagaChapterCount = useCardStore((s) => s.cardData.sagaChapterCount)
   const activeInputId = useCardStore((s) => s.activeInputId)
   const activeSelectionStart = useCardStore((s) => s.activeSelectionStart)
   const activeSelectionEnd = useCardStore((s) => s.activeSelectionEnd)
+
+  const stageTextForTarget = useCallback(
+    (target: ManaTextTarget) => {
+      if (!isSagaStageManaTarget(target)) return ''
+      const stages = normalizeSagaStageTexts(sagaStageTexts, normalizeSagaChapterCount(sagaChapterCount))
+      return stages[sagaStageIndexFromTarget(target)] ?? ''
+    },
+    [sagaStageTexts, sagaChapterCount],
+  )
+
+  const textForTarget = useCallback(
+    (target: ManaTextTarget) => {
+      if (target === 'manaCost') return manaCost ?? ''
+      if (isSagaStageManaTarget(target)) return stageTextForTarget(target)
+      return cardText ?? ''
+    },
+    [manaCost, cardText, stageTextForTarget],
+  )
 
   const panelRef = useRef<HTMLDivElement | null>(null)
   const [placement, setPlacement] = useState<ManaPopoverPlacement | null>(null)
@@ -148,7 +177,7 @@ export default function ManaSymbolPopupPanel() {
 
   const handleInsert = useCallback(
     (token: string) => {
-      const current = manaPopupTarget === 'manaCost' ? (manaCost ?? '') : (cardText ?? '')
+      const current = textForTarget(manaPopupTarget)
       const len = current.length
       setActiveInputId(manaPopupTarget)
       const useStoredCaret =
@@ -161,7 +190,7 @@ export default function ManaSymbolPopupPanel() {
       const end = useStoredCaret
         ? Math.max(0, Math.min(len, Math.floor(activeSelectionEnd)))
         : len
-      // Mana cost: always append (chip-row mental model). Rules: respect caret when known.
+      // Mana cost: always append (chip-row mental model). Rules/stages: respect caret when known.
       if (manaPopupTarget === 'manaCost') {
         setActiveSelectionRange(len, len)
       } else {
@@ -173,8 +202,7 @@ export default function ManaSymbolPopupPanel() {
     },
     [
       manaPopupTarget,
-      manaCost,
-      cardText,
+      textForTarget,
       activeInputId,
       activeSelectionStart,
       activeSelectionEnd,
@@ -213,15 +241,18 @@ export default function ManaSymbolPopupPanel() {
   }, [manaCost, setField, commitState])
 
   const handleTargetChange = useCallback(
-    (next: 'manaCost' | 'rulesText') => {
+    (next: ManaTextTarget) => {
       setManaPopupTarget(next)
       setActiveInputId(next)
-      const current = next === 'manaCost' ? (manaCost ?? '') : (cardText ?? '')
-      const len = current.length
+      const len = textForTarget(next).length
       setActiveSelectionRange(len, len)
     },
-    [setManaPopupTarget, setActiveInputId, setActiveSelectionRange, manaCost, cardText],
+    [setManaPopupTarget, setActiveInputId, setActiveSelectionRange, textForTarget],
   )
+
+  const stageHost = isSagaStageManaTarget(manaPopupHost)
+  const secondaryTarget: ManaTextTarget = stageHost ? manaPopupHost : 'rulesText'
+  const secondaryLabel = stageHost ? 'Stage' : 'Rules'
 
   if (!manaPopupOpen || !placement) return null
 
@@ -324,16 +355,16 @@ export default function ManaSymbolPopupPanel() {
             </button>
             <button
               type="button"
-              onClick={() => handleTargetChange('rulesText')}
+              onClick={() => handleTargetChange(secondaryTarget)}
               className={[
                 'mana-picker-segment__btn ui-focus-ring',
-                manaPopupTarget === 'rulesText' ? 'is-active' : '',
+                manaPopupTarget === secondaryTarget ? 'is-active' : '',
               ]
                 .filter(Boolean)
                 .join(' ')}
-              aria-pressed={manaPopupTarget === 'rulesText'}
+              aria-pressed={manaPopupTarget === secondaryTarget}
             >
-              Rules
+              {secondaryLabel}
             </button>
           </div>
 
