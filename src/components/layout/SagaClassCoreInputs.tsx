@@ -8,7 +8,10 @@ import {
 } from '../../authority/sagaClassStageAuthority'
 import { romanNumeral } from '../../authority/sagaClassLayoutAuthority'
 import type { CardData } from '../../store/useCardStore'
+import { useCardStore } from '../../store/useCardStore'
+import { manaTargetForSagaStage, type ManaTextTarget } from '../../utils/manaTextTarget'
 import FieldRow from '../ui/FieldRow'
+import { Plus, Sparkles } from 'lucide-react'
 
 const INPUT_CLASS =
   'w-full h-10 rounded-xl border border-neutral-200 bg-white px-3 ui-text-control outline-none ui-focus-ring-control dark:border-[var(--sb-border)] dark:bg-[var(--sb-surface-soft)]'
@@ -25,6 +28,36 @@ type Props = {
   commitState: () => void
 }
 
+function StageManaAssistantIcon({ target }: { target: ManaTextTarget }) {
+  const manaPopupOpen = useCardStore((s) => s.manaPopupOpen)
+  const manaPopupHost = useCardStore((s) => s.manaPopupHost)
+  const openManaPopup = useCardStore((s) => s.openManaPopup)
+  const closeManaPopup = useCardStore((s) => s.closeManaPopup)
+  const activeHere = manaPopupOpen && manaPopupHost === target
+  return (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        className={['studio-mana-cta ui-focus-ring', activeHere ? 'is-active' : '']
+          .filter(Boolean)
+          .join(' ')}
+        aria-label={activeHere ? 'Close mana picker' : 'Open mana picker'}
+        aria-pressed={activeHere}
+        title="Pick mana symbols"
+        data-mana-picker-entry={target}
+        onClick={() => {
+          if (activeHere) closeManaPopup()
+          else openManaPopup(target)
+        }}
+      >
+        <Plus size={14} aria-hidden />
+        <Sparkles size={14} aria-hidden />
+        <span>{activeHere ? 'Close' : '+ Mana'}</span>
+      </button>
+    </div>
+  )
+}
+
 function SagaClassCoreInputs({
   mode,
   sagaReminderText,
@@ -33,6 +66,8 @@ function SagaClassCoreInputs({
   setField,
   commitState,
 }: Props) {
+  const setActiveInputId = useCardStore((s) => s.setActiveInputId)
+  const setActiveSelectionRange = useCardStore((s) => s.setActiveSelectionRange)
   const count = normalizeSagaChapterCount(sagaChapterCount)
   const stages = normalizeSagaStageTexts(sagaStageTexts, count)
   const stageLabel = mode === 'class' ? 'Level' : 'Chapter'
@@ -50,6 +85,19 @@ function SagaClassCoreInputs({
     },
     [stages, count, setField],
   )
+
+  const pushSelection = (el: HTMLTextAreaElement) => {
+    const a = el.selectionStart
+    const b = el.selectionEnd
+    if (a != null && b != null) setActiveSelectionRange(a, b)
+  }
+
+  const queueSelection = (el: HTMLTextAreaElement) => {
+    requestAnimationFrame(() => {
+      if (document.activeElement !== el) return
+      pushSelection(el)
+    })
+  }
 
   return (
     <div className="space-y-3">
@@ -87,25 +135,43 @@ function SagaClassCoreInputs({
       </FieldRow>
 
       <div className="space-y-3 border-l-2 border-neutral-200 pl-3 dark:border-[color-mix(in_srgb,var(--sb-border)_70%,transparent)]">
-        {stages.map((stageText, index) => (
-          <div
-            key={`saga-stage-${index}`}
-            className="space-y-2 rounded-xl bg-neutral-50/80 p-3 dark:bg-neutral-900/30"
-          >
-            <div className={`${LABEL_CLASS} font-medium`}>
-              {stageLabel} {romanNumeral(index + 1)}
+        {stages.map((stageText, index) => {
+          const target = manaTargetForSagaStage(index)
+          return (
+            <div
+              key={`saga-stage-${index}`}
+              className="space-y-2 rounded-xl bg-neutral-50/80 p-3 dark:bg-neutral-900/30"
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <div className={`${LABEL_CLASS} font-medium`}>
+                  {stageLabel} {romanNumeral(index + 1)}
+                </div>
+                <StageManaAssistantIcon target={target} />
+              </div>
+              <textarea
+                value={stageText}
+                onChange={(e) => patchStage(index, e.target.value)}
+                onFocus={(e) => {
+                  setActiveInputId(target)
+                  queueSelection(e.currentTarget)
+                }}
+                onMouseUp={(e) => pushSelection(e.currentTarget)}
+                onClick={(e) => pushSelection(e.currentTarget)}
+                onKeyUp={(e) => pushSelection(e.currentTarget)}
+                onSelect={(e) => pushSelection(e.currentTarget)}
+                onBlur={() => {
+                  setActiveInputId(null)
+                  commitState()
+                }}
+                data-mana-input={target}
+                className={TEXTAREA_CLASS}
+                placeholder={`${stageLabel} ${romanNumeral(index + 1)} ability… e.g. Create a {W} token.`}
+                rows={3}
+                aria-label={`${stageLabel} ${romanNumeral(index + 1)} text`}
+              />
             </div>
-            <textarea
-              value={stageText}
-              onChange={(e) => patchStage(index, e.target.value)}
-              onBlur={commitState}
-              className={TEXTAREA_CLASS}
-              placeholder={`${stageLabel} ${romanNumeral(index + 1)} ability…`}
-              rows={3}
-              aria-label={`${stageLabel} ${romanNumeral(index + 1)} text`}
-            />
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

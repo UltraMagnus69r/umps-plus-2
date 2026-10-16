@@ -257,7 +257,7 @@ export function collectManaKeepClearRects(): DOMRect[] {
     .filter(isUsableRect)
 }
 
-export function findManaAnchorRect(host: 'manaCost' | 'rulesText'): DOMRect | null {
+export function findManaAnchorRect(host: string): DOMRect | null {
   if (typeof document === 'undefined') return null
   const nodes = Array.from(
     document.querySelectorAll<HTMLElement>(`[data-mana-picker-entry="${host}"]`),

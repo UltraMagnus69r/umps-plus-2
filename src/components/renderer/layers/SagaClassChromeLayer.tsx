@@ -2,9 +2,10 @@
  * Procedural Saga / Class / Saga Creature chrome:
  * parchment column, vertical chapter/level banner, roman badges, dividers.
  * Saga/Class stage copy comes from CardData.sagaReminderText + sagaStageTexts.
+ * Stage bodies support inline mana braces ({W}, Classic/Legacy) like rules text.
  */
-import { memo, useMemo } from 'react'
-import { Layer, Shape, Text } from 'react-konva'
+import { Fragment, memo, useCallback, useMemo, useRef, useState } from 'react'
+import { Image, Layer, Shape, Text } from 'react-konva'
 import { shallow } from 'zustand/shallow'
 import {
   getActiveLayoutCapabilitiesFromState,
@@ -32,7 +33,14 @@ import {
   isSagaLayout,
   type LayoutId,
 } from '../../../authority/layoutTaxonomy'
+import { SYMBOL_BASELINE_OFFSET } from '../../../authority/symbolAuthority'
 import { resolveProceduralIdentity, useCardStore } from '../../../store/useCardStore'
+import {
+  layoutRichTextItems,
+  measureTextWidth as measureTextWidthFn,
+  resolveChunks,
+  type RichItem,
+} from './textIconsShared'
 
 function darkenHex(hex: string, amount: number): string {
   const n = hex.replace(/^#/, '')
@@ -51,6 +59,10 @@ function lightenHex(hex: string, amount: number): string {
   const b = Math.max(0, Math.min(255, Math.round(parseInt(n.slice(4, 6), 16) + (255 - parseInt(n.slice(4, 6), 16)) * amount)))
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
 }
+
+const STAGE_FONT_FAMILY = "Georgia, 'Times New Roman', serif"
+const STAGE_FONT_STYLE = 'normal'
+const STAGE_INK = '#1c1612'
 
 function SagaClassChromeLayer() {
   const {
@@ -170,6 +182,58 @@ function SagaClassChromeLayer() {
   )
   const badgeCount = chapterCount
   const reminderFontSize = creatureLayout ? 26 : 36
+  const stageFontSize = creatureLayout ? 26 : 30
+  const stageLineHeight = Math.round(stageFontSize * 1.2)
+
+  const measureCtxRef = useRef<CanvasRenderingContext2D | null>(null)
+  const measureTextWidth = useCallback(
+    (text: string, fontFamily: string, fontStyle: string, fontSize: number) => {
+      if (!measureCtxRef.current) {
+        const c = document.createElement('canvas')
+        measureCtxRef.current = c.getContext('2d')
+      }
+      return measureTextWidthFn(measureCtxRef.current, text, fontFamily, fontStyle, fontSize)
+    },
+    [],
+  )
+
+  const manaImageCache = useRef<Map<string, HTMLImageElement>>(new Map())
+  const [, setManaImageTick] = useState(0)
+  const getManaImage = useCallback((key: string, dataUrl: string) => {
+    const cacheKey = `${key}::${dataUrl}`
+    const existing = manaImageCache.current.get(cacheKey)
+    if (existing) return existing
+    const img = new window.Image()
+    img.onload = () => setManaImageTick((t) => t + 1)
+    img.onerror = () => setManaImageTick((t) => t + 1)
+    img.src = dataUrl
+    manaImageCache.current.set(cacheKey, img)
+    return img
+  }, [])
+
+  const stageRenders = useMemo((): RichItem[][] => {
+    return bands.map((band, i) => {
+      const body = stages[i] ?? ''
+      if (!body) return []
+      const padX = 6
+      const padY = 10
+      const chunks = resolveChunks(body)
+      return layoutRichTextItems({
+        chunks,
+        originX: band.x + padX,
+        originY: band.y + padY,
+        maxWidth: band.width - padX * 2,
+        maxHeight: band.height - padY - 8,
+        fontSize: stageFontSize,
+        lineHeightPx: stageLineHeight,
+        iconSize: stageFontSize,
+        fontFamily: STAGE_FONT_FAMILY,
+        fontStyle: STAGE_FONT_STYLE,
+        measure: measureTextWidth,
+        iconBaselineOffset: SYMBOL_BASELINE_OFFSET,
+      })
+    })
+  }, [bands, stages, stageFontSize, stageLineHeight, measureTextWidth])
 
   if (!enabled || (!sagaLayout && !classLayout && !creatureLayout)) return null
 
@@ -334,26 +398,56 @@ function SagaClassChromeLayer() {
         verticalAlign="middle"
       />
 
-      {bands.map((band, i) => {
-        const body = stages[i] ?? ''
-        if (!body) return null
-        return (
-          <Text
-            key={`ch-${i}`}
-            listening={false}
-            x={band.x + 6}
-            y={band.y + 10}
-            width={band.width - 12}
-            height={band.height - 18}
-            text={body}
-            fontFamily="Georgia, 'Times New Roman', serif"
-            fontSize={creatureLayout ? 26 : 30}
-            fill="#1c1612"
-            wrap="word"
-            verticalAlign="top"
-          />
-        )
-      })}
+      {stageRenders.map((items, bandIdx) =>
+        items.map((it, idx) =>
+          it.kind === 'icon'
+            ? (() => {
+                const img = getManaImage(it.key, it.dataUrl)
+                const useFallback = !img || (img.complete && img.naturalWidth === 0)
+                return useFallback ? (
+                  <Text
+                    key={`ch-${bandIdx}-fb-${idx}-${it.key}`}
+                    listening={false}
+                    text={it.rawToken}
+                    x={it.x}
+                    y={it.y}
+                    width={it.size}
+                    height={it.size}
+                    fontFamily={STAGE_FONT_FAMILY}
+                    fontStyle={STAGE_FONT_STYLE}
+                    fontSize={stageFontSize}
+                    fill={STAGE_INK}
+                  />
+                ) : (
+                  <Fragment key={`ch-${bandIdx}-icon-${idx}-${it.key}`}>
+                    <Image
+                      image={img}
+                      x={it.x}
+                      y={it.y}
+                      width={it.size}
+                      height={it.size}
+                      listening={false}
+                    />
+                  </Fragment>
+                )
+              })()
+            : (
+              <Text
+                key={`ch-${bandIdx}-tx-${idx}`}
+                listening={false}
+                text={it.text}
+                x={it.x}
+                y={it.y}
+                width={it.width}
+                height={stageLineHeight}
+                fontFamily={STAGE_FONT_FAMILY}
+                fontStyle={STAGE_FONT_STYLE}
+                fontSize={stageFontSize}
+                fill={STAGE_INK}
+              />
+            ),
+        ),
+      )}
     </Layer>
   )
 }

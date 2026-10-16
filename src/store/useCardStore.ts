@@ -15,6 +15,12 @@ import {
   normalizeStoreManaCost,
   normalizeStoreRulesText,
 } from '../utils/manaCanonical'
+import {
+  isSagaStageManaTarget,
+  sagaStageIndexFromTarget,
+  type ManaTextTarget,
+} from '../utils/manaTextTarget'
+export type { ManaTextTarget } from '../utils/manaTextTarget'
 import { slugifyCardName } from '../utils/textUtils'
 import { loadSharedImage } from '../utils/sharedImageLoadCache'
 import { DEFAULT_CARD_COPYRIGHT, normalizeCardCopyright } from '../authority/collectorDataAuthority'
@@ -871,17 +877,17 @@ setManualUseTwoColors: (enabled: boolean) => void
 
 
   // Phase 3.5 – Mana Symbol Picker UI (UI-only)
-  activeInputId: 'manaCost' | 'rulesText' | null
+  activeInputId: ManaTextTarget | null
   activeSelectionStart: number
   activeSelectionEnd: number
   manaPopupOpen: boolean
-  /** Where symbols insert (Cost vs Rules). */
-  manaPopupTarget: 'manaCost' | 'rulesText'
+  /** Where symbols insert (Cost / Rules / Saga–Class stage). */
+  manaPopupTarget: ManaTextTarget
   /** Sidebar anchor for the inline sheet (stays put when insert target toggles). */
-  manaPopupHost: 'manaCost' | 'rulesText'
+  manaPopupHost: ManaTextTarget
   /** @deprecated Inline sheet — position unused; kept for session snapshot compat. */
   manaPopupPosition: { top: number; left: number }
-  registerManaInputFocus: ((target: 'manaCost' | 'rulesText', caret: number) => void) | null
+  registerManaInputFocus: ((target: ManaTextTarget, caret: number) => void) | null
 
 
   // Phase 3.1 – Dynamic Font Loader
@@ -912,15 +918,15 @@ setManualUseTwoColors: (enabled: boolean) => void
 
 
   // Phase 3.5 – Mana Symbol Picker UI (UI-only)
-  setActiveInputId: (id: 'manaCost' | 'rulesText' | null) => void
+  setActiveInputId: (id: ManaTextTarget | null) => void
   setActiveSelectionRange: (start: number, end: number) => void
   insertManaSymbol: (symbolKey: string) => number
-  openManaPopup: (host?: 'manaCost' | 'rulesText') => void
+  openManaPopup: (host?: ManaTextTarget) => void
   closeManaPopup: () => void
-  setManaPopupTarget: (target: 'manaCost' | 'rulesText') => void
-  setManaPopupHost: (host: 'manaCost' | 'rulesText') => void
+  setManaPopupTarget: (target: ManaTextTarget) => void
+  setManaPopupHost: (host: ManaTextTarget) => void
   setManaPopupPosition: (top: number, left: number) => void
-  setRegisterManaInputFocus: (fn: ((target: 'manaCost' | 'rulesText', caret: number) => void) | null) => void
+  setRegisterManaInputFocus: (fn: ((target: ManaTextTarget, caret: number) => void) | null) => void
 
   setFontsLoaded: (loaded: boolean) => void
   /** Transient hover-preview for Outer Border selection (not persisted, not in undo). null = use committed value. */
@@ -2523,7 +2529,7 @@ setManualUseTwoColors: (enabled) =>
         let caret = 0
 
         set((state) => {
-          const target: 'manaCost' | 'rulesText' = state.activeInputId ?? 'rulesText'
+          const target: ManaTextTarget = state.activeInputId ?? 'rulesText'
 
           const rawKey = String(symbolKey ?? '')
           const upperToken = rawKey.match(/^\d+$/)
@@ -2536,8 +2542,15 @@ setManualUseTwoColors: (enabled) =>
           const tokenInner = upperToken ? formatManaTokenInnerForSet(symbolSet, upperToken) : ''
           const token = tokenInner ? `{${tokenInner}}` : ''
 
+          const chapterCount = normalizeSagaChapterCount(state.cardData.sagaChapterCount)
+          const stages = normalizeSagaStageTexts(state.cardData.sagaStageTexts, chapterCount)
+          const stageIdx = isSagaStageManaTarget(target) ? sagaStageIndexFromTarget(target) : -1
           const current =
-            target === 'manaCost' ? (state.cardData.manaCost ?? '') : (state.cardData.cardText ?? '')
+            target === 'manaCost'
+              ? (state.cardData.manaCost ?? '')
+              : isSagaStageManaTarget(target)
+                ? (stages[stageIdx] ?? '')
+                : (state.cardData.cardText ?? '')
 
           const start = Number.isFinite(state.activeSelectionStart)
             ? Math.max(0, Math.min(current.length, Math.floor(state.activeSelectionStart)))
@@ -2554,16 +2567,27 @@ setManualUseTwoColors: (enabled) =>
           caret = token ? a + token.length : a
 
           const nextCardData: any = { ...state.cardData }
-          if (target === 'manaCost') nextCardData.manaCost = normalizeStoreManaCost(next)
-          else nextCardData.cardText = normalizeStoreRulesText(next)
+          if (target === 'manaCost') {
+            nextCardData.manaCost = normalizeStoreManaCost(next)
+          } else if (isSagaStageManaTarget(target)) {
+            const nextStages = [...stages]
+            while (nextStages.length < chapterCount) nextStages.push('')
+            nextStages[stageIdx] = normalizeStoreRulesText(next)
+            nextCardData.sagaStageTexts = normalizeSagaStageTexts(nextStages, chapterCount)
+          } else {
+            nextCardData.cardText = normalizeStoreRulesText(next)
+          }
 
-          const canonBefore = target === 'manaCost' ? normalizeStoreManaCost(current) : normalizeStoreRulesText(current)
-          const canonAfter =
-            target === 'manaCost' ? normalizeStoreManaCost(nextCardData.manaCost) : normalizeStoreRulesText(nextCardData.cardText)
-          const textChanged = canonBefore !== canonAfter
-          const dirtyKey: FieldDirtyKey = target === 'manaCost' ? 'manaCost' : 'cardText'
-          const isFieldDirty =
-            textChanged ? { ...state.isFieldDirty, [dirtyKey]: true } : state.isFieldDirty
+          let isFieldDirty = state.isFieldDirty
+          if (target === 'manaCost') {
+            const textChanged =
+              normalizeStoreManaCost(current) !== normalizeStoreManaCost(nextCardData.manaCost)
+            if (textChanged) isFieldDirty = { ...state.isFieldDirty, manaCost: true }
+          } else if (!isSagaStageManaTarget(target)) {
+            const textChanged =
+              normalizeStoreRulesText(current) !== normalizeStoreRulesText(nextCardData.cardText)
+            if (textChanged) isFieldDirty = { ...state.isFieldDirty, cardText: true }
+          }
 
           const out: {
             cardData: typeof nextCardData
