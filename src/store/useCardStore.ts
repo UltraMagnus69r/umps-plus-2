@@ -86,6 +86,7 @@ import {
   normalizeSagaChapterCount,
   normalizeSagaReminderText,
   normalizeSagaStageTexts,
+  parseSagaClassOracleText,
   reminderAfterChapterCountChange,
   SAGA_CHAPTER_COUNT_DEFAULT,
 } from '../authority/sagaClassStageAuthority'
@@ -468,12 +469,22 @@ function scryfallTypeLineSupportsPT(typeLine: string | null): boolean {
 }
 
 /** Map Scryfall service payload into applySystemUpdate input (only defined fields). */
+function scryfallImportUsesStructuredSagaClass(data: ScryfallCardFields): boolean {
+  const layout = normalizeLayout(data.inferred_layout)
+  return isSagaLayout(layout) || isClassLayout(layout) || isSagaCreatureLayout(layout)
+}
+
 function scryfallFieldsToSystemUpdate(data: ScryfallCardFields): SystemCardDataUpdate {
   const out: SystemCardDataUpdate = {}
   if (data.name != null) out.name = data.name
   if (data.mana_cost != null) out.manaCost = data.mana_cost
   if (data.type_line != null) out.typeLine = data.type_line
-  if (!scryfallTypeLineIsPlaneswalker(data.type_line) && data.oracle_text != null) {
+  // Saga/Class oracle is parsed into reminder + stages (not a rules blob).
+  if (
+    !scryfallTypeLineIsPlaneswalker(data.type_line) &&
+    data.oracle_text != null &&
+    !scryfallImportUsesStructuredSagaClass(data)
+  ) {
     out.cardText = data.oracle_text
   }
   if (data.flavor_text != null) out.flavorText = data.flavor_text
@@ -622,6 +633,29 @@ function buildScryfallImportMappedUpdate(
     out.showPowerToughness = true
   }
   return out
+}
+
+function buildScryfallSagaClassExtras(data: ScryfallCardFields): Partial<CardData> | null {
+  const layout = normalizeLayout(data.inferred_layout)
+  const mode = isClassLayout(layout)
+    ? 'class'
+    : isSagaCreatureLayout(layout)
+      ? 'saga-creature'
+      : isSagaLayout(layout)
+        ? 'saga'
+        : null
+  if (!mode) return null
+  const parsed = parseSagaClassOracleText(data.oracle_text, mode)
+  const chapterCount = normalizeSagaChapterCount(parsed.chapterCount)
+  const stages = normalizeSagaStageTexts(parsed.stages, chapterCount)
+  const reminder = normalizeSagaReminderText(parsed.reminder)
+  return {
+    sagaReminderText: reminder,
+    sagaChapterCount: chapterCount,
+    sagaStageTexts: stages,
+    // Saga/Class: clear rules blob. Saga Creature: keyword/ability lines under the split.
+    cardText: mode === 'saga-creature' ? parsed.creatureText : '',
+  }
 }
 
 function buildScryfallPlaneswalkerExtras(data: ScryfallCardFields): Partial<CardData> | null {
@@ -1863,6 +1897,7 @@ colorBlendDirection: 'vertical',
           const data = prefetched ?? (await fetchScryfallCardById(id))
           const mapped = buildScryfallImportMappedUpdate(data, scryfallFieldsToSystemUpdate(data))
           const pwExtras = buildScryfallPlaneswalkerExtras(data)
+          const sagaClassExtras = buildScryfallSagaClassExtras(data)
 
           if (mapped.artImage) {
             await loadSharedImage(String(mapped.artImage))
@@ -1890,6 +1925,24 @@ colorBlendDirection: 'vertical',
 
             if (pwExtras) {
               cardData = applyPlaneswalkerStructuredSync({ ...cardData, ...pwExtras })
+            }
+            if (sagaClassExtras) {
+              cardData = {
+                ...cardData,
+                ...sagaClassExtras,
+                sagaChapterCount: normalizeSagaChapterCount(sagaClassExtras.sagaChapterCount),
+                sagaStageTexts: normalizeSagaStageTexts(
+                  sagaClassExtras.sagaStageTexts,
+                  sagaClassExtras.sagaChapterCount,
+                ),
+                sagaReminderText: normalizeSagaReminderText(sagaClassExtras.sagaReminderText),
+              }
+              if (!dirty.cardText && sagaClassExtras.cardText !== undefined) {
+                cardData = {
+                  ...cardData,
+                  cardText: normalizeStoreRulesText(String(sagaClassExtras.cardText ?? '')),
+                }
+              }
             }
 
             if (!dirty.manaCost) {
@@ -1991,6 +2044,7 @@ colorBlendDirection: 'vertical',
             isFieldDirty: nextFieldDirtyAfterScryfallMappedClear(state.isFieldDirty, mapped),
           }))
           get().applySystemUpdate(mapped)
+          const sagaClassExtras = buildScryfallSagaClassExtras(data)
           set((state) => {
             const d = state.cardData
             const patch: Partial<CardData> = {}
@@ -1998,7 +2052,17 @@ colorBlendDirection: 'vertical',
               const m = normalizeStoreManaCost(d.manaCost)
               if (m !== d.manaCost) patch.manaCost = m
             }
-            if (!state.isFieldDirty.cardText) {
+            if (sagaClassExtras) {
+              patch.sagaReminderText = normalizeSagaReminderText(sagaClassExtras.sagaReminderText)
+              patch.sagaChapterCount = normalizeSagaChapterCount(sagaClassExtras.sagaChapterCount)
+              patch.sagaStageTexts = normalizeSagaStageTexts(
+                sagaClassExtras.sagaStageTexts,
+                sagaClassExtras.sagaChapterCount,
+              )
+              if (!state.isFieldDirty.cardText) {
+                patch.cardText = normalizeStoreRulesText(String(sagaClassExtras.cardText ?? ''))
+              }
+            } else if (!state.isFieldDirty.cardText) {
               const t = normalizeStoreRulesText(d.cardText)
               if (t !== d.cardText) patch.cardText = t
             }

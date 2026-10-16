@@ -38,8 +38,9 @@ const FACE_SAGA: Face = {
   art: { x: 0.5015, y: 0.1137, w: 0.4199, h: 0.7221 },
   parchment: { x: 0.11, y: 0.1137, w: 0.388, h: 0.7221 },
   banner: { x: 0.044, y: 0.160, w: 0.068, h: 0.665 },
-  reminder: { x: 0.0867, y: 0.1137, w: 0.404, h: 0.078 },
-  abilityCol: { x: 0.1334, y: 0.200, w: 0.35, h: 0.625 },
+  /** Reminder + ability column stay inside parchment (no bleed into banner/art). */
+  reminder: { x: 0.118, y: 0.118, w: 0.372, h: 0.074 },
+  abilityCol: { x: 0.118, y: 0.200, w: 0.372, h: 0.620 },
   badge: { x: 0.0386, w: 0.0787, h: 0.0629 },
 }
 
@@ -48,8 +49,8 @@ const FACE_CLASS: Face = {
   art: { x: 0.0786, y: 0.1137, w: 0.4199, h: 0.7221 },
   parchment: { x: 0.502, y: 0.1137, w: 0.388, h: 0.7221 },
   banner: { x: 0.888, y: 0.160, w: 0.068, h: 0.665 },
-  reminder: { x: 0.5093, y: 0.1137, w: 0.404, h: 0.078 },
-  abilityCol: { x: 0.5166, y: 0.200, w: 0.35, h: 0.625 },
+  reminder: { x: 0.510, y: 0.118, w: 0.372, h: 0.074 },
+  abilityCol: { x: 0.510, y: 0.200, w: 0.372, h: 0.620 },
   badge: { x: 0.8827, w: 0.0787, h: 0.0629 },
 }
 
@@ -58,8 +59,10 @@ const FACE_CREATURE: Face = {
   art: { x: 0.5015, y: 0.198, w: 0.4218, h: 0.528 },
   parchment: { x: 0.0767, y: 0.198, w: 0.421, h: 0.528 },
   banner: { x: 0.044, y: 0.215, w: 0.068, h: 0.492 },
+  /** Full-width reminder strip (own parchment band above the split). */
   reminder: { x: 0.0767, y: 0.1129, w: 0.8476, h: 0.078 },
-  abilityCol: { x: 0.118, y: 0.215, w: 0.368, h: 0.498 },
+  /** Keep stage ink clear of banner badges; stay inside parchment right edge. */
+  abilityCol: { x: 0.122, y: 0.215, w: 0.360, h: 0.498 },
   badge: { x: 0.0386, w: 0.0787, h: 0.052 },
 }
 

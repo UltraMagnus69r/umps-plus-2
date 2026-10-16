@@ -107,11 +107,17 @@ export function measureTextWidth(
   return ctx.measureText(text).width
 }
 
+export type LayoutRichTextResult = {
+  items: RichItem[]
+  /** False when content was truncated by maxHeight / maxWidth. */
+  complete: boolean
+}
+
 /**
  * Lay out resolved rich chunks (text + mana icons) into positioned RichItems.
  * Shared by rules text and Saga/Class chapter bands.
  */
-export function layoutRichTextItems(opts: {
+export function layoutRichTextItemsDetailed(opts: {
   chunks: RichChunk[]
   originX: number
   originY: number
@@ -125,7 +131,7 @@ export function layoutRichTextItems(opts: {
   measure: (text: string, fontFamily: string, fontStyle: string, fontSize: number) => number
   /** Applied to icon Y after vertical centering within the line (rules use SYMBOL_BASELINE_OFFSET). */
   iconBaselineOffset?: number
-}): RichItem[] {
+}): LayoutRichTextResult {
   const items: RichItem[] = []
   const maxW = Math.max(1, opts.maxWidth)
   const maxH = Math.max(1, opts.maxHeight)
@@ -135,6 +141,7 @@ export function layoutRichTextItems(opts: {
   const baseline = opts.iconBaselineOffset ?? 0
   let x = opts.originX
   let y = opts.originY
+  let complete = true
   const lineTopForText = () => y + Math.max(0, (lineH - opts.fontSize) / 2)
   const lineTopForIcon = (displaySize: number) =>
     y + Math.max(0, (lineH - displaySize) / 2) + baseline
@@ -142,12 +149,18 @@ export function layoutRichTextItems(opts: {
     x = opts.originX
     y += lineH
   }
-  for (const c of opts.chunks) {
-    if (y + lineH > maxY) break
+  outer: for (const c of opts.chunks) {
+    if (y + lineH > maxY) {
+      complete = false
+      break
+    }
     if (c.kind === 'text') {
       const tokens = splitPreserveWhitespaceAndNewlines(c.value)
       for (const t of tokens) {
-        if (y + lineH > maxY) break
+        if (y + lineH > maxY) {
+          complete = false
+          break outer
+        }
         if (t === '\n') {
           newLine()
           continue
@@ -155,7 +168,10 @@ export function layoutRichTextItems(opts: {
         const wTok = opts.measure(t, opts.fontFamily, opts.fontStyle, opts.fontSize)
         const isSpace = /^\s+$/.test(t)
         if (!isSpace && x + wTok > maxX) newLine()
-        if (y + lineH > maxY) break
+        if (y + lineH > maxY) {
+          complete = false
+          break outer
+        }
         if (isSpace && x === opts.originX) continue
         items.push({ kind: 'text', text: t, x, y: lineTopForText(), width: wTok })
         x += wTok
@@ -163,7 +179,10 @@ export function layoutRichTextItems(opts: {
     } else {
       const iconSize = scaleManaPipDisplaySizePx(opts.iconSize, c.symbolSet)
       if (x + iconSize > maxX) newLine()
-      if (y + lineH > maxY) break
+      if (y + lineH > maxY) {
+        complete = false
+        break
+      }
       items.push({
         kind: 'icon',
         key: c.key,
@@ -176,7 +195,77 @@ export function layoutRichTextItems(opts: {
       x += iconSize
     }
   }
-  return items
+  return { items, complete }
+}
+
+export function layoutRichTextItems(opts: {
+  chunks: RichChunk[]
+  originX: number
+  originY: number
+  maxWidth: number
+  maxHeight: number
+  fontSize: number
+  lineHeightPx: number
+  iconSize: number
+  fontFamily: string
+  fontStyle: string
+  measure: (text: string, fontFamily: string, fontStyle: string, fontSize: number) => number
+  iconBaselineOffset?: number
+}): RichItem[] {
+  return layoutRichTextItemsDetailed(opts).items
+}
+
+/** Shrink font until rich text fits the band (Saga/Class chapter bodies). */
+export function fitRichTextItemsInBand(opts: {
+  chunks: RichChunk[]
+  originX: number
+  originY: number
+  maxWidth: number
+  maxHeight: number
+  maxFontSize: number
+  minFontSize: number
+  fontFamily: string
+  fontStyle: string
+  measure: (text: string, fontFamily: string, fontStyle: string, fontSize: number) => number
+  iconBaselineOffset?: number
+  lineHeightRatio?: number
+}): { items: RichItem[]; fontSize: number; lineHeightPx: number } {
+  const minS = Math.max(8, opts.minFontSize)
+  const maxS = Math.max(minS, opts.maxFontSize)
+  const ratio = opts.lineHeightRatio ?? 1.2
+  const floorToHalfPx = (v: number) => Math.floor(v * 2) / 2
+  let best = layoutRichTextItemsDetailed({
+    ...opts,
+    fontSize: maxS,
+    lineHeightPx: Math.round(maxS * ratio),
+    iconSize: maxS,
+  })
+  let bestSize = maxS
+  if (best.complete || !opts.chunks.length) {
+    return {
+      items: best.items,
+      fontSize: floorToHalfPx(maxS),
+      lineHeightPx: Math.round(maxS * ratio),
+    }
+  }
+  for (let size = maxS - 0.5; size >= minS; size -= 0.5) {
+    const fontSize = floorToHalfPx(size)
+    const lineHeightPx = Math.max(1, Math.round(fontSize * ratio))
+    const laid = layoutRichTextItemsDetailed({
+      ...opts,
+      fontSize,
+      lineHeightPx,
+      iconSize: fontSize,
+    })
+    best = laid
+    bestSize = fontSize
+    if (laid.complete) break
+  }
+  return {
+    items: best.items,
+    fontSize: bestSize,
+    lineHeightPx: Math.max(1, Math.round(bestSize * ratio)),
+  }
 }
 
 /** Line count for plain text with Konva-style word wrap (`wrap="word"`). */

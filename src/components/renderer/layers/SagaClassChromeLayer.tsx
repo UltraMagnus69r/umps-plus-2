@@ -5,7 +5,7 @@
  * Stage bodies support inline mana braces ({W}, Classic/Legacy) like rules text.
  */
 import { Fragment, memo, useCallback, useMemo, useRef, useState } from 'react'
-import { Image, Layer, Shape, Text } from 'react-konva'
+import { Group, Image, Layer, Shape, Text } from 'react-konva'
 import { shallow } from 'zustand/shallow'
 import {
   getActiveLayoutCapabilitiesFromState,
@@ -36,8 +36,9 @@ import {
 import { SYMBOL_BASELINE_OFFSET } from '../../../authority/symbolAuthority'
 import { resolveProceduralIdentity, useCardStore } from '../../../store/useCardStore'
 import {
-  layoutRichTextItems,
+  fitRichTextItemsInBand,
   measureTextWidth as measureTextWidthFn,
+  measureWrappedTextHeight,
   resolveChunks,
   type RichItem,
 } from './textIconsShared'
@@ -181,20 +182,24 @@ function SagaClassChromeLayer() {
     [chapterCount, activeLayout],
   )
   const badgeCount = chapterCount
-  const reminderFontSize = creatureLayout ? 26 : 36
-  const stageFontSize = creatureLayout ? 26 : 30
-  const stageLineHeight = Math.round(stageFontSize * 1.2)
+  const reminderFontMax = creatureLayout ? 26 : 36
+  const stageFontMax = creatureLayout ? 26 : 30
+  const stageFontMin = creatureLayout ? 14 : 16
+  const reminderFontMin = creatureLayout ? 14 : 16
 
   const measureCtxRef = useRef<CanvasRenderingContext2D | null>(null)
+  const ensureMeasureCtx = useCallback(() => {
+    if (!measureCtxRef.current) {
+      const c = document.createElement('canvas')
+      measureCtxRef.current = c.getContext('2d')
+    }
+    return measureCtxRef.current
+  }, [])
   const measureTextWidth = useCallback(
     (text: string, fontFamily: string, fontStyle: string, fontSize: number) => {
-      if (!measureCtxRef.current) {
-        const c = document.createElement('canvas')
-        measureCtxRef.current = c.getContext('2d')
-      }
-      return measureTextWidthFn(measureCtxRef.current, text, fontFamily, fontStyle, fontSize)
+      return measureTextWidthFn(ensureMeasureCtx(), text, fontFamily, fontStyle, fontSize)
     },
-    [],
+    [ensureMeasureCtx],
   )
 
   const manaImageCache = useRef<Map<string, HTMLImageElement>>(new Map())
@@ -211,29 +216,64 @@ function SagaClassChromeLayer() {
     return img
   }, [])
 
-  const stageRenders = useMemo((): RichItem[][] => {
+  /** Reminder box for saga/class is already inside parchment; creature uses its own strip. */
+  const reminderBox = reminderRect
+  const reminderPadX = 10
+  const reminderPadY = creatureLayout ? 10 : 6
+  const reminderInnerH = Math.max(8, reminderBox.height - (creatureLayout ? 16 : 12))
+  const reminderInnerW = Math.max(8, reminderBox.width - reminderPadX * 2)
+
+  const reminderFontSize = useMemo(() => {
+    const ctx = ensureMeasureCtx()
+    let size = reminderFontMax
+    const floorToHalfPx = (v: number) => Math.floor(v * 2) / 2
+    while (size > reminderFontMin) {
+      const lineH = Math.round(size * 1.15)
+      const h = measureWrappedTextHeight(
+        ctx,
+        reminderText,
+        reminderInnerW,
+        STAGE_FONT_FAMILY,
+        'italic',
+        size,
+        lineH,
+      )
+      if (h <= reminderInnerH) break
+      size -= 0.5
+    }
+    return floorToHalfPx(Math.max(reminderFontMin, size))
+  }, [
+    ensureMeasureCtx,
+    reminderText,
+    reminderInnerW,
+    reminderInnerH,
+    reminderFontMax,
+    reminderFontMin,
+  ])
+
+  type StageBandRender = { items: RichItem[]; fontSize: number; lineHeightPx: number }
+  const stageRenders = useMemo((): StageBandRender[] => {
     return bands.map((band, i) => {
       const body = stages[i] ?? ''
-      if (!body) return []
-      const padX = 6
-      const padY = 10
+      if (!body) return { items: [], fontSize: stageFontMax, lineHeightPx: Math.round(stageFontMax * 1.2) }
+      const padX = 8
+      const padY = 8
       const chunks = resolveChunks(body)
-      return layoutRichTextItems({
+      return fitRichTextItemsInBand({
         chunks,
         originX: band.x + padX,
         originY: band.y + padY,
-        maxWidth: band.width - padX * 2,
-        maxHeight: band.height - padY - 8,
-        fontSize: stageFontSize,
-        lineHeightPx: stageLineHeight,
-        iconSize: stageFontSize,
+        maxWidth: Math.max(8, band.width - padX * 2),
+        maxHeight: Math.max(8, band.height - padY * 2),
+        maxFontSize: stageFontMax,
+        minFontSize: stageFontMin,
         fontFamily: STAGE_FONT_FAMILY,
         fontStyle: STAGE_FONT_STYLE,
         measure: measureTextWidth,
         iconBaselineOffset: SYMBOL_BASELINE_OFFSET,
       })
     })
-  }, [bands, stages, stageFontSize, stageLineHeight, measureTextWidth])
+  }, [bands, stages, stageFontMax, stageFontMin, measureTextWidth])
 
   if (!enabled || (!sagaLayout && !classLayout && !creatureLayout)) return null
 
@@ -383,71 +423,89 @@ function SagaClassChromeLayer() {
         )
       })}
 
-      <Text
+      {/* Reminder: clip to its tan band (creature) or parchment (saga/class). */}
+      <Group
         listening={false}
-        x={reminderRect.x + 10}
-        y={reminderRect.y + (creatureLayout ? 10 : 6)}
-        width={reminderRect.width - 20}
-        height={reminderRect.height - (creatureLayout ? 16 : 12)}
-        text={reminderText}
-        fontFamily="Georgia, 'Times New Roman', serif"
-        fontStyle="italic"
-        fontSize={reminderFontSize}
-        fill="#2a2218"
-        wrap="word"
-        verticalAlign="middle"
-      />
+        clipX={creatureLayout ? reminderBox.x : parchment.x}
+        clipY={creatureLayout ? reminderBox.y : parchment.y}
+        clipWidth={creatureLayout ? reminderBox.width : parchment.width}
+        clipHeight={creatureLayout ? reminderBox.height : parchment.height}
+      >
+        <Text
+          listening={false}
+          x={reminderBox.x + reminderPadX}
+          y={reminderBox.y + reminderPadY}
+          width={reminderInnerW}
+          height={reminderInnerH}
+          text={reminderText}
+          fontFamily="Georgia, 'Times New Roman', serif"
+          fontStyle="italic"
+          fontSize={reminderFontSize}
+          fill="#2a2218"
+          wrap="word"
+          verticalAlign="middle"
+        />
+      </Group>
 
-      {stageRenders.map((items, bandIdx) =>
-        items.map((it, idx) =>
-          it.kind === 'icon'
-            ? (() => {
-                const img = getManaImage(it.key, it.dataUrl)
-                const useFallback = !img || (img.complete && img.naturalWidth === 0)
-                return useFallback ? (
-                  <Text
-                    key={`ch-${bandIdx}-fb-${idx}-${it.key}`}
-                    listening={false}
-                    text={it.rawToken}
-                    x={it.x}
-                    y={it.y}
-                    width={it.size}
-                    height={it.size}
-                    fontFamily={STAGE_FONT_FAMILY}
-                    fontStyle={STAGE_FONT_STYLE}
-                    fontSize={stageFontSize}
-                    fill={STAGE_INK}
-                  />
-                ) : (
-                  <Fragment key={`ch-${bandIdx}-icon-${idx}-${it.key}`}>
-                    <Image
-                      image={img}
+      {/* Chapter/level bodies: always clip to parchment so ink never enters banner/art. */}
+      <Group
+        listening={false}
+        clipX={parchment.x}
+        clipY={parchment.y}
+        clipWidth={parchment.width}
+        clipHeight={parchment.height}
+      >
+        {stageRenders.map((bandRender, bandIdx) =>
+          bandRender.items.map((it, idx) =>
+            it.kind === 'icon'
+              ? (() => {
+                  const img = getManaImage(it.key, it.dataUrl)
+                  const useFallback = !img || (img.complete && img.naturalWidth === 0)
+                  return useFallback ? (
+                    <Text
+                      key={`ch-${bandIdx}-fb-${idx}-${it.key}`}
+                      listening={false}
+                      text={it.rawToken}
                       x={it.x}
                       y={it.y}
                       width={it.size}
                       height={it.size}
-                      listening={false}
+                      fontFamily={STAGE_FONT_FAMILY}
+                      fontStyle={STAGE_FONT_STYLE}
+                      fontSize={bandRender.fontSize}
+                      fill={STAGE_INK}
                     />
-                  </Fragment>
-                )
-              })()
-            : (
-              <Text
-                key={`ch-${bandIdx}-tx-${idx}`}
-                listening={false}
-                text={it.text}
-                x={it.x}
-                y={it.y}
-                width={it.width}
-                height={stageLineHeight}
-                fontFamily={STAGE_FONT_FAMILY}
-                fontStyle={STAGE_FONT_STYLE}
-                fontSize={stageFontSize}
-                fill={STAGE_INK}
-              />
-            ),
-        ),
-      )}
+                  ) : (
+                    <Fragment key={`ch-${bandIdx}-icon-${idx}-${it.key}`}>
+                      <Image
+                        image={img}
+                        x={it.x}
+                        y={it.y}
+                        width={it.size}
+                        height={it.size}
+                        listening={false}
+                      />
+                    </Fragment>
+                  )
+                })()
+              : (
+                <Text
+                  key={`ch-${bandIdx}-tx-${idx}`}
+                  listening={false}
+                  text={it.text}
+                  x={it.x}
+                  y={it.y}
+                  width={it.width}
+                  height={bandRender.lineHeightPx}
+                  fontFamily={STAGE_FONT_FAMILY}
+                  fontStyle={STAGE_FONT_STYLE}
+                  fontSize={bandRender.fontSize}
+                  fill={STAGE_INK}
+                />
+              ),
+          ),
+        )}
+      </Group>
     </Layer>
   )
 }
