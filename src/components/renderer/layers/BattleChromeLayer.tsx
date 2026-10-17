@@ -1,10 +1,11 @@
 /**
  * Battle / Siege landscape stack chrome —
- * top nameplate (name + mana), art aperture, type line, upright tan rules,
- * defense shield, left-edge collector strip, hologram stamp.
+ * top nameplate (name + Classic/Legacy mana pips), art aperture, type line,
+ * upright tan rules (inline mana), defense shield, left-edge collector, hologram.
+ * Name / type / rules typography follow the same studio FontMenu controls as other layouts.
  */
-import { memo, useMemo } from 'react'
-import { Ellipse, Group, Layer, Shape, Text } from 'react-konva'
+import { Fragment, memo, useCallback, useMemo, useRef, useState } from 'react'
+import { Ellipse, Group, Image, Layer, Shape, Text } from 'react-konva'
 import { shallow } from 'zustand/shallow'
 import {
   BATTLE_SIEGE_DEFAULT_REMINDER,
@@ -27,6 +28,7 @@ import {
 import { addBattleArtInnerClipPathForRect, addBattleRoundRectPath } from './battleArtPath'
 import { getActiveLayoutCapabilitiesFromState } from '../../../authority/layoutRegistry'
 import type { LayoutId } from '../../../authority/layoutTaxonomy'
+import { SYMBOL_BASELINE_OFFSET } from '../../../authority/symbolAuthority'
 import {
   resolveTypographyFontFace,
   resolveTypographyInkColor,
@@ -35,10 +37,21 @@ import {
 } from '../../../authority/typographyAuthority'
 import { useEffectiveTypographyFontKey } from '../../../hooks/useEffectiveTypographyFontKey'
 import { resolveProceduralIdentity, useCardStore } from '../../../store/useCardStore'
+import { normalizeMana } from '../../../utils/manaNormalization'
+import {
+  layoutRichTextItems,
+  MANA_COST_ICON_GAP,
+  measureTextWidth as measureTextWidthFn,
+  resolveChunks,
+  scaleManaPipDisplaySizePx,
+} from './textIconsShared'
 
-/** sizePt 12 ≈ prior hardcoded ~34 px in the landscape tan rules pill. */
+/** sizePt 12 ≈ prior hardcoded sizes on the landscape face. */
+const BATTLE_NAME_PT_REF_PX = 44
+const BATTLE_TYPE_PT_REF_PX = 32
 const BATTLE_RULES_PT_REF_PX = 34
-/** Auto ink on parchment when rules typography color is not manual. */
+/** Auto ink on plates / parchment when typography color is not manual. */
+const BATTLE_PLATE_AUTO_INK = '#f7f2e8'
 const BATTLE_RULES_AUTO_INK = '#1c1612'
 
 function darkenHex(hex: string, amount: number): string {
@@ -100,6 +113,8 @@ function BattleChromeLayer() {
     manaCost,
     typeLine,
     cardText,
+    nameTypography,
+    typeTypography,
     rulesTypography,
     battleDefense,
     collectorNumber,
@@ -126,6 +141,8 @@ function BattleChromeLayer() {
       manaCost: s.cardData.manaCost,
       typeLine: s.cardData.typeLine,
       cardText: s.cardData.cardText,
+      nameTypography: s.cardData.nameTypography as CardFieldTypography,
+      typeTypography: s.cardData.typeTypography as CardFieldTypography,
       rulesTypography: s.cardData.rulesTypography as CardFieldTypography,
       battleDefense: s.cardData.battleDefense,
       collectorNumber: s.cardData.collector_number,
@@ -154,22 +171,80 @@ function BattleChromeLayer() {
   })
   const enabled = caps.supportsBattleChrome === true && layoutUsesBattleChrome(activeLayout)
 
+  const effectiveNameFontKey = useEffectiveTypographyFontKey(
+    'nameTypography',
+    nameTypography.fontKey,
+  )
+  const effectiveTypeFontKey = useEffectiveTypographyFontKey(
+    'typeTypography',
+    typeTypography.fontKey,
+  )
   const effectiveRulesFontKey = useEffectiveTypographyFontKey(
     'rulesTypography',
     rulesTypography.fontKey,
+  )
+  const nameFace = useMemo(
+    () => resolveTypographyFontFace(effectiveNameFontKey, nameTypography.weight),
+    [effectiveNameFontKey, nameTypography.weight],
+  )
+  const typeFace = useMemo(
+    () => resolveTypographyFontFace(effectiveTypeFontKey, typeTypography.weight),
+    [effectiveTypeFontKey, typeTypography.weight],
   )
   const rulesFace = useMemo(
     () => resolveTypographyFontFace(effectiveRulesFontKey, rulesTypography.weight),
     [effectiveRulesFontKey, rulesTypography.weight],
   )
+  const nameInk = useMemo(
+    () => resolveTypographyInkColor(nameTypography, BATTLE_PLATE_AUTO_INK),
+    [nameTypography],
+  )
+  const typeInk = useMemo(
+    () => resolveTypographyInkColor(typeTypography, BATTLE_PLATE_AUTO_INK),
+    [typeTypography],
+  )
   const rulesInk = useMemo(
     () => resolveTypographyInkColor(rulesTypography, BATTLE_RULES_AUTO_INK),
     [rulesTypography],
   )
+  const nameFontSize = useMemo(() => {
+    const fromPt = typographyPtToStagePx(nameTypography.sizePt, BATTLE_NAME_PT_REF_PX)
+    return Math.max(22, Math.min(72, Math.round(fromPt * 2) / 2))
+  }, [nameTypography.sizePt])
+  const typeFontSize = useMemo(() => {
+    const fromPt = typographyPtToStagePx(typeTypography.sizePt, BATTLE_TYPE_PT_REF_PX)
+    return Math.max(18, Math.min(56, Math.round(fromPt * 2) / 2))
+  }, [typeTypography.sizePt])
   const rulesFontSize = useMemo(() => {
     const fromPt = typographyPtToStagePx(rulesTypography.sizePt, BATTLE_RULES_PT_REF_PX)
     return Math.max(16, Math.min(56, Math.round(fromPt * 2) / 2))
   }, [rulesTypography.sizePt])
+
+  const manaImageCache = useRef<Map<string, HTMLImageElement>>(new Map())
+  const [, setManaImageTick] = useState(0)
+  const getManaImage = useCallback((key: string, dataUrl: string) => {
+    const cacheKey = `${key}::${dataUrl}`
+    const existing = manaImageCache.current.get(cacheKey)
+    if (existing) return existing
+    const img = new window.Image()
+    img.onload = () => setManaImageTick((t) => t + 1)
+    img.onerror = () => setManaImageTick((t) => t + 1)
+    img.src = dataUrl
+    manaImageCache.current.set(cacheKey, img)
+    return img
+  }, [])
+
+  const measureCtxRef = useRef<CanvasRenderingContext2D | null>(null)
+  const measureTextWidth = useCallback(
+    (text: string, fontFamily: string, fontStyle: string, fontSize: number) => {
+      if (!measureCtxRef.current) {
+        const c = document.createElement('canvas')
+        measureCtxRef.current = c.getContext('2d')
+      }
+      return measureTextWidthFn(measureCtxRef.current, text, fontFamily, fontStyle, fontSize)
+    },
+    [],
+  )
 
   const identity = useMemo(
     () =>
@@ -224,7 +299,7 @@ function BattleChromeLayer() {
   const defense = normalizeBattleDefense(battleDefense) || '0'
   const rulesBody = String(cardText ?? '').trim() || BATTLE_SIEGE_DEFAULT_REMINDER
   const typeLabel = String(typeLine ?? '').trim() || 'Battle — Siege'
-  const manaLabel = String(manaCost ?? '').trim()
+  const nameLabel = String(name ?? '').trim() || 'Battle'
   const rarityLetter = String(rarity ?? 'C').slice(0, 1).toUpperCase()
   const collectorLine = [
     String(collectorNumber ?? '').trim() || '000',
@@ -236,10 +311,61 @@ function BattleChromeLayer() {
     .filter(Boolean)
     .join('  ·  ')
 
+  const nameManaIconSize = Math.max(28, Math.min(64, Math.round(manaR.height * 0.82)))
+  const manaCostRender = useMemo(() => {
+    const chunks = resolveChunks(normalizeMana(manaCost ?? '') || '{0}')
+    let totalWidth = 0
+    for (let i = 0; i < chunks.length; i++) {
+      const c = chunks[i]
+      if (c.kind === 'icon') totalWidth += scaleManaPipDisplaySizePx(nameManaIconSize, c.symbolSet)
+      else totalWidth += measureTextWidth(c.value, nameFace.fontStack, nameFace.fontStyle, nameManaIconSize)
+      if (i < chunks.length - 1) totalWidth += MANA_COST_ICON_GAP
+    }
+    return { chunks, totalWidth }
+  }, [manaCost, nameManaIconSize, measureTextWidth, nameFace.fontStack, nameFace.fontStyle])
+
+  const rulesPadX = 28
+  const rulesPadY = 22
+  const rulesInnerW = Math.max(8, rulesR.width - rulesPadX - 170)
+  const rulesInnerH = Math.max(8, rulesR.height - rulesPadY * 2)
+  const rulesLineHeight = Math.round(rulesFontSize * 1.2)
+  const rulesItems = useMemo(
+    () =>
+      layoutRichTextItems({
+        chunks: resolveChunks(rulesBody),
+        originX: rulesR.x + rulesPadX,
+        originY: rulesR.y + rulesPadY,
+        maxWidth: rulesInnerW,
+        maxHeight: rulesInnerH,
+        fontSize: rulesFontSize,
+        lineHeightPx: rulesLineHeight,
+        iconSize: rulesFontSize,
+        fontFamily: rulesFace.fontStack,
+        fontStyle: rulesFace.fontStyle,
+        measure: measureTextWidth,
+        iconBaselineOffset: SYMBOL_BASELINE_OFFSET,
+      }),
+    [
+      rulesBody,
+      rulesR.x,
+      rulesR.y,
+      rulesInnerW,
+      rulesInnerH,
+      rulesFontSize,
+      rulesLineHeight,
+      rulesFace.fontStack,
+      rulesFace.fontStyle,
+      measureTextWidth,
+    ],
+  )
+
   if (!enabled) return null
 
   const nameTextLeft = transformR.x + transformR.width + 16
-  const nameTextWidth = Math.max(40, manaR.x - nameTextLeft - 12)
+  const nameTextWidth = Math.max(
+    40,
+    manaR.x - nameTextLeft - 12 - (manaCostRender.totalWidth > 0 ? manaCostRender.totalWidth + 12 : 0),
+  )
   /** Battle chrome owns the left-frame stamp; TextIcons seal is disabled for battle. */
   const showStamp = showHologram !== false
 
@@ -332,30 +458,87 @@ function BattleChromeLayer() {
         y={nameR.y}
         width={nameTextWidth}
         height={nameR.height}
-        text={String(name ?? '').trim() || 'Battle'}
-        fontFamily="Beleren, Georgia, serif"
-        fontStyle="bold"
-        fontSize={44}
-        fill="#f7f2e8"
+        text={nameLabel}
+        fontFamily={nameFace.fontStack}
+        fontStyle={nameFace.fontStyle}
+        fontSize={nameFontSize}
+        fill={nameInk}
         align="left"
         verticalAlign="middle"
         wrap="none"
         ellipsis
       />
 
-      <Text
-        listening={false}
-        x={manaR.x}
-        y={manaR.y}
-        width={manaR.width}
-        height={manaR.height}
-        text={manaLabel || '{0}'}
-        fontFamily="Plantin, Georgia, serif"
-        fontSize={32}
-        fill="#f7f2e8"
-        align="right"
-        verticalAlign="middle"
-      />
+      {manaCostRender.chunks.length > 0 ? (
+        <Group
+          listening={false}
+          x={Math.round(manaR.x + manaR.width - manaCostRender.totalWidth)}
+          y={Math.round(manaR.y + (manaR.height - nameManaIconSize) / 2)}
+        >
+          {(() => {
+            let dx = 0
+            const lastIdx = manaCostRender.chunks.length - 1
+            return manaCostRender.chunks.map((c, i) => {
+              if (c.kind === 'icon') {
+                const iconSize = scaleManaPipDisplaySizePx(nameManaIconSize, c.symbolSet)
+                const yOffset = (nameManaIconSize - iconSize) / 2
+                const img = getManaImage(c.key, c.dataUrl)
+                const useFallback = !img || (img.complete && img.naturalWidth === 0)
+                const node = useFallback ? (
+                  <Text
+                    key={`battle-mc-fb-${i}-${c.key}`}
+                    listening={false}
+                    text={c.token}
+                    x={dx}
+                    y={yOffset}
+                    width={iconSize}
+                    height={iconSize}
+                    fontFamily={nameFace.fontStack}
+                    fontStyle={nameFace.fontStyle}
+                    fontSize={Math.max(12, iconSize * 0.55)}
+                    fill={nameInk}
+                    verticalAlign="middle"
+                  />
+                ) : (
+                  <Fragment key={`battle-mc-icon-${i}-${c.key}`}>
+                    <Image
+                      image={img}
+                      x={dx}
+                      y={yOffset}
+                      width={iconSize}
+                      height={iconSize}
+                      listening={false}
+                    />
+                  </Fragment>
+                )
+                dx += iconSize
+                if (i < lastIdx) dx += MANA_COST_ICON_GAP
+                return node
+              }
+              const wText = measureTextWidth(c.value, nameFace.fontStack, nameFace.fontStyle, nameManaIconSize)
+              const node = (
+                <Text
+                  key={`battle-mc-tx-${i}`}
+                  listening={false}
+                  text={c.value}
+                  x={dx}
+                  y={0}
+                  width={wText}
+                  height={nameManaIconSize}
+                  fontFamily={nameFace.fontStack}
+                  fontStyle={nameFace.fontStyle}
+                  fontSize={nameManaIconSize}
+                  fill={nameInk}
+                  verticalAlign="middle"
+                />
+              )
+              dx += wText
+              if (i < lastIdx) dx += MANA_COST_ICON_GAP
+              return node
+            })
+          })()}
+        </Group>
+      ) : null}
 
       <Shape
         x={typeR.x}
@@ -383,10 +566,10 @@ function BattleChromeLayer() {
         width={typeR.width - 140}
         height={typeR.height}
         text={typeLabel}
-        fontFamily="Beleren, Georgia, serif"
-        fontStyle="bold"
-        fontSize={32}
-        fill="#f7f2e8"
+        fontFamily={typeFace.fontStack}
+        fontStyle={typeFace.fontStyle}
+        fontSize={typeFontSize}
+        fill={typeInk}
         align="left"
         verticalAlign="middle"
         wrap="none"
@@ -412,21 +595,53 @@ function BattleChromeLayer() {
           c.stroke()
         }}
       />
-      <Text
-        listening={false}
-        x={rulesR.x + 28}
-        y={rulesR.y + 22}
-        width={rulesR.width - 170}
-        height={rulesR.height - 44}
-        text={rulesBody}
-        fontFamily={rulesFace.fontStack}
-        fontStyle={rulesFace.fontStyle}
-        fontSize={rulesFontSize}
-        fill={rulesInk}
-        align="left"
-        verticalAlign="top"
-        wrap="word"
-      />
+      {rulesItems.map((it, idx) =>
+        it.kind === 'icon'
+          ? (() => {
+              const img = getManaImage(it.key, it.dataUrl)
+              const useFallback = !img || (img.complete && img.naturalWidth === 0)
+              return useFallback ? (
+                <Text
+                  key={`battle-rules-fb-${idx}-${it.key}`}
+                  listening={false}
+                  text={it.rawToken}
+                  x={it.x}
+                  y={it.y}
+                  width={it.size}
+                  height={it.size}
+                  fontFamily={rulesFace.fontStack}
+                  fontStyle={rulesFace.fontStyle}
+                  fontSize={rulesFontSize}
+                  fill={rulesInk}
+                />
+              ) : (
+                <Image
+                  key={`battle-rules-icon-${idx}-${it.key}`}
+                  image={img}
+                  x={it.x}
+                  y={it.y}
+                  width={it.size}
+                  height={it.size}
+                  listening={false}
+                />
+              )
+            })()
+          : (
+            <Text
+              key={`battle-rules-tx-${idx}`}
+              listening={false}
+              text={it.text}
+              x={it.x}
+              y={it.y}
+              width={it.width}
+              height={rulesLineHeight}
+              fontFamily={rulesFace.fontStack}
+              fontStyle={rulesFace.fontStyle}
+              fontSize={rulesFontSize}
+              fill={rulesInk}
+            />
+          ),
+      )}
 
       {/* Spiky defense shield */}
       <Shape
