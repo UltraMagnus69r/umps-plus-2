@@ -11,6 +11,7 @@ import { getPlaneswalkerModernV2ArtInnerRect } from '../../../authority/planeswa
 import { useKonvaPublicImage } from '../../../hooks/useKonvaPublicImage'
 import { useCardStore } from '../../../store/useCardStore'
 import type { LayoutId } from '../../../authority/layoutTaxonomy'
+import { addBattleArtInnerClipPath } from './battleArtPath'
 import { addPlaneswalkerModernV2ArtInnerClipPath } from './planeswalkerModernV2ArtPath'
 
 type ArtDragSession = {
@@ -56,6 +57,7 @@ function ArtLayer() {
     cardData: { layout: activeLayout },
   })
   const modernV2Layout = capabilities.supportsPlaneswalkerModernV2Layout
+  const battleLayout = capabilities.supportsBattleChrome === true
   const artR = modernV2Layout
     ? getPlaneswalkerModernV2ArtInnerRect()
     : getActiveLayoutArtRectFromState({
@@ -242,12 +244,22 @@ function ArtLayer() {
                   c.clip()
                 },
               }
-            : {
-                clipX: artInnerX,
-                clipY: artInnerY,
-                clipWidth: artInnerW,
-                clipHeight: artInnerH,
-              })}
+            : battleLayout
+              ? {
+                  // Same path as BattleChromeLayer inner-border punch (bounds + radii).
+                  clipFunc: (ctx) => {
+                    const c = ctx as unknown as CanvasRenderingContext2D
+                    c.beginPath()
+                    addBattleArtInnerClipPath(c)
+                    c.clip()
+                  },
+                }
+              : {
+                  clipX: artInnerX,
+                  clipY: artInnerY,
+                  clipWidth: artInnerW,
+                  clipHeight: artInnerH,
+                })}
           listening={true}
           onWheel={(e) => {
             // Ctrl/Meta+wheel belongs to StudioCanvas preview zoom.
