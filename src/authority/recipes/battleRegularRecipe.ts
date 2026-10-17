@@ -8,8 +8,8 @@ import { M15_REGULAR_MANA_PIP_SIZE_PX } from './m15RegularCreatureRecipe'
 const CC_PIP_SIZE_FRAC = 71 / 1638
 
 const WIDEN_RIGHT = 24 / 2100
-const CONTENT_X = 158 / 2100
-const CONTENT_W = 1880 / 2100 + WIDEN_RIGHT
+const CONTENT_X = 83 / 2100
+const CONTENT_W = 1955 / 2100 + WIDEN_RIGHT
 const TOP = 44 / 1500
 const BOTTOM = 40 / 1500
 const PLATE_H = 92 / 1500
@@ -24,7 +24,7 @@ const DEFENSE_H = 158 / 1500
 const TRANSFORM_SIZE = 108 / 2100
 const TRANSFORM_SIZE_Y = 108 / 1500
 
-const L_COLLECTOR = { x: 72 / 2100, y: 56 / 1500, w: 72 / 2100, h: 1390 / 1500 }
+const L_COLLECTOR = { x: -3 / 2100, y: 56 / 1500, w: 72 / 2100, h: 1390 / 1500 }
 const L_TITLE = { x: CONTENT_X, y: NAME_Y, w: CONTENT_W, h: PLATE_H }
 const L_MANA = {
   x: CONTENT_X + CONTENT_W - 460 / 2100,
