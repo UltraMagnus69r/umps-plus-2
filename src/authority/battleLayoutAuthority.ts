@@ -1,9 +1,10 @@
 /**
  * Battle / Siege — landscape stack face (wider than tall).
- * Ground truth: fidelity-battle/battle-no-inner-border-ref.png (Invasion of Ikoria)
- * + battle-dark-grey-must-cover.png — art cover-fills the full trim face inside the
- * black outer edge (under name/type/rules/defense). No dark-grey identity mat.
- * Collector + hologram sit on the left over that art.
+ * Ground truth: MotM Invasion of Ikoria (Scryfall MOM/190) left-edge crops —
+ * fidelity-battle/ikoria-official-left.png (+ -2).
+ * Art cover-fills top/right/bottom to the black outer edge (no dark-grey mats),
+ * but insets from the left so a frame-colored strip remains for vertical
+ * collector text; hologram straddles that strip / art edge.
  */
 import { BLEED_PX, INNER_BORDER_CORNER_RADIUS_MODERN } from './geometryAuthority'
 import type { LayoutId } from './layoutTaxonomy'
@@ -36,9 +37,9 @@ function n(rect: { x: number; y: number; w: number; h: number }): BattleStageRec
 const WIDEN_RIGHT = 24 / BATTLE_TRIM_WIDTH
 
 /**
- * Plate/rules seating (inset overlays on top of full-bleed art).
- * Art itself is flush to trim (inner face of the black outer edge) so no
- * identity-mat / dark-grey band remains beside the art.
+ * Plate/rules seating (overlays on art). Art left edge aligns with CONTENT_X
+ * so the MotM frame-colored collector strip shows; top/right/bottom stay flush
+ * to the black outer edge (no dark-grey mats on those sides).
  */
 const CONTENT_X = 108 / 2100
 const CONTENT_W = 1930 / 2100 + WIDEN_RIGHT
@@ -56,13 +57,16 @@ const DEFENSE_H = 158 / 1500
 /** Transform mark — covers left end of name plate. */
 const TRANSFORM_SIZE = 108 / 2100
 const TRANSFORM_SIZE_Y = 108 / 1500
+/** MotM security stamp — straddles left frame strip / art edge. */
+const HOLO_W = 68 / 2100
+const HOLO_H = 110 / 1500
 
 /**
  * Landscape stack seating (trim-norm of 2100×1500).
  * Content reads upright; collector strip along the left edge is drawn rotated.
  */
 const FACE = {
-  /** Vertical collector / credit strip (text rotated 90° CW). */
+  /** Vertical collector / credit strip on the left frame-colored band. */
   collector: { x: 22 / 2100, y: 56 / 1500, w: 72 / 2100, h: 1390 / 1500 },
   /** Horizontal nameplate — drawn over art. */
   name: { x: CONTENT_X, y: NAME_Y, w: CONTENT_W, h: PLATE_H },
@@ -81,13 +85,13 @@ const FACE = {
     h: 72 / 1500,
   },
   /**
-   * Full trim face (under name/type/rules/defense/collector).
-   * Zero inset from black outer edge — covers the former dark-grey identity mat.
+   * Left-only inset (MotM collector strip). Top / right / bottom meet the
+   * black outer edge so no identity mat / dark-grey band returns there.
    */
   art: {
-    x: 0,
+    x: CONTENT_X,
     y: 0,
-    w: 1,
+    w: 1 - CONTENT_X,
     h: 1,
   },
   /** Type line — drawn over art. */
@@ -107,12 +111,12 @@ const FACE = {
     w: DEFENSE_W,
     h: DEFENSE_H,
   },
-  /** Security / hologram stamp — left vertical frame over art. */
+  /** Security / hologram stamp — centered on art left edge (overlaps frame + art). */
   hologram: {
-    x: 10 / 2100,
-    y: (NAME_Y + RULES_BOTTOM) / 2 - 55 / 1500,
-    w: 68 / 2100,
-    h: 110 / 1500,
+    x: CONTENT_X - HOLO_W / 2,
+    y: (NAME_Y + RULES_BOTTOM) / 2 - HOLO_H / 2,
+    w: HOLO_W,
+    h: HOLO_H,
   },
 } as const
 
@@ -131,9 +135,10 @@ export function getBattleStageSize(): { width: number; height: number } {
 }
 
 /**
- * Art aperture — full trim face (under name/type/rules/defense).
+ * Art aperture — left-inset MotM face (under name/type/rules/defense).
  * Identical to {@link getBattleInnerBorderRect}. ArtLayer cover-fills + clips this;
- * chrome evenodd hole matches so no dark-grey mat remains inside the black edge.
+ * chrome evenodd hole matches so the left strip stays frame-colored for collector
+ * while top/right/bottom stay flush to the black outer edge.
  */
 export function getBattleArtRect(): BattleStageRect {
   return getBattleInnerBorderRect()
@@ -142,7 +147,7 @@ export function getBattleArtRect(): BattleStageRect {
 /**
  * Art / chrome-hole aperture (stage px) — ArtLayer clip and chrome frame-ring hole
  * share this rect and the Battle corner radii (including left tangent extra).
- * Equals trim so art meets the black outer edge on all sides.
+ * Left edge = CONTENT_X; top/right/bottom = trim.
  */
 export function getBattleInnerBorderRect(): BattleStageRect {
   return n(FACE.art)
