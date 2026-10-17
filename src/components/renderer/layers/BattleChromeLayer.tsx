@@ -308,7 +308,6 @@ function BattleChromeLayer() {
   )
 
   const fill = identity.stroke
-  const stroke = useMemo(() => darkenHex(fill, 0.35), [fill])
   /** MotM light plate border (thin light/identity stroke around translucent boxes). */
   const plateBorder = useMemo(() => lightenHex(fill, 0.55), [fill])
   const effectiveNameBox = effectivePanelBackground('nameBoxColor', nameBoxColor, panelBackgroundPreview)
@@ -434,16 +433,13 @@ function BattleChromeLayer() {
           c.fillStyle = '#0a0a0a'
           c.fill('evenodd')
           // Left collector strip (= trim − art aperture): black outer border, not identity green.
+          // No identity stroke on the trim path — that leftover frame stroke showed as a thin
+          // green line curving through the black left strip (MotM follow-up #2).
           c.beginPath()
           addBattleRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, cornerRadii, leftTangentExtra)
           addBattleArtInnerClipPathForRect(c, artR.x, artR.y, artR.width, artR.height)
           c.fillStyle = '#0a0a0a'
           c.fill('evenodd')
-          c.beginPath()
-          addBattleRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, cornerRadii, leftTangentExtra)
-          c.strokeStyle = stroke
-          c.lineWidth = 4
-          c.stroke()
         }}
       />
 
