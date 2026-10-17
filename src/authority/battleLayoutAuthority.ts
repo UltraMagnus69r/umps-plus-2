@@ -132,17 +132,17 @@ export function getBattleStageSize(): { width: number; height: number } {
 }
 
 /**
- * Art aperture — identical to the inner-border content path
- * ({@link getBattleInnerBorderRect} + {@link getBattleInnerBorderCornerRadii}).
- * Chrome plates/rules/flip draw above; stacking is unchanged.
+ * Art aperture — full light-grey inner face (under name/type/rules/defense).
+ * Identical to {@link getBattleInnerBorderRect}; ArtLayer cover-fills + clips this,
+ * BattleChrome draws only the frame ring outside it (evenodd), never a mat fill.
  */
 export function getBattleArtRect(): BattleStageRect {
   return getBattleInnerBorderRect()
 }
 
 /**
- * Inner-border content face (stage px) — ArtLayer clip and chrome punch share this
- * rect and the Battle corner radii (including left tangent extra).
+ * Inner-face aperture (stage px) — ArtLayer clip and chrome frame-ring hole share
+ * this rect and the Battle corner radii (including left tangent extra).
  */
 export function getBattleInnerBorderRect(): BattleStageRect {
   return n(FACE.art)
