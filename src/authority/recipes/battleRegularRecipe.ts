@@ -10,24 +10,29 @@ const CC_PIP_SIZE_FRAC = 71 / 1638
 const WIDEN_RIGHT = 24 / 2100
 const CONTENT_X = 83 / 2100
 const CONTENT_W = 1955 / 2100 + WIDEN_RIGHT
-const TOP = 44 / 1500
-const BOTTOM = 40 / 1500
+const PLATE_INSET_LEFT = 50 / 2100
+const PLATE_X = CONTENT_X + PLATE_INSET_LEFT
+const PLATE_W = CONTENT_W - PLATE_INSET_LEFT
+const RULES_INSET_RIGHT = 15 / 2100
+const RULES_W = PLATE_W - RULES_INSET_RIGHT
 const PLATE_H = 92 / 1500
-const RULES_H = 528 / 1500
-const NAME_Y = TOP
-const RULES_BOTTOM = 1 - BOTTOM
-const RULES_Y = RULES_BOTTOM - RULES_H
+const RULES_H_PRIOR = 528 / 1500
+const BOTTOM_PRIOR = 40 / 1500
+const NAME_Y = 0
+const RULES_Y = 1 - BOTTOM_PRIOR - RULES_H_PRIOR
+const RULES_BOTTOM = 1
+const RULES_H = RULES_BOTTOM - RULES_Y
 const TYPE_Y = RULES_Y - PLATE_H
-const RULES_RIGHT = CONTENT_X + CONTENT_W
+const RULES_RIGHT = PLATE_X + RULES_W
 const DEFENSE_W = 138 / 2100
 const DEFENSE_H = 158 / 1500
 const TRANSFORM_SIZE = 108 / 2100
 const TRANSFORM_SIZE_Y = 108 / 1500
 
 const L_COLLECTOR = { x: -3 / 2100, y: 56 / 1500, w: 72 / 2100, h: 1390 / 1500 }
-const L_TITLE = { x: CONTENT_X, y: NAME_Y, w: CONTENT_W, h: PLATE_H }
+const L_TITLE = { x: PLATE_X, y: NAME_Y, w: PLATE_W, h: PLATE_H }
 const L_MANA = {
-  x: CONTENT_X + CONTENT_W - 460 / 2100,
+  x: PLATE_X + PLATE_W - 460 / 2100,
   y: NAME_Y + (PLATE_H - 72 / 1500) / 2,
   w: 440 / 2100,
   h: 72 / 1500,
@@ -39,14 +44,14 @@ const L_ART = {
   w: 1 - CONTENT_X,
   h: 1,
 }
-const L_TYPE = { x: CONTENT_X, y: TYPE_Y, w: CONTENT_W, h: PLATE_H }
+const L_TYPE = { x: PLATE_X, y: TYPE_Y, w: PLATE_W, h: PLATE_H }
 const L_SET = {
-  x: CONTENT_X + CONTENT_W - 120 / 2100,
+  x: PLATE_X + PLATE_W - 120 / 2100,
   y: TYPE_Y + (PLATE_H - 68 / 1500) / 2,
   w: 96 / 2100,
   h: 68 / 1500,
 }
-const L_RULES = { x: CONTENT_X, y: RULES_Y, w: CONTENT_W, h: RULES_H }
+const L_RULES = { x: PLATE_X, y: RULES_Y, w: RULES_W, h: RULES_H }
 const L_DEFENSE = {
   x: RULES_RIGHT - DEFENSE_W / 2,
   y: RULES_BOTTOM - DEFENSE_H / 2,
@@ -62,7 +67,7 @@ const L_HOLOGRAM = {
   h: L_HOLO_H,
 }
 const L_TRANSFORM = {
-  x: CONTENT_X - 6 / 2100,
+  x: PLATE_X - 6 / 2100,
   y: NAME_Y + PLATE_H / 2 - TRANSFORM_SIZE_Y / 2,
   w: TRANSFORM_SIZE,
   h: TRANSFORM_SIZE_Y,

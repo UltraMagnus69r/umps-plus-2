@@ -433,11 +433,19 @@ function BattleChromeLayer() {
           c.fillStyle = '#0a0a0a'
           c.fill('evenodd')
           // Left collector strip (= trim − art aperture): black outer border, not identity green.
-          // No identity stroke on the trim path — that leftover frame stroke showed as a thin
-          // green line curving through the black left strip (MotM follow-up #2).
+          // No identity stroke on the trim path (#49). Punch hole is inset 2px into art on the
+          // left so black covers the art-edge AA fringe that read as a thin grey/green trim
+          // stroke along the inner frame curve in the collector strip.
+          const seamCoverPx = 2
           c.beginPath()
           addBattleRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, cornerRadii, leftTangentExtra)
-          addBattleArtInnerClipPathForRect(c, artR.x, artR.y, artR.width, artR.height)
+          addBattleArtInnerClipPathForRect(
+            c,
+            artR.x + seamCoverPx,
+            artR.y,
+            Math.max(1, artR.width - seamCoverPx),
+            artR.height,
+          )
           c.fillStyle = '#0a0a0a'
           c.fill('evenodd')
         }}
