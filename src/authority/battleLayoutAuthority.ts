@@ -3,8 +3,8 @@
  * Ground truth: MotM Invasion of Ikoria (Scryfall MOM/190) left-edge crops —
  * fidelity-battle/ikoria-official-left.png (+ -2).
  * Art cover-fills top/right/bottom to the black outer edge (no dark-grey mats),
- * but insets from the left so a frame-colored strip remains for vertical
- * collector text; hologram straddles that strip / art edge.
+ * but insets from the left so a black outer-border strip remains for vertical
+ * collector text (no identity-green mat); hologram straddles that strip / art edge.
  */
 import { BLEED_PX, INNER_BORDER_CORNER_RADIUS_MODERN } from './geometryAuthority'
 import type { LayoutId } from './layoutTaxonomy'
@@ -38,11 +38,12 @@ const WIDEN_RIGHT = 24 / BATTLE_TRIM_WIDTH
 
 /**
  * Plate/rules seating (overlays on art). Art left edge aligns with CONTENT_X
- * so the MotM frame-colored collector strip shows; top/right/bottom stay flush
- * to the black outer edge (no dark-grey mats on those sides).
+ * so the MotM black collector strip shows; top/right/bottom stay flush
+ * to the black outer edge (no dark-grey / identity-green mats on those sides).
+ * +25 trim-px left inset vs prior 108 seating (MotM follow-up).
  */
-const CONTENT_X = 108 / 2100
-const CONTENT_W = 1930 / 2100 + WIDEN_RIGHT
+const CONTENT_X = 133 / 2100
+const CONTENT_W = 1905 / 2100 + WIDEN_RIGHT
 const TOP = 44 / 1500
 const BOTTOM = 40 / 1500
 const PLATE_H = 92 / 1500
@@ -66,8 +67,8 @@ const HOLO_H = 110 / 1500
  * Content reads upright; collector strip along the left edge is drawn rotated.
  */
 const FACE = {
-  /** Vertical collector / credit strip on the left frame-colored band. */
-  collector: { x: 22 / 2100, y: 56 / 1500, w: 72 / 2100, h: 1390 / 1500 },
+  /** Vertical collector / credit strip on the left black outer-border band. */
+  collector: { x: 47 / 2100, y: 56 / 1500, w: 72 / 2100, h: 1390 / 1500 },
   /** Horizontal nameplate — drawn over art. */
   name: { x: CONTENT_X, y: NAME_Y, w: CONTENT_W, h: PLATE_H },
   /** DFC / transform mark covering the left end of the nameplate. */
@@ -85,8 +86,8 @@ const FACE = {
     h: 72 / 1500,
   },
   /**
-   * Left-only inset (MotM collector strip). Top / right / bottom meet the
-   * black outer edge so no identity mat / dark-grey band returns there.
+   * Left-only inset (MotM black collector strip). Top / right / bottom meet the
+   * black outer edge so no identity-green / dark-grey mat returns there.
    */
   art: {
     x: CONTENT_X,
@@ -137,7 +138,7 @@ export function getBattleStageSize(): { width: number; height: number } {
 /**
  * Art aperture — left-inset MotM face (under name/type/rules/defense).
  * Identical to {@link getBattleInnerBorderRect}. ArtLayer cover-fills + clips this;
- * chrome evenodd hole matches so the left strip stays frame-colored for collector
+ * chrome evenodd hole matches so the left strip stays black for collector
  * while top/right/bottom stay flush to the black outer edge.
  */
 export function getBattleArtRect(): BattleStageRect {
