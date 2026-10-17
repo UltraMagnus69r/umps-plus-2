@@ -419,9 +419,9 @@ function BattleChromeLayer() {
   return (
     <Layer listening={false}>
       {/*
-        Bleed + MotM identity frame chrome.
-        Art cover-fills the shared aperture (left-inset for collector strip;
-        flush top/right/bottom). Plates/rules draw on top.
+        Bleed + MotM outer border chrome.
+        Art cover-fills the shared aperture (left-inset for black collector strip;
+        flush top/right/bottom). No identity-green mat on the left. Plates/rules draw on top.
       */}
       <Shape
         listening={false}
@@ -433,11 +433,11 @@ function BattleChromeLayer() {
           addBattleRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, cornerRadii, leftTangentExtra)
           c.fillStyle = '#0a0a0a'
           c.fill('evenodd')
-          // Frame chrome: trim minus art aperture (left strip stays frame-colored).
+          // Left collector strip (= trim − art aperture): black outer border, not identity green.
           c.beginPath()
           addBattleRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, cornerRadii, leftTangentExtra)
           addBattleArtInnerClipPathForRect(c, artR.x, artR.y, artR.width, artR.height)
-          c.fillStyle = fill
+          c.fillStyle = '#0a0a0a'
           c.fill('evenodd')
           c.beginPath()
           addBattleRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, cornerRadii, leftTangentExtra)
@@ -792,7 +792,7 @@ function BattleChromeLayer() {
         />
       </Group>
 
-      {/* Left frame strip holds collector; art fills the aperture under these plates. */}
+      {/* Left black border strip holds collector; art fills the aperture under these plates. */}
     </Layer>
   )
 }
