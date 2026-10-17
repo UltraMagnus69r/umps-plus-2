@@ -47,13 +47,18 @@ const WIDEN_RIGHT = 24 / BATTLE_TRIM_WIDTH
 const CONTENT_X = 83 / 2100
 /** Full content span used for art-aligned right edge before plate insets. */
 const CONTENT_W = 1955 / 2100 + WIDEN_RIGHT
-/** Name / type / rules shortened 50 trim-px from the left (left edges move right). */
+/** Name / type shortened 50 trim-px from the left (left edges move right). */
 const PLATE_INSET_LEFT = 50 / 2100
 const PLATE_X = CONTENT_X + PLATE_INSET_LEFT
 const PLATE_W = CONTENT_W - PLATE_INSET_LEFT
-/** Rules also shortened 15 trim-px from the right. */
-const RULES_INSET_RIGHT = 15 / 2100
-const RULES_W = PLATE_W - RULES_INSET_RIGHT
+/**
+ * Rules: −50 with plates, then −20 more from left and −15−5 from right
+ * (total −70 left / −20 right vs art-aligned content span).
+ */
+const RULES_INSET_LEFT = PLATE_INSET_LEFT + 20 / 2100
+const RULES_INSET_RIGHT = 20 / 2100
+const RULES_X = CONTENT_X + RULES_INSET_LEFT
+const RULES_W = CONTENT_W - RULES_INSET_LEFT - RULES_INSET_RIGHT
 const PLATE_H = 92 / 1500
 /** Prior rules height before extending flush to art bottom. */
 const RULES_H_PRIOR = 528 / 1500
@@ -65,7 +70,7 @@ const RULES_Y = 1 - BOTTOM_PRIOR - RULES_H_PRIOR
 const RULES_BOTTOM = 1
 const RULES_H = RULES_BOTTOM - RULES_Y
 const TYPE_Y = RULES_Y - PLATE_H
-const RULES_RIGHT = PLATE_X + RULES_W
+const RULES_RIGHT = RULES_X + RULES_W
 const DEFENSE_W = 138 / 2100
 const DEFENSE_H = 158 / 1500
 /** Transform mark — covers left end of name plate. */
@@ -116,8 +121,8 @@ const FACE = {
     w: 96 / 2100,
     h: 68 / 1500,
   },
-  /** Tan parchment rules — left −50 / right −15 vs prior content span. */
-  rules: { x: PLATE_X, y: RULES_Y, w: RULES_W, h: RULES_H },
+  /** Tan parchment rules — left −70 / right −20 vs prior content span. */
+  rules: { x: RULES_X, y: RULES_Y, w: RULES_W, h: RULES_H },
   /** Defense shield centered on lower-right corner of rules (half in / half out). */
   defense: {
     x: RULES_RIGHT - DEFENSE_W / 2,
