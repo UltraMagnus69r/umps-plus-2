@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useRef } from 'react'
-import { Group, Image, Layer } from 'react-konva'
+import { Group, Image, Layer, Shape } from 'react-konva'
 import type Konva from 'konva'
 import { shallow } from 'zustand/shallow'
 import {
@@ -264,6 +264,19 @@ function ArtLayer() {
 
   return (
     <Layer ref={layerRef} listening={true}>
+      {/* Battle: paint the full chrome aperture so empty/cover edges never read as a mat gap. */}
+      {battleLayout ? (
+        <Shape
+          listening={false}
+          sceneFunc={(ctx) => {
+            const c = ctx as unknown as CanvasRenderingContext2D
+            c.beginPath()
+            addBattleArtInnerClipPath(c)
+            c.fillStyle = '#bfbfbf'
+            c.fill()
+          }}
+        />
+      ) : null}
       {artImg && (
         <Group
           {...(modernV2Layout

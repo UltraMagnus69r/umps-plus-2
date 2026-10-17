@@ -372,9 +372,9 @@ function BattleChromeLayer() {
   return (
     <Layer listening={false}>
       {/*
-        Bleed ring + frame ring only — never paint the inner-face aperture.
-        (A full-stage fillRect would cover ArtLayer; evenodd holes stay transparent.)
-        ArtLayer cover-fills that aperture underneath; plates/rules/flip draw on top.
+        Bleed + thin MotM brown/identity frame chrome only.
+        Art cover-fills the shared inner-face hole (getBattleArtRect); plates/rules
+        draw on top. Do not shrink art back to the plate bay.
       */}
       <Shape
         listening={false}
@@ -386,7 +386,7 @@ function BattleChromeLayer() {
           addBattleRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, cornerRadii, leftTangentExtra)
           c.fillStyle = '#0a0a0a'
           c.fill('evenodd')
-          // Frame ring: trim minus inner-face art path (same path ArtLayer clips to).
+          // Brown frame chrome: trim minus art aperture (same path ArtLayer clips to).
           c.beginPath()
           addBattleRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, cornerRadii, leftTangentExtra)
           addBattleArtInnerClipPathForRect(c, artR.x, artR.y, artR.width, artR.height)
