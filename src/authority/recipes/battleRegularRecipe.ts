@@ -2,7 +2,6 @@
  * Battle / Siege — landscape stack face (name → art → type → upright rules).
  * Regions are trim-norm of 2100×1500; BattleChromeLayer + battleLayoutAuthority own seating.
  */
-import { mmToPx } from '../geometryAuthority'
 import type { LayoutRecipe } from './layoutRecipeTypes'
 import { M15_REGULAR_MANA_PIP_SIZE_PX } from './m15RegularCreatureRecipe'
 
@@ -20,10 +19,6 @@ const RULES_BOTTOM = 1 - BOTTOM
 const RULES_Y = RULES_BOTTOM - RULES_H
 const TYPE_Y = RULES_Y - PLATE_H
 const RULES_RIGHT = CONTENT_X + CONTENT_W
-/** Match battleLayoutAuthority — art flush to inner face of brown frame chrome. */
-const ART_BORDER_INSET_PX = mmToPx(2.25)
-const ART_BORDER_INSET_X = ART_BORDER_INSET_PX / 2100
-const ART_BORDER_INSET_Y = ART_BORDER_INSET_PX / 1500
 const DEFENSE_W = 138 / 2100
 const DEFENSE_H = 158 / 1500
 const TRANSFORM_SIZE = 108 / 2100
@@ -37,11 +32,12 @@ const L_MANA = {
   w: 440 / 2100,
   h: 72 / 1500,
 }
+/** Match battleLayoutAuthority — full trim face; covers dark-grey identity mat. */
 const L_ART = {
-  x: ART_BORDER_INSET_X,
-  y: ART_BORDER_INSET_Y,
-  w: 1 - 2 * ART_BORDER_INSET_X,
-  h: 1 - 2 * ART_BORDER_INSET_Y,
+  x: 0,
+  y: 0,
+  w: 1,
+  h: 1,
 }
 const L_TYPE = { x: CONTENT_X, y: TYPE_Y, w: CONTENT_W, h: PLATE_H }
 const L_SET = {
