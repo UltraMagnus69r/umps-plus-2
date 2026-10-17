@@ -40,10 +40,10 @@ const WIDEN_RIGHT = 24 / BATTLE_TRIM_WIDTH
  * Plate/rules seating (overlays on art). Art left edge aligns with CONTENT_X
  * so the MotM black collector strip shows; top/right/bottom stay flush
  * to the black outer edge (no dark-grey / identity-green mats on those sides).
- * +50 trim-px left inset vs prior 108 seating (MotM follow-ups #48 + #2).
+ * −75 trim-px vs #49 (158): art/collector/holo shift left (was wrong-direction shrink).
  */
-const CONTENT_X = 158 / 2100
-const CONTENT_W = 1880 / 2100 + WIDEN_RIGHT
+const CONTENT_X = 83 / 2100
+const CONTENT_W = 1955 / 2100 + WIDEN_RIGHT
 const TOP = 44 / 1500
 const BOTTOM = 40 / 1500
 const PLATE_H = 92 / 1500
@@ -68,7 +68,7 @@ const HOLO_H = 110 / 1500
  */
 const FACE = {
   /** Vertical collector / credit strip on the left black outer-border band. */
-  collector: { x: 72 / 2100, y: 56 / 1500, w: 72 / 2100, h: 1390 / 1500 },
+  collector: { x: -3 / 2100, y: 56 / 1500, w: 72 / 2100, h: 1390 / 1500 },
   /** Horizontal nameplate — drawn over art. */
   name: { x: CONTENT_X, y: NAME_Y, w: CONTENT_W, h: PLATE_H },
   /** DFC / transform mark covering the left end of the nameplate. */
