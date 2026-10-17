@@ -82,8 +82,8 @@ const FACE = {
     h: 72 / 1500,
   },
   /**
-   * Art — full inner content face (under name/type/rules/defense).
-   * Not a mid-band inset; chrome punches this aperture then draws plates on top.
+   * Art / inner-border content face (under name/type/rules/defense).
+   * Clip + chrome punch use this rect with {@link getBattleInnerBorderCornerRadii}.
    */
   art: {
     x: CONTENT_X,
@@ -131,7 +131,20 @@ export function getBattleStageSize(): { width: number; height: number } {
   return { width: BATTLE_STAGE_WIDTH, height: BATTLE_STAGE_HEIGHT }
 }
 
+/**
+ * Art aperture — identical to the inner-border content path
+ * ({@link getBattleInnerBorderRect} + {@link getBattleInnerBorderCornerRadii}).
+ * Chrome plates/rules/flip draw above; stacking is unchanged.
+ */
 export function getBattleArtRect(): BattleStageRect {
+  return getBattleInnerBorderRect()
+}
+
+/**
+ * Inner-border content face (stage px) — ArtLayer clip and chrome punch share this
+ * rect and the Battle corner radii (including left tangent extra).
+ */
+export function getBattleInnerBorderRect(): BattleStageRect {
   return n(FACE.art)
 }
 

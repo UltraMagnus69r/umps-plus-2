@@ -24,6 +24,7 @@ import {
   layoutUsesBattleChrome,
   normalizeBattleDefense,
 } from '../../../authority/battleLayoutAuthority'
+import { addBattleArtInnerClipPathForRect, addBattleRoundRectPath } from './battleArtPath'
 import { getActiveLayoutCapabilitiesFromState } from '../../../authority/layoutRegistry'
 import type { LayoutId } from '../../../authority/layoutTaxonomy'
 import {
@@ -70,42 +71,6 @@ function addPlatePath(ctx: CanvasRenderingContext2D, w: number, h: number): void
   ctx.quadraticCurveTo(0, h, 0, h - r)
   ctx.lineTo(0, r)
   ctx.quadraticCurveTo(0, 0, r, 0)
-  ctx.closePath()
-}
-
-/**
- * Rounded rect with per-corner radii (TL, TR, BR, BL).
- * Left corners keep vertical anchors at `tl`/`bl` but push the top/bottom
- * tangent points further right by `leftTangentExtra` so the arc starts later.
- */
-function addRoundRectPath(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  radii: readonly [number, number, number, number],
-  leftTangentExtra = 0,
-): void {
-  const [tl, tr, br, bl] = radii.map((r) => Math.max(0, Math.min(r, Math.min(w, h) / 2))) as [
-    number,
-    number,
-    number,
-    number,
-  ]
-  const tlH = Math.min(w / 2, tl + Math.max(0, leftTangentExtra))
-  const blH = Math.min(w / 2, bl + Math.max(0, leftTangentExtra))
-  ctx.moveTo(x + tlH, y)
-  ctx.lineTo(x + w - tr, y)
-  ctx.quadraticCurveTo(x + w, y, x + w, y + tr)
-  ctx.lineTo(x + w, y + h - br)
-  ctx.quadraticCurveTo(x + w, y + h, x + w - br, y + h)
-  ctx.lineTo(x + blH, y + h)
-  // BL: vertical anchor at y+h-bl stays; bottom tangent at x+blH
-  ctx.quadraticCurveTo(x, y + h, x, y + h - bl)
-  ctx.lineTo(x, y + tl)
-  // TL: vertical anchor at y+tl stays; top tangent at x+tlH
-  ctx.quadraticCurveTo(x, y, x + tlH, y)
   ctx.closePath()
 }
 
@@ -281,8 +246,9 @@ function BattleChromeLayer() {
   return (
     <Layer listening={false}>
       {/*
-        Bleed + outer frame. Clear the full inner-face art aperture so ArtLayer
-        (drawn underneath) shows through with no mat gaps; plates/rules paint on top.
+        Bleed + outer frame. Punch the inner-border path (art rect + corner radii —
+        identical to ArtLayer clip) so the art window matches that shape; plates /
+        rules / flip stay painted on top (z-order unchanged).
       */}
       <Shape
         listening={false}
@@ -291,14 +257,18 @@ function BattleChromeLayer() {
           c.fillStyle = '#0a0a0a'
           c.fillRect(0, 0, stage.width, stage.height)
           c.beginPath()
-          addRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, cornerRadii, leftTangentExtra)
+          addBattleRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, cornerRadii, leftTangentExtra)
           c.fillStyle = fill
           c.fill()
           c.strokeStyle = stroke
           c.lineWidth = 4
           c.stroke()
-          // Punch the entire inner content face (not a mid-band inset window).
-          c.clearRect(artR.x, artR.y, artR.width, artR.height)
+          // Same path as ArtLayer battle clip (bounds + radii), not axis-aligned clearRect.
+          c.beginPath()
+          addBattleArtInnerClipPathForRect(c, artR.x, artR.y, artR.width, artR.height)
+          c.globalCompositeOperation = 'destination-out'
+          c.fill()
+          c.globalCompositeOperation = 'source-over'
         }}
       />
 
