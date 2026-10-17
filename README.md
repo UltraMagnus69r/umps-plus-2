@@ -1,27 +1,27 @@
 # PipMint
 
-**PipMint · Custom Card Creator** (v0.2.0)
+**PipMint · Custom Card Creator** (v0.3.0)
 
 Custom Magic-style card studio for web, desktop (Electron), and Android (Capacitor).
 
 ## Get installers
 
-Prebuilt packages are on the **[GitHub Release for v0.2.0](https://github.com/UltraMagnus69r/umps-plus-2/releases/tag/v0.2.0)** (too large for the git tree):
+Prebuilt packages are on the **[GitHub Release for v0.3.0](https://github.com/UltraMagnus69r/umps-plus-2/releases/tag/v0.3.0)** (too large for the git tree):
 
 | File | Platform |
 |------|----------|
-| `PipMint-Setup-0.2.0.exe` | Windows installer |
-| `PipMint-Portable-0.2.0.exe` | Windows portable (no install) |
-| `PipMint-0.2.0.x86_64.rpm` | Fedora / RHEL |
-| `PipMint-0.2.0-debug.apk` | Android (sideload) |
+| `PipMint-Setup-0.3.0.exe` | Windows installer |
+| `PipMint-Portable-0.3.0.exe` | Windows portable (no install) |
+| `PipMint-0.3.0.x86_64.rpm` | Fedora / RHEL |
+| `PipMint-0.3.0-debug.apk` | Android (sideload) |
 
-**Fedora:** `sudo dnf install ./PipMint-0.2.0.x86_64.rpm`
+**Fedora:** `sudo dnf install ./PipMint-0.3.0.x86_64.rpm`
 
-**Windows:** run `PipMint-Setup-0.2.0.exe`, or use the portable `.exe`.
+**Windows:** run `PipMint-Setup-0.3.0.exe`, or use the portable `.exe`.
 
-**Android:** `adb install -r PipMint-0.2.0-debug.apk` (or open the APK on device).
+**Android:** `adb install -r PipMint-0.3.0-debug.apk` (or open the APK on device).
 
-Debian `.deb` is not in this release upload; build with `npm run desktop:linux` if you need one.
+Debian `.deb` is built with `npm run desktop:linux` when needed; include it in the Desktop installer set when present.
 
 ## Develop from source
 
