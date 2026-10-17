@@ -32,11 +32,11 @@ const L_MANA = {
   w: 440 / 2100,
   h: 72 / 1500,
 }
-/** Match battleLayoutAuthority — full trim face; covers dark-grey identity mat. */
+/** Match battleLayoutAuthority — left-only MotM collector inset; flush elsewhere. */
 const L_ART = {
-  x: 0,
+  x: CONTENT_X,
   y: 0,
-  w: 1,
+  w: 1 - CONTENT_X,
   h: 1,
 }
 const L_TYPE = { x: CONTENT_X, y: TYPE_Y, w: CONTENT_W, h: PLATE_H }
@@ -53,11 +53,13 @@ const L_DEFENSE = {
   w: DEFENSE_W,
   h: DEFENSE_H,
 }
+const L_HOLO_W = 68 / 2100
+const L_HOLO_H = 110 / 1500
 const L_HOLOGRAM = {
-  x: 10 / 2100,
-  y: (NAME_Y + RULES_BOTTOM) / 2 - 55 / 1500,
-  w: 68 / 2100,
-  h: 110 / 1500,
+  x: CONTENT_X - L_HOLO_W / 2,
+  y: (NAME_Y + RULES_BOTTOM) / 2 - L_HOLO_H / 2,
+  w: L_HOLO_W,
+  h: L_HOLO_H,
 }
 const L_TRANSFORM = {
   x: CONTENT_X - 6 / 2100,

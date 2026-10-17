@@ -1,7 +1,9 @@
 /**
  * Battle / Siege landscape stack chrome —
  * top nameplate (name + Classic/Legacy mana pips), art aperture, type line,
- * upright tan rules (inline mana), defense shield, left-edge collector, hologram.
+ * upright rules (inline mana), defense shield, left-edge collector, hologram.
+ * MotM default: bordered name/type/rules plates (stroke + translucent interior);
+ * solid panel fill is opt-in via Advanced → Name/Type/Rules box colors.
  * Name / type / rules typography follow the same studio FontMenu controls as other layouts.
  */
 import { Fragment, memo, useCallback, useMemo, useRef, useState } from 'react'
@@ -25,6 +27,11 @@ import {
   layoutUsesBattleChrome,
   normalizeBattleDefense,
 } from '../../../authority/battleLayoutAuthority'
+import { DEFAULT_PANEL_BOX_HEX } from '../../../authority/boxColorUiAuthority'
+import {
+  effectivePanelBackground,
+  resolvePanelBackgroundContrastHex,
+} from '../../../authority/panelBackgroundAuthority'
 import { addBattleArtInnerClipPathForRect, addBattleRoundRectPath } from './battleArtPath'
 import { getActiveLayoutCapabilitiesFromState } from '../../../authority/layoutRegistry'
 import type { LayoutId } from '../../../authority/layoutTaxonomy'
@@ -70,6 +77,20 @@ function lightenHex(hex: string, amount: number): string {
   const g = Math.max(0, Math.min(255, Math.round(parseInt(n.slice(2, 4), 16) + (255 - parseInt(n.slice(2, 4), 16)) * amount)))
   const b = Math.max(0, Math.min(255, Math.round(parseInt(n.slice(4, 6), 16) + (255 - parseInt(n.slice(4, 6), 16)) * amount)))
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const n = hex.replace(/^#/, '')
+  if (n.length !== 6) return `rgba(0,0,0,${alpha})`
+  const r = parseInt(n.slice(0, 2), 16)
+  const g = parseInt(n.slice(2, 4), 16)
+  const b = parseInt(n.slice(4, 6), 16)
+  return `rgba(${r},${g},${b},${Math.max(0, Math.min(1, alpha))})`
+}
+
+/** Default cream box color → MotM outline plate; any other Advanced color = opt-in solid fill. */
+function isBattleOutlinePlate(stored: string): boolean {
+  return resolvePanelBackgroundContrastHex(stored).toLowerCase() === DEFAULT_PANEL_BOX_HEX.toLowerCase()
 }
 
 /** MotM-like name/type plate — soft corners, not a full pill. */
@@ -133,6 +154,10 @@ function BattleChromeLayer() {
     manualColorHex5,
     manualColorCount,
     showHologram,
+    nameBoxColor,
+    typeLineBoxColor,
+    rulesTextBoxColor,
+    panelBackgroundPreview,
   } = useCardStore(
     (s) => ({
       currentLayout: s.currentLayout,
@@ -161,6 +186,10 @@ function BattleChromeLayer() {
       manualColorHex5: s.manualColorHex5,
       manualColorCount: s.manualColorCount,
       showHologram: s.showHologram,
+      nameBoxColor: s.cardData.nameBoxColor,
+      typeLineBoxColor: s.cardData.typeLineBoxColor,
+      rulesTextBoxColor: s.cardData.rulesTextBoxColor,
+      panelBackgroundPreview: s.panelBackgroundPreview,
     }),
     shallow,
   )
@@ -280,7 +309,25 @@ function BattleChromeLayer() {
 
   const fill = identity.stroke
   const stroke = useMemo(() => darkenHex(fill, 0.35), [fill])
-  const highlight = useMemo(() => lightenHex(fill, 0.28), [fill])
+  /** MotM light plate border (thin light/identity stroke around translucent boxes). */
+  const plateBorder = useMemo(() => lightenHex(fill, 0.55), [fill])
+  const effectiveNameBox = effectivePanelBackground('nameBoxColor', nameBoxColor, panelBackgroundPreview)
+  const effectiveTypeBox = effectivePanelBackground(
+    'typeLineBoxColor',
+    typeLineBoxColor,
+    panelBackgroundPreview,
+  )
+  const effectiveRulesBox = effectivePanelBackground(
+    'rulesTextBoxColor',
+    rulesTextBoxColor,
+    panelBackgroundPreview,
+  )
+  const nameOutline = isBattleOutlinePlate(effectiveNameBox)
+  const typeOutline = isBattleOutlinePlate(effectiveTypeBox)
+  const rulesOutline = isBattleOutlinePlate(effectiveRulesBox)
+  const nameFillHex = resolvePanelBackgroundContrastHex(effectiveNameBox)
+  const typeFillHex = resolvePanelBackgroundContrastHex(effectiveTypeBox)
+  const rulesFillHex = resolvePanelBackgroundContrastHex(effectiveRulesBox)
   const stage = getBattleStageSize()
   const trim = getBattleTrimRect()
   const nameR = getBattleNameRect()
@@ -372,9 +419,9 @@ function BattleChromeLayer() {
   return (
     <Layer listening={false}>
       {/*
-        Bleed + thin MotM brown/identity frame chrome only.
-        Art cover-fills the shared inner-face hole (getBattleArtRect); plates/rules
-        draw on top. Do not shrink art back to the plate bay.
+        Bleed + MotM identity frame chrome.
+        Art cover-fills the shared aperture (left-inset for collector strip;
+        flush top/right/bottom). Plates/rules draw on top.
       */}
       <Shape
         listening={false}
@@ -386,7 +433,7 @@ function BattleChromeLayer() {
           addBattleRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, cornerRadii, leftTangentExtra)
           c.fillStyle = '#0a0a0a'
           c.fill('evenodd')
-          // Brown frame chrome: trim minus art aperture (same path ArtLayer clips to).
+          // Frame chrome: trim minus art aperture (left strip stays frame-colored).
           c.beginPath()
           addBattleRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, cornerRadii, leftTangentExtra)
           addBattleArtInnerClipPathForRect(c, artR.x, artR.y, artR.width, artR.height)
@@ -400,7 +447,7 @@ function BattleChromeLayer() {
         }}
       />
 
-      {/* Top nameplate — flush above art */}
+      {/* Top nameplate — MotM bordered box (outline default; solid fill opt-in). */}
       <Shape
         x={nameR.x}
         y={nameR.y}
@@ -409,15 +456,23 @@ function BattleChromeLayer() {
           const c = ctx as unknown as CanvasRenderingContext2D
           c.beginPath()
           addPlatePath(c, nameR.width, nameR.height)
-          const g = c.createLinearGradient(0, 0, 0, nameR.height)
-          g.addColorStop(0, highlight)
-          g.addColorStop(0.45, fill)
-          g.addColorStop(1, stroke)
-          c.fillStyle = g
-          c.fill()
-          c.strokeStyle = stroke
-          c.lineWidth = 2
-          c.stroke()
+          if (nameOutline) {
+            c.fillStyle = hexToRgba(fill, 0.38)
+            c.fill()
+            c.strokeStyle = plateBorder
+            c.lineWidth = 2.5
+            c.stroke()
+          } else {
+            const g = c.createLinearGradient(0, 0, 0, nameR.height)
+            g.addColorStop(0, lightenHex(nameFillHex, 0.22))
+            g.addColorStop(0.45, nameFillHex)
+            g.addColorStop(1, darkenHex(nameFillHex, 0.28))
+            c.fillStyle = g
+            c.fill()
+            c.strokeStyle = darkenHex(nameFillHex, 0.35)
+            c.lineWidth = 2
+            c.stroke()
+          }
         }}
       />
 
@@ -548,15 +603,23 @@ function BattleChromeLayer() {
           const c = ctx as unknown as CanvasRenderingContext2D
           c.beginPath()
           addPlatePath(c, typeR.width, typeR.height)
-          const g = c.createLinearGradient(0, 0, 0, typeR.height)
-          g.addColorStop(0, highlight)
-          g.addColorStop(0.5, fill)
-          g.addColorStop(1, stroke)
-          c.fillStyle = g
-          c.fill()
-          c.strokeStyle = stroke
-          c.lineWidth = 2
-          c.stroke()
+          if (typeOutline) {
+            c.fillStyle = hexToRgba(fill, 0.38)
+            c.fill()
+            c.strokeStyle = plateBorder
+            c.lineWidth = 2.5
+            c.stroke()
+          } else {
+            const g = c.createLinearGradient(0, 0, 0, typeR.height)
+            g.addColorStop(0, lightenHex(typeFillHex, 0.22))
+            g.addColorStop(0.5, typeFillHex)
+            g.addColorStop(1, darkenHex(typeFillHex, 0.28))
+            c.fillStyle = g
+            c.fill()
+            c.strokeStyle = darkenHex(typeFillHex, 0.35)
+            c.lineWidth = 2
+            c.stroke()
+          }
         }}
       />
       <Text
@@ -588,11 +651,20 @@ function BattleChromeLayer() {
           c.arcTo(rulesR.x, rulesR.y + rulesR.height, rulesR.x, rulesR.y, r)
           c.arcTo(rulesR.x, rulesR.y, rulesR.x + rulesR.width, rulesR.y, r)
           c.closePath()
-          c.fillStyle = '#f4ebe0'
-          c.fill()
-          c.strokeStyle = 'rgba(80,60,40,0.28)'
-          c.lineWidth = 2
-          c.stroke()
+          if (rulesOutline) {
+            // MotM parchment: translucent interior + light identity stroke border.
+            c.fillStyle = 'rgba(244, 235, 224, 0.52)'
+            c.fill()
+            c.strokeStyle = plateBorder
+            c.lineWidth = 2.5
+            c.stroke()
+          } else {
+            c.fillStyle = rulesFillHex
+            c.fill()
+            c.strokeStyle = darkenHex(rulesFillHex, 0.35)
+            c.lineWidth = 2
+            c.stroke()
+          }
         }}
       />
       {rulesItems.map((it, idx) =>
@@ -720,7 +792,7 @@ function BattleChromeLayer() {
         />
       </Group>
 
-      {/* Inner face is never matted — art fills the ring hole under these plates. */}
+      {/* Left frame strip holds collector; art fills the aperture under these plates. */}
     </Layer>
   )
 }

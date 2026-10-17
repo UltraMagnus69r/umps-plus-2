@@ -62,7 +62,7 @@ function ArtLayer() {
   })
   const modernV2Layout = capabilities.supportsPlaneswalkerModernV2Layout
   const battleLayout = capabilities.supportsBattleChrome === true
-  /** Battle: always the full inner-face aperture (same as chrome ring hole). */
+  /** Battle: MotM left-inset art aperture (same as chrome ring hole). */
   const artR = modernV2Layout
     ? getPlaneswalkerModernV2ArtInnerRect()
     : battleLayout
@@ -146,7 +146,7 @@ function ArtLayer() {
   }, [applyArtZoom])
 
   const baseScale = artInnerW / (artImg?.width ?? 1)
-  /** Battle full-face: never letterbox — zoom at least cover so art fills the grey aperture. */
+  /** Battle: never letterbox — zoom at least cover so art fills the aperture. */
   const minCoverZoom =
     battleLayout && artImg
       ? getCoverZoomMultiplier({
@@ -289,7 +289,7 @@ function ArtLayer() {
               }
             : battleLayout
               ? {
-                  // Full inner-face path (same bounds/radii as chrome frame ring hole).
+                  // Art aperture path (same bounds/radii as chrome frame ring hole).
                   // Konva begins the path and calls clip() after clipFunc returns.
                   clipFunc: (ctx) => {
                     const c = ctx as unknown as CanvasRenderingContext2D
