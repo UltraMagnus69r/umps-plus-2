@@ -93,18 +93,16 @@ function isBattleOutlinePlate(stored: string): boolean {
   return resolvePanelBackgroundContrastHex(stored).toLowerCase() === DEFAULT_PANEL_BOX_HEX.toLowerCase()
 }
 
-/** MotM-like name/type plate — soft corners, not a full pill. */
+/** MotM name/type plate — 25px circular end-cap radii on left/right ends. */
+const BATTLE_PLATE_END_RADIUS_PX = 25
+
 function addPlatePath(ctx: CanvasRenderingContext2D, w: number, h: number): void {
-  const r = Math.min(w, h) * 0.28
+  const r = Math.min(BATTLE_PLATE_END_RADIUS_PX, w / 2, h / 2)
   ctx.moveTo(r, 0)
-  ctx.lineTo(w - r, 0)
-  ctx.quadraticCurveTo(w, 0, w, r)
-  ctx.lineTo(w, h - r)
-  ctx.quadraticCurveTo(w, h, w - r, h)
-  ctx.lineTo(r, h)
-  ctx.quadraticCurveTo(0, h, 0, h - r)
-  ctx.lineTo(0, r)
-  ctx.quadraticCurveTo(0, 0, r, 0)
+  ctx.arcTo(w, 0, w, h, r)
+  ctx.arcTo(w, h, 0, h, r)
+  ctx.arcTo(0, h, 0, 0, r)
+  ctx.arcTo(0, 0, w, 0, r)
   ctx.closePath()
 }
 
@@ -433,11 +431,20 @@ function BattleChromeLayer() {
           c.fillStyle = '#0a0a0a'
           c.fill('evenodd')
           // Left collector strip (= trim − art aperture): black outer border, not identity green.
-          // No identity stroke on the trim path — that leftover frame stroke showed as a thin
-          // green line curving through the black left strip (MotM follow-up #2).
+          // No identity stroke on the trim path (#49). Punch hole is inset 2px into art on the
+          // left so black covers the art-edge AA fringe that read as a thin grey/green trim
+          // stroke along the inner frame curve in the collector strip.
+          // Cover art-edge AA / leftover trim fringe in the collector strip.
+          const seamCoverPx = 4
           c.beginPath()
           addBattleRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, cornerRadii, leftTangentExtra)
-          addBattleArtInnerClipPathForRect(c, artR.x, artR.y, artR.width, artR.height)
+          addBattleArtInnerClipPathForRect(
+            c,
+            artR.x + seamCoverPx,
+            artR.y,
+            Math.max(1, artR.width - seamCoverPx),
+            artR.height,
+          )
           c.fillStyle = '#0a0a0a'
           c.fill('evenodd')
         }}

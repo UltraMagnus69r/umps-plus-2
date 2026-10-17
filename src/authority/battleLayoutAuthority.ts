@@ -40,19 +40,37 @@ const WIDEN_RIGHT = 24 / BATTLE_TRIM_WIDTH
  * Plate/rules seating (overlays on art). Art left edge aligns with CONTENT_X
  * so the MotM black collector strip shows; top/right/bottom stay flush
  * to the black outer edge (no dark-grey / identity-green mats on those sides).
- * −75 trim-px vs #49 (158): art/collector/holo shift left (was wrong-direction shrink).
+ * Art/collector/holo stay at CONTENT_X (83 after #50). Plates inset from art
+ * left (−50) so chrome boxes sit clear of the black strip; rules also −15
+ * from the right. Name top / rules bottom flush with art box.
  */
 const CONTENT_X = 83 / 2100
+/** Full content span used for art-aligned right edge before plate insets. */
 const CONTENT_W = 1955 / 2100 + WIDEN_RIGHT
-const TOP = 44 / 1500
-const BOTTOM = 40 / 1500
+/** Name / type shortened 50 trim-px from the left (left edges move right). */
+const PLATE_INSET_LEFT = 50 / 2100
+const PLATE_X = CONTENT_X + PLATE_INSET_LEFT
+const PLATE_W = CONTENT_W - PLATE_INSET_LEFT
+/**
+ * Rules: −50 with plates, then −20 more from left and −15−5 from right
+ * (total −70 left / −20 right vs art-aligned content span).
+ */
+const RULES_INSET_LEFT = PLATE_INSET_LEFT + 20 / 2100
+const RULES_INSET_RIGHT = 20 / 2100
+const RULES_X = CONTENT_X + RULES_INSET_LEFT
+const RULES_W = CONTENT_W - RULES_INSET_LEFT - RULES_INSET_RIGHT
 const PLATE_H = 92 / 1500
-const RULES_H = 528 / 1500
-const NAME_Y = TOP
-const RULES_BOTTOM = 1 - BOTTOM
-const RULES_Y = RULES_BOTTOM - RULES_H
+/** Prior rules height before extending flush to art bottom. */
+const RULES_H_PRIOR = 528 / 1500
+const BOTTOM_PRIOR = 40 / 1500
+/** Nameplate top flush with art top (art y = 0). */
+const NAME_Y = 0
+/** Keep type/rules top seating; extend rules bottom flush with art bottom. */
+const RULES_Y = 1 - BOTTOM_PRIOR - RULES_H_PRIOR
+const RULES_BOTTOM = 1
+const RULES_H = RULES_BOTTOM - RULES_Y
 const TYPE_Y = RULES_Y - PLATE_H
-const RULES_RIGHT = CONTENT_X + CONTENT_W
+const RULES_RIGHT = RULES_X + RULES_W
 const DEFENSE_W = 138 / 2100
 const DEFENSE_H = 158 / 1500
 /** Transform mark — covers left end of name plate. */
@@ -69,18 +87,18 @@ const HOLO_H = 110 / 1500
 const FACE = {
   /** Vertical collector / credit strip on the left black outer-border band. */
   collector: { x: -3 / 2100, y: 56 / 1500, w: 72 / 2100, h: 1390 / 1500 },
-  /** Horizontal nameplate — drawn over art. */
-  name: { x: CONTENT_X, y: NAME_Y, w: CONTENT_W, h: PLATE_H },
+  /** Horizontal nameplate — drawn over art; left inset from art edge. */
+  name: { x: PLATE_X, y: NAME_Y, w: PLATE_W, h: PLATE_H },
   /** DFC / transform mark covering the left end of the nameplate. */
   transform: {
-    x: CONTENT_X - 6 / 2100,
+    x: PLATE_X - 6 / 2100,
     y: NAME_Y + PLATE_H / 2 - TRANSFORM_SIZE_Y / 2,
     w: TRANSFORM_SIZE,
     h: TRANSFORM_SIZE_Y,
   },
   /** Mana chips along the right of the nameplate. */
   mana: {
-    x: CONTENT_X + CONTENT_W - 460 / 2100,
+    x: PLATE_X + PLATE_W - 460 / 2100,
     y: NAME_Y + (PLATE_H - 72 / 1500) / 2,
     w: 440 / 2100,
     h: 72 / 1500,
@@ -95,16 +113,16 @@ const FACE = {
     w: 1 - CONTENT_X,
     h: 1,
   },
-  /** Type line — drawn over art. */
-  type: { x: CONTENT_X, y: TYPE_Y, w: CONTENT_W, h: PLATE_H },
+  /** Type line — drawn over art; left inset matches nameplate. */
+  type: { x: PLATE_X, y: TYPE_Y, w: PLATE_W, h: PLATE_H },
   setSymbol: {
-    x: CONTENT_X + CONTENT_W - 120 / 2100,
+    x: PLATE_X + PLATE_W - 120 / 2100,
     y: TYPE_Y + (PLATE_H - 68 / 1500) / 2,
     w: 96 / 2100,
     h: 68 / 1500,
   },
-  /** Tan parchment rules — drawn over art. */
-  rules: { x: CONTENT_X, y: RULES_Y, w: CONTENT_W, h: RULES_H },
+  /** Tan parchment rules — left −70 / right −20 vs prior content span. */
+  rules: { x: RULES_X, y: RULES_Y, w: RULES_W, h: RULES_H },
   /** Defense shield centered on lower-right corner of rules (half in / half out). */
   defense: {
     x: RULES_RIGHT - DEFENSE_W / 2,
