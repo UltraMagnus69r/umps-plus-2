@@ -246,29 +246,31 @@ function BattleChromeLayer() {
   return (
     <Layer listening={false}>
       {/*
-        Bleed + outer frame. Punch the inner-border path (art rect + corner radii —
-        identical to ArtLayer clip) so the art window matches that shape; plates /
-        rules / flip stay painted on top (z-order unchanged).
+        Bleed ring + frame ring only — never paint the inner-face aperture.
+        (A full-stage fillRect would cover ArtLayer; evenodd holes stay transparent.)
+        ArtLayer cover-fills that aperture underneath; plates/rules/flip draw on top.
       */}
       <Shape
         listening={false}
         sceneFunc={(ctx) => {
           const c = ctx as unknown as CanvasRenderingContext2D
+          // Bleed: stage rect minus trim (black outside the card).
+          c.beginPath()
+          c.rect(0, 0, stage.width, stage.height)
+          addBattleRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, cornerRadii, leftTangentExtra)
           c.fillStyle = '#0a0a0a'
-          c.fillRect(0, 0, stage.width, stage.height)
+          c.fill('evenodd')
+          // Frame ring: trim minus inner-face art path (same path ArtLayer clips to).
           c.beginPath()
           addBattleRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, cornerRadii, leftTangentExtra)
+          addBattleArtInnerClipPathForRect(c, artR.x, artR.y, artR.width, artR.height)
           c.fillStyle = fill
-          c.fill()
+          c.fill('evenodd')
+          c.beginPath()
+          addBattleRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, cornerRadii, leftTangentExtra)
           c.strokeStyle = stroke
           c.lineWidth = 4
           c.stroke()
-          // Same path as ArtLayer battle clip (bounds + radii), not axis-aligned clearRect.
-          c.beginPath()
-          addBattleArtInnerClipPathForRect(c, artR.x, artR.y, artR.width, artR.height)
-          c.globalCompositeOperation = 'destination-out'
-          c.fill()
-          c.globalCompositeOperation = 'source-over'
         }}
       />
 
@@ -503,7 +505,7 @@ function BattleChromeLayer() {
         />
       </Group>
 
-      {/* Art bay is intentionally flush — no inset stroke / inner border mat. */}
+      {/* Inner face is never matted — art fills the ring hole under these plates. */}
     </Layer>
   )
 }

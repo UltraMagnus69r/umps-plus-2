@@ -2,7 +2,11 @@ import { memo, useCallback, useEffect, useRef } from 'react'
 import { Group, Image, Layer } from 'react-konva'
 import type Konva from 'konva'
 import { shallow } from 'zustand/shallow'
-import { clampArtPlacementOffsets } from '../../../authority/artPlacementAuthority'
+import {
+  clampArtPlacementOffsets,
+  getCoverZoomMultiplier,
+} from '../../../authority/artPlacementAuthority'
+import { getBattleArtRect } from '../../../authority/battleLayoutAuthority'
 import {
   getActiveLayoutCapabilitiesFromState,
   getActiveLayoutArtRectFromState,
@@ -58,12 +62,15 @@ function ArtLayer() {
   })
   const modernV2Layout = capabilities.supportsPlaneswalkerModernV2Layout
   const battleLayout = capabilities.supportsBattleChrome === true
+  /** Battle: always the full inner-face aperture (same as chrome ring hole). */
   const artR = modernV2Layout
     ? getPlaneswalkerModernV2ArtInnerRect()
-    : getActiveLayoutArtRectFromState({
-        currentLayout,
-        cardData: { layout: activeLayout },
-      })
+    : battleLayout
+      ? getBattleArtRect()
+      : getActiveLayoutArtRectFromState({
+          currentLayout,
+          cardData: { layout: activeLayout },
+        })
   const artInnerX = artR.x
   const artInnerY = artR.y
   const artInnerW = artR.width
@@ -90,10 +97,20 @@ function ArtLayer() {
 
   const pinchRef = useRef<{ distance: number; zoom: number } | null>(null)
 
+  const battleCoverMinZoom = useCallback(() => {
+    if (!battleLayout || !artImg) return 1
+    return getCoverZoomMultiplier({
+      imageWidth: artImg.width,
+      imageHeight: artImg.height,
+      bounds: { x: artInnerX, y: artInnerY, width: artInnerW, height: artInnerH },
+    })
+  }, [artImg, artInnerH, artInnerW, artInnerX, artInnerY, battleLayout])
+
   const applyArtZoom = useCallback(
     (nextZoom: number, commit: boolean) => {
       const state = useCardStore.getState()
-      const zoom = Math.min(4, Math.max(1, nextZoom))
+      const minZ = battleCoverMinZoom()
+      const zoom = Math.min(4, Math.max(minZ, nextZoom))
       if (!artImg) {
         state.setManualArtPlacement({ artZoom: zoom })
         if (commit) state.commitState()
@@ -106,6 +123,7 @@ function ArtLayer() {
         artZoom: zoom,
         artOffsetX: state.cardData.artOffsetX ?? 0,
         artOffsetY: state.cardData.artOffsetY ?? 0,
+        minZoom: minZ,
       })
       state.setManualArtPlacement({
         artZoom: zoom,
@@ -114,7 +132,7 @@ function ArtLayer() {
       })
       if (commit) state.commitState()
     },
-    [artImg, artInnerH, artInnerW, artInnerX, artInnerY],
+    [artImg, artInnerH, artInnerW, artInnerX, artInnerY, battleCoverMinZoom],
   )
 
   useEffect(() => {
@@ -128,7 +146,16 @@ function ArtLayer() {
   }, [applyArtZoom])
 
   const baseScale = artInnerW / (artImg?.width ?? 1)
-  const zoom = Math.max(1, artZoom ?? 1)
+  /** Battle full-face: never letterbox — zoom at least cover so art fills the grey aperture. */
+  const minCoverZoom =
+    battleLayout && artImg
+      ? getCoverZoomMultiplier({
+          imageWidth: artImg.width,
+          imageHeight: artImg.height,
+          bounds: { x: artInnerX, y: artInnerY, width: artInnerW, height: artInnerH },
+        })
+      : 1
+  const zoom = Math.max(minCoverZoom, artZoom ?? 1)
   const scale = baseScale * zoom
   const dispW = (artImg?.width ?? 0) * scale
   const dispH = (artImg?.height ?? 0) * scale
@@ -139,7 +166,8 @@ function ArtLayer() {
     (ox: number, oy: number, nextZoom?: number) => {
       const node = artNodeRef.current
       if (!node || !artImg) return
-      const z = Math.max(1, nextZoom ?? useCardStore.getState().cardData.artZoom ?? 1)
+      const minZ = battleCoverMinZoom()
+      const z = Math.max(minZ, nextZoom ?? useCardStore.getState().cardData.artZoom ?? 1)
       const s = (artInnerW / artImg.width) * z
       const dw = artImg.width * s
       const dh = artImg.height * s
@@ -150,7 +178,7 @@ function ArtLayer() {
       })
       node.getLayer()?.batchDraw()
     },
-    [artImg, artInnerCx, artInnerCy, artInnerW],
+    [artImg, artInnerCx, artInnerCy, artInnerW, battleCoverMinZoom],
   )
 
   const beginArtDrag = useCallback(
@@ -200,13 +228,15 @@ function ArtLayer() {
 
       const nextX = drag.originOffsetX + (e.clientX - drag.startClientX) * drag.designPerClientX
       const nextY = drag.originOffsetY + (e.clientY - drag.startClientY) * drag.designPerClientY
+      const minZ = battleCoverMinZoom()
       const clamped = clampArtPlacementOffsets({
         imageWidth: artImg.width,
         imageHeight: artImg.height,
         bounds: { x: artInnerX, y: artInnerY, width: artInnerW, height: artInnerH },
-        artZoom: useCardStore.getState().cardData.artZoom ?? 1,
+        artZoom: Math.max(minZ, useCardStore.getState().cardData.artZoom ?? 1),
         artOffsetX: nextX,
         artOffsetY: nextY,
+        minZoom: minZ,
       })
       syncNodeFromOffsets(clamped.artOffsetX, clamped.artOffsetY)
       useCardStore.getState().setManualArtPlacement({
@@ -230,7 +260,7 @@ function ArtLayer() {
       window.removeEventListener('pointerup', onUp)
       window.removeEventListener('pointercancel', onUp)
     }
-  }, [artImg, artInnerH, artInnerW, artInnerX, artInnerY, syncNodeFromOffsets])
+  }, [artImg, artInnerH, artInnerW, artInnerX, artInnerY, battleCoverMinZoom, syncNodeFromOffsets])
 
   return (
     <Layer ref={layerRef} listening={true}>
@@ -246,12 +276,11 @@ function ArtLayer() {
               }
             : battleLayout
               ? {
-                  // Same path as BattleChromeLayer inner-border punch (bounds + radii).
+                  // Full inner-face path (same bounds/radii as chrome frame ring hole).
+                  // Konva begins the path and calls clip() after clipFunc returns.
                   clipFunc: (ctx) => {
                     const c = ctx as unknown as CanvasRenderingContext2D
-                    c.beginPath()
                     addBattleArtInnerClipPath(c)
-                    c.clip()
                   },
                 }
               : {
