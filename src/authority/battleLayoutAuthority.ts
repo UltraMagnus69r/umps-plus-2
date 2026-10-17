@@ -1,10 +1,11 @@
 /**
  * Battle / Siege — landscape stack face (wider than tall).
  * Ground truth: fidelity-battle/battle-no-inner-border-ref.png (Invasion of Ikoria)
- * Art fills the full inner content face underneath name/type/rules/defense chrome.
- * Collector + hologram on left edge.
+ * + battle-art-user-circled.png — art cover-fills the full interior aperture of the
+ * brown frame chrome (under name/type/rules/defense). Not the plate-bay postage stamp.
+ * Collector + hologram sit on the left over that art.
  */
-import { BLEED_PX, INNER_BORDER_CORNER_RADIUS_MODERN } from './geometryAuthority'
+import { BLEED_PX, INNER_BORDER_CORNER_RADIUS_MODERN, mmToPx } from './geometryAuthority'
 import type { LayoutId } from './layoutTaxonomy'
 import { isBattleLayout } from './layoutTaxonomy'
 
@@ -31,12 +32,13 @@ function n(rect: { x: number; y: number; w: number; h: number }): BattleStageRec
   }
 }
 
-/** Slight right widen so plates/art reach the right frame edge. */
+/** Slight right widen so plates reach the right content edge. */
 const WIDEN_RIGHT = 24 / BATTLE_TRIM_WIDTH
 
 /**
- * Stack chrome seating + full inner-face art (under plates/rules).
- * Art fills the entire content bay (where the old mat showed); chrome draws on top.
+ * Plate/rules seating (inset overlays on top of full-bleed art).
+ * Art itself uses {@link ART_BORDER_INSET_*} — flush to the inner face of the
+ * MotM brown frame chrome (thin identity ring), not the plate bay.
  */
 const CONTENT_X = 108 / 2100
 const CONTENT_W = 1930 / 2100 + WIDEN_RIGHT
@@ -49,9 +51,14 @@ const RULES_BOTTOM = 1 - BOTTOM
 const RULES_Y = RULES_BOTTOM - RULES_H
 const TYPE_Y = RULES_Y - PLATE_H
 const RULES_RIGHT = CONTENT_X + CONTENT_W
-/** Full inner face behind name → rules (no mid-band inset window). */
-const ART_FACE_Y = 32 / 1500
-const ART_FACE_BOTTOM = 1 - 32 / 1500
+/**
+ * Thin MotM frame chrome thickness (trim → art). Matches Standard modern
+ * inner-border inset (~2.25 mm) so the brown ring stays a frame, not a mat.
+ * Prior CONTENT_X art left a ~108 px postage-stamp bay with empty L/R bands.
+ */
+const ART_BORDER_INSET_PX = mmToPx(2.25)
+const ART_BORDER_INSET_X = ART_BORDER_INSET_PX / BATTLE_TRIM_WIDTH
+const ART_BORDER_INSET_Y = ART_BORDER_INSET_PX / BATTLE_TRIM_HEIGHT
 const DEFENSE_W = 138 / 2100
 const DEFENSE_H = 158 / 1500
 /** Transform mark — covers left end of name plate. */
@@ -82,14 +89,14 @@ const FACE = {
     h: 72 / 1500,
   },
   /**
-   * Art / inner-border content face (under name/type/rules/defense).
-   * Clip + chrome punch use this rect with {@link getBattleInnerBorderCornerRadii}.
+   * Full interior aperture of the brown frame chrome (under name/type/rules/defense).
+   * Outer edge = inner face of the identity ring — not an inset mid-band window.
    */
   art: {
-    x: CONTENT_X,
-    y: ART_FACE_Y,
-    w: CONTENT_W,
-    h: ART_FACE_BOTTOM - ART_FACE_Y,
+    x: ART_BORDER_INSET_X,
+    y: ART_BORDER_INSET_Y,
+    w: 1 - 2 * ART_BORDER_INSET_X,
+    h: 1 - 2 * ART_BORDER_INSET_Y,
   },
   /** Type line — drawn over art. */
   type: { x: CONTENT_X, y: TYPE_Y, w: CONTENT_W, h: PLATE_H },
@@ -108,7 +115,7 @@ const FACE = {
     w: DEFENSE_W,
     h: DEFENSE_H,
   },
-  /** Security / hologram stamp — left vertical frame. */
+  /** Security / hologram stamp — left vertical frame over art. */
   hologram: {
     x: 10 / 2100,
     y: (NAME_Y + RULES_BOTTOM) / 2 - 55 / 1500,
@@ -132,9 +139,10 @@ export function getBattleStageSize(): { width: number; height: number } {
 }
 
 /**
- * Art aperture — full light-grey inner face (under name/type/rules/defense).
- * Identical to {@link getBattleInnerBorderRect}; ArtLayer cover-fills + clips this,
- * BattleChrome draws only the frame ring outside it (evenodd), never a mat fill.
+ * Art aperture — full interior of the brown frame chrome
+ * (under name/type/rules/defense). Identical to {@link getBattleInnerBorderRect}.
+ * ArtLayer cover-fills + clips this; BattleChrome draws the thin identity ring
+ * outside it (evenodd), never a plate-bay mat.
  */
 export function getBattleArtRect(): BattleStageRect {
   return getBattleInnerBorderRect()
@@ -143,6 +151,7 @@ export function getBattleArtRect(): BattleStageRect {
 /**
  * Inner-face aperture (stage px) — ArtLayer clip and chrome frame-ring hole share
  * this rect and the Battle corner radii (including left tangent extra).
+ * This is the hole inside the brown chrome, not the name/type plate bay.
  */
 export function getBattleInnerBorderRect(): BattleStageRect {
   return n(FACE.art)
