@@ -12,6 +12,7 @@ import {
   PW_MODERN_V2_RULES_BOX_BOTTOM_CORNER_RADIUS_PX,
 } from '../../../authority/planeswalkerModernV2LayoutAuthority'
 import type { LayoutId } from '../../../authority/layoutTaxonomy'
+import { effectivePanelBackground } from '../../../authority/panelBackgroundAuthority'
 import { usePanelBackgroundImage } from '../../../hooks/usePanelBackgroundImage'
 import { useCardStore } from '../../../store/useCardStore'
 import {
@@ -36,6 +37,9 @@ function RulesTextBoxTextureLayer() {
     rulesTextBoxGradientDirection,
     rulesTextBoxGradientSaturation,
     rulesTextBoxGradientReversed,
+    panelFrostEnabled,
+    panelFrostOpacity,
+    panelBackgroundPreview,
   } = useCardStore(
     (s) => ({
       currentLayout: s.currentLayout,
@@ -47,8 +51,16 @@ function RulesTextBoxTextureLayer() {
       rulesTextBoxGradientDirection: s.cardData.rulesTextBoxGradientDirection,
       rulesTextBoxGradientSaturation: s.cardData.rulesTextBoxGradientSaturation,
       rulesTextBoxGradientReversed: s.cardData.rulesTextBoxGradientReversed,
+      panelFrostEnabled: s.cardData.panelFrostEnabled,
+      panelFrostOpacity: s.cardData.panelFrostOpacity,
+      panelBackgroundPreview: s.panelBackgroundPreview,
     }),
     shallow,
+  )
+
+  const effectiveRulesTextBoxColor = useMemo(
+    () => effectivePanelBackground('rulesTextBoxColor', rulesTextBoxColor, panelBackgroundPreview),
+    [rulesTextBoxColor, panelBackgroundPreview],
   )
 
   const caps = getActiveLayoutCapabilitiesFromState({
@@ -84,7 +96,7 @@ function RulesTextBoxTextureLayer() {
     }
   }, [modernV2Layout])
 
-  const rulesBoxBgImage = usePanelBackgroundImage(rulesTextBoxColor)
+  const rulesBoxBgImage = usePanelBackgroundImage(effectiveRulesTextBoxColor)
 
   const [textureImg, setTextureImg] = useState<HTMLImageElement | null>(null)
   const textureGroupRef = useRef<Konva.Group>(null)
@@ -111,11 +123,13 @@ function RulesTextBoxTextureLayer() {
     rulesTextBoxTextureOpacity,
     rulesRect.width,
     rulesRect.height,
-    rulesTextBoxColor,
+    effectiveRulesTextBoxColor,
     rulesTextBoxGradientEnabled,
     rulesTextBoxGradientDirection,
     rulesTextBoxGradientSaturation,
     rulesTextBoxGradientReversed,
+    panelFrostEnabled,
+    panelFrostOpacity,
     modernV2Layout,
   ])
 
@@ -128,22 +142,26 @@ function RulesTextBoxTextureLayer() {
       getKonvaBoxPanelRectProps(
         rw,
         rh,
-        rulesTextBoxColor,
+        effectiveRulesTextBoxColor,
         rulesTextBoxGradientEnabled,
         rulesTextBoxGradientDirection,
         rulesTextBoxGradientSaturation,
         rulesTextBoxGradientReversed,
         rulesBoxBgImage,
+        panelFrostEnabled,
+        panelFrostOpacity,
       ),
     [
       rw,
       rh,
-      rulesTextBoxColor,
+      effectiveRulesTextBoxColor,
       rulesTextBoxGradientEnabled,
       rulesTextBoxGradientDirection,
       rulesTextBoxGradientSaturation,
       rulesTextBoxGradientReversed,
       rulesBoxBgImage,
+      panelFrostEnabled,
+      panelFrostOpacity,
     ],
   )
 

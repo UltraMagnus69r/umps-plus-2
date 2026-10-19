@@ -19,7 +19,12 @@ export default function PanelFillSwatch({ value, ariaLabel, onHexChange }: Panel
         aria-label={ariaLabel}
         title={value}
       >
-        <img src={textureUrl} alt="" className="h-full w-full object-cover" draggable={false} />
+        <img
+          src={textureUrl}
+          alt=""
+          className="h-full w-auto max-w-none object-left"
+          draggable={false}
+        />
       </div>
     )
   }

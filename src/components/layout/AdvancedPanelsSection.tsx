@@ -170,6 +170,8 @@ export default function AdvancedPanelsSection() {
   const watermarkPath = useCardStore((s) => s.cardData.watermarkPath)
   const customWatermarkDataUrl = useCardStore((s) => s.cardData.customWatermarkDataUrl)
   const watermarkOpacity = useCardStore((s) => s.cardData.watermarkOpacity)
+  const panelFrostEnabled = useCardStore((s) => s.cardData.panelFrostEnabled)
+  const panelFrostOpacity = useCardStore((s) => s.cardData.panelFrostOpacity)
   const panelBackgroundPreview = useCardStore((s) => s.panelBackgroundPreview)
   const referenceImage = useCardStore((s) => s.cardData.referenceImage)
   const referenceOpacity = useCardStore((s) => s.cardData.referenceOpacity)
@@ -192,11 +194,50 @@ export default function AdvancedPanelsSection() {
   )
   const effectivePtBoxColor = effectivePanelBackground('ptBoxColor', ptBoxColor, panelBackgroundPreview)
 
+  const frostOpacityPct = Math.round(
+    Math.max(0, Math.min(1, typeof panelFrostOpacity === 'number' ? panelFrostOpacity : 0.32)) * 100,
+  )
+
   return (
 <div className="space-y-3">
       <p className={`${UI_TEXT_HELP_COMPACT} leading-snug`}>
         Base colors and optional per-panel gradients for name, type, rules, and P/T (preview and export). Typography ink uses your font color when contrast allows.
       </p>
+      <div className="space-y-2 rounded-xl border border-neutral-200/80 bg-neutral-50/60 p-3 dark:border-[var(--sb-border)] dark:bg-[var(--sb-surface-soft)]">
+        <SwitchRow
+          label="Panel Frost"
+          checked={!!panelFrostEnabled}
+          onToggle={() => {
+            setField('panelFrostEnabled', (!panelFrostEnabled) as CardData['panelFrostEnabled'])
+            commitState()
+          }}
+          ariaLabel="Panel frost"
+        />
+        <p className={`${UI_TEXT_HELP_COMPACT} leading-snug`}>
+          Soft white scrim over panel colors and Classic textures so name, type, and rules stay readable.
+        </p>
+        {panelFrostEnabled ? (
+          <FieldRow label="Frost Opacity" layout="stacked">
+            <div className="flex items-center gap-3">
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={frostOpacityPct}
+                onChange={(e) => setField('panelFrostOpacity', Number(e.target.value) / 100)}
+                onMouseUp={commitState}
+                onTouchEnd={commitState}
+                className="w-full min-w-0"
+                aria-label="Panel frost opacity"
+              />
+              <span className={`shrink-0 tabular-nums ${UI_TEXT_METADATA} w-8 text-right`}>
+                {frostOpacityPct}
+              </span>
+            </div>
+          </FieldRow>
+        ) : null}
+      </div>
       <FieldRow label={BOX_PANEL_COLOR_UI.name.rowLabel} layout="stacked">
         <>
           <div className="flex items-center gap-2">

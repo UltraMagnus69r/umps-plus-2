@@ -159,6 +159,8 @@ function FrameLayer() {
     shallow,
   )
   const panelBackgroundPreview = useCardStore((s) => s.panelBackgroundPreview)
+  const panelFrostEnabled = useCardStore((s) => s.cardData.panelFrostEnabled)
+  const panelFrostOpacity = useCardStore((s) => s.cardData.panelFrostOpacity)
   const effectiveTypeLineBoxColor = useMemo(
     () => effectivePanelBackground('typeLineBoxColor', typeLineBoxColor, panelBackgroundPreview),
     [typeLineBoxColor, panelBackgroundPreview],
@@ -480,6 +482,8 @@ function FrameLayer() {
               typeLineBoxGradientSaturation,
               typeLineBoxGradientReversed,
               typeLineBoxBgImage,
+              panelFrostEnabled,
+              panelFrostOpacity,
             )
             drawBeveledFrameOnContext(c, typeOuterW, typeOuterH, plateBarRadius, inner, 'raised', outerStrokeColor, bevelColors, {
               shape: effectiveTypeBarShape,
@@ -509,6 +513,8 @@ function FrameLayer() {
                   rulesTextBoxGradientSaturation,
                   rulesTextBoxGradientReversed,
                   rulesBoxBgImage,
+                  panelFrostEnabled,
+                  panelFrostOpacity,
                 )
             drawBeveledFrameOnContext(c, rulesBoxW, rulesBoxH, 0, inner, 'recessed', outerStrokeColor, bevelColors)
           }}
@@ -535,6 +541,8 @@ function FrameLayer() {
                   rulesTextBoxGradientSaturation,
                   rulesTextBoxGradientReversed,
                   rulesBoxBgImage,
+                  panelFrostEnabled,
+                  panelFrostOpacity,
                 )
             c.beginPath()
             addPlaneswalkerModernV2RulesPanelPath(
