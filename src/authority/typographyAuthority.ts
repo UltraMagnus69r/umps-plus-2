@@ -160,7 +160,8 @@ export function migrateTypographyColorManual(
   if (t.color.toLowerCase() !== fallback.color.toLowerCase()) {
     return { ...t, colorManual: true }
   }
-  return { ...t, colorManual: false }
+  // Match fallback intent (e.g. metadata defaults to white + manual so auto-contrast does not override).
+  return { ...t, colorManual: fallback.colorManual }
 }
 
 export function defaultNameTypography(): CardFieldTypography {
@@ -228,8 +229,9 @@ export function defaultMetadataTypography(): CardFieldTypography {
   return {
     fontKey: 'gillCondensedBold',
     weight: 'bold',
+    /** Collector / footer metadata defaults to white until the user picks a color. */
     color: '#ffffff',
-    colorManual: false,
+    colorManual: true,
     sizePt: 12,
   }
 }

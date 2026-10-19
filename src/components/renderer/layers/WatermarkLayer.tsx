@@ -11,7 +11,7 @@ import type { LayoutId } from '../../../authority/layoutTaxonomy'
 
 /**
  * Module 5.2 — rules-text-area watermark (local assets, store opacity).
- * Composed above frame fill, below TextIconsLayer text.
+ * Composed above rules-box background (texture / parchment / plate), below TextIconsLayer text.
  */
 function WatermarkLayer() {
   const { watermarkPath, watermarkOpacity, customWatermarkDataUrl, currentLayout, activeLayout } = useCardStore(

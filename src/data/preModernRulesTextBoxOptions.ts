@@ -1,12 +1,15 @@
 /**
  * Bundled Standard / Land Pre-Modern rules text box backgrounds — served from `public/premodern-rules-textbox/`.
  * Inner fill region: 1272 × 556 stage px @ 600 DPI.
+ * `none` = no plate/parchment chrome — plain white rules area.
  */
 export type PreModernRulesTextBoxOption = { id: string; label: string; file: string }
 
 export const DEFAULT_PRE_MODERN_RULES_TEXT_BOX_ID = 'white'
+export const NONE_PRE_MODERN_RULES_TEXT_BOX_ID = 'none'
 
 export const PRE_MODERN_RULES_TEXT_BOX_OPTIONS: readonly PreModernRulesTextBoxOption[] = [
+  { id: 'none', label: 'None', file: '' },
   { id: 'white', label: 'White', file: 'white.png' },
   { id: 'blue', label: 'Blue', file: 'blue.png' },
   { id: 'black', label: 'Black', file: 'black.png' },
@@ -21,6 +24,7 @@ export const PRE_MODERN_RULES_TEXT_BOX_OPTIONS: readonly PreModernRulesTextBoxOp
 
 /** Representative mid-tone for rules text ink contrast on bundled backgrounds. */
 export const PRE_MODERN_RULES_TEXT_BOX_CONTRAST_HEX: Record<string, string> = {
+  none: '#ffffff',
   white: '#f2ebe0',
   blue: '#4a6a9a',
   black: '#2a2a2a',
@@ -39,8 +43,13 @@ export function normalizePreModernRulesTextBoxId(value: unknown): string {
   return PRE_MODERN_RULES_TEXT_BOX_OPTIONS.some((o) => o.id === id) ? id : DEFAULT_PRE_MODERN_RULES_TEXT_BOX_ID
 }
 
+export function isNonePreModernRulesTextBoxId(panelId: string): boolean {
+  return normalizePreModernRulesTextBoxId(panelId) === NONE_PRE_MODERN_RULES_TEXT_BOX_ID
+}
+
 export function resolvePreModernRulesTextBoxPublicUrl(panelId: string): string | null {
   const id = normalizePreModernRulesTextBoxId(panelId)
+  if (id === NONE_PRE_MODERN_RULES_TEXT_BOX_ID) return null
   const opt = PRE_MODERN_RULES_TEXT_BOX_OPTIONS.find((o) => o.id === id)
   if (!opt?.file) return null
   return `/premodern-rules-textbox/${encodeURIComponent(opt.file)}`

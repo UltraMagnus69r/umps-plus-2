@@ -78,8 +78,8 @@ function useContainerSize<T extends HTMLElement>() {
  * 3. Frame (art / type / rules bevels; name plate is separate)
  * 3a. Crown (Showcase flourish — above art + inner border + art frame, below name plate)
  * 3b. Name plate
- * 3c. Rules Text Box Surface FX (base color + texture), below watermark
- * 4. Watermark — rules-area mark, above frame fill, below text
+ * 3c. Rules Text Box Surface FX / bundled plate / parchment (base fill), below watermark
+ * 4. Watermark — rules-area mark, above rules-box background, below text
  * 5. Text & Icons
  * 6. Set symbol — Scryfall CDN SVG in type-line slot (above type-line text on the right)
  * 7. P/T overlay — box body, values, pinline above all face chrome (below clone/debug/reference)
@@ -299,10 +299,11 @@ function KonvaStage({
                 {showCrown ? <CrownLayer /> : null}
                 {layoutCaps.supportsNamePlateBox ? <NamePlateLayer /> : null}
                 {showRulesTexture ? <RulesTextBoxTextureLayer /> : null}
-                <WatermarkLayer />
-                {layoutCaps.supportsLandSecondaryArtInRulesRegion ? <LandSecondaryArtLayer /> : null}
                 {layoutCaps.supportsSpellTextBoxPanel ? <SpellTextBoxLayer /> : null}
                 {showBundledRulesPanel ? <PreModernRulesTextBoxLayer /> : null}
+                {layoutCaps.supportsLandSecondaryArtInRulesRegion ? <LandSecondaryArtLayer /> : null}
+                {/* Rules bg (texture / parchment / plate) → watermark → rules text */}
+                <WatermarkLayer />
                 {layoutCaps.supportsPreparedChrome ? <PreparedChromeLayer /> : null}
                 {layoutCaps.useLandFullArtManaCircle ? <LandFullArtManaCircleLayer /> : null}
                 <TextIconsLayer />
