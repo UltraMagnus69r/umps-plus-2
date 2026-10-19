@@ -336,6 +336,15 @@ function buildStandardModernContract(): LayoutContract {
   })
 }
 
+/** Standard / Station Artifact — copy of Standard / Modern seating + capabilities. */
+function buildStandardStationArtifactContract(): LayoutContract {
+  const modern = buildStandardModernContract()
+  return normalizeLayoutContract({
+    ...modern,
+    id: { family: 'standard', variant: 'station-artifact' },
+  })
+}
+
 /** Standard / Borderless — Standard / Modern chrome with full-bleed art (no inner border). */
 function buildStandardBorderlessContract(): LayoutContract {
   const modern = buildStandardModernContract()
@@ -501,6 +510,15 @@ function buildLandModernContract(): LayoutContract {
       supportsHologramSeal: true,
       supportsMetadataStrip: true,
     },
+  })
+}
+
+/** Land / Station Land — copy of Land / Modern seating + capabilities. */
+function buildLandStationLandContract(): LayoutContract {
+  const modern = buildLandModernContract()
+  return normalizeLayoutContract({
+    ...modern,
+    id: { family: 'land', variant: 'station-land' },
   })
 }
 
@@ -1106,6 +1124,7 @@ function buildPkmnContract(variant: LayoutVariant): LayoutContract {
 
 const rawContracts: readonly LayoutContract[] = [
   buildStandardModernContract(),
+  buildStandardStationArtifactContract(),
   buildStandardBorderlessContract(),
   buildStandardPreModernContract(),
   buildStandardFullArtContract(),
@@ -1115,6 +1134,7 @@ const rawContracts: readonly LayoutContract[] = [
   buildPlaneswalkerFullArtContract(),
   buildPlaneswalkerPreModernContract(),
   buildLandModernContract(),
+  buildLandStationLandContract(),
   buildLandPreModernContract(),
   buildLandBorderlessContract(),
   buildLandFullArtContract(),

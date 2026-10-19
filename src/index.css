@@ -3103,14 +3103,24 @@ body,
 }
 
 .studio-card-back-img {
+  /* Prefer explicit face-box px from StudioCanvas; fall back to contain-fit. */
   max-height: 100%;
-  max-width: min(100%, 28rem);
+  max-width: 100%;
   width: auto;
   height: auto;
-  object-fit: contain;
+  object-fit: fill;
   border-radius: 4.5% / 3.5%;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
   user-select: none;
+}
+
+/* Flip label toggles "Flip card" ↔ "Show front" — reserve width so the toolbar never reflows. */
+.studio-empty-cta--flip {
+  min-width: 8.75rem;
+}
+
+.studio-canvas-chrome__row {
+  scrollbar-width: thin;
 }
 
 .studio-inspector {

@@ -17,6 +17,10 @@ export type LayoutVariant =
   | 'saga'
   | 'saga-creature'
   | 'class'
+  /** Standard-family copy of Modern seating/chrome. */
+  | 'station-artifact'
+  /** Land-family copy of Modern seating/chrome. */
+  | 'station-land'
   | 'white'
   | 'blue'
   | 'red'
@@ -41,8 +45,8 @@ export const DEFAULT_LAYOUT_ID: LayoutId = {
 }
 
 export const layoutCompatibility: Record<LayoutFamily, readonly LayoutVariant[]> = {
-  standard: ['modern', 'pre-modern', 'borderless', 'full-art', 'saga-creature'],
-  land: ['modern', 'pre-modern', 'borderless', 'full-art'],
+  standard: ['modern', 'station-artifact', 'pre-modern', 'borderless', 'full-art', 'saga-creature'],
+  land: ['modern', 'station-land', 'pre-modern', 'borderless', 'full-art'],
   spell: ['modern', 'pre-modern', 'saga', 'class'],
   battle: ['modern'],
   prepared: ['modern'],
@@ -83,6 +87,8 @@ export const LAYOUT_VARIANT_LABELS: Record<LayoutVariant, string> = {
   saga: 'Saga',
   'saga-creature': 'Saga Creature',
   class: 'Class',
+  'station-artifact': 'Station Artifact',
+  'station-land': 'Station Land',
   white: 'White',
   blue: 'Blue',
   red: 'Red',
@@ -147,6 +153,8 @@ function normalizeVariant(value: unknown): LayoutVariant {
     value === 'saga' ||
     value === 'saga-creature' ||
     value === 'class' ||
+    value === 'station-artifact' ||
+    value === 'station-land' ||
     value === 'white' ||
     value === 'blue' ||
     value === 'red' ||
@@ -283,6 +291,24 @@ export function isPlaneswalkerModernAbilityBoxLayout(layout: Partial<LayoutId> |
   )
 }
 
+/** Standard / Land Station variants — Modern seating/chrome twins (PKMN untouched). */
+export function isStationLayout(layout: Partial<LayoutId> | null | undefined): boolean {
+  const normalized = normalizeLayout(layout)
+  return (
+    (normalized.family === 'standard' && normalized.variant === 'station-artifact') ||
+    (normalized.family === 'land' && normalized.variant === 'station-land')
+  )
+}
+
+/** Modern + Station chrome twins (Standard/Land Station copies Modern recipe seating). */
+export function isModernOrStationChromeVariant(variant: LayoutVariant): boolean {
+  return (
+    variant === 'modern' ||
+    variant === 'station-artifact' ||
+    variant === 'station-land'
+  )
+}
+
 /** Standard / Land / Spell / Planeswalker Modern-family chrome (inner-border + plate seating). */
 export function isModernDummyLayout(layout: Partial<LayoutId> | null | undefined): boolean {
   const normalized = normalizeLayout(layout)
@@ -294,7 +320,9 @@ export function isModernDummyLayout(layout: Partial<LayoutId> | null | undefined
       normalized.family === 'planeswalker') &&
     (normalized.variant === 'modern' ||
       normalized.variant === 'modern-v2' ||
-      normalized.variant === 'borderless')
+      normalized.variant === 'borderless' ||
+      normalized.variant === 'station-artifact' ||
+      normalized.variant === 'station-land')
   )
 }
 
