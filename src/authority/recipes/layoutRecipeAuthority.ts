@@ -54,6 +54,8 @@ export function layoutUsesM15RegularRecipe(layout: Partial<LayoutId> | null | un
   if (layout.family !== 'standard' && layout.family !== 'land') return false
   return (
     layout.variant === 'modern' ||
+    layout.variant === 'station-artifact' ||
+    layout.variant === 'station-land' ||
     layout.variant === 'borderless' ||
     layout.variant === 'full-art'
   )

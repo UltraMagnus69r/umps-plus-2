@@ -51,6 +51,8 @@ function StudioCanvas({ onRequestSegment, onRequestImport }: Props) {
   const [pan, setPan] = useState<PanState>({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [flipped, setFlipped] = useState(false)
+  /** Match flip-back image to the live Konva face box at every zoom. */
+  const [faceBoxPx, setFaceBoxPx] = useState<{ width: number; height: number } | null>(null)
   const panSurfaceRef = useRef<HTMLDivElement | null>(null)
   const panDragRef = useRef<{
     pointerId: number
@@ -78,6 +80,25 @@ function StudioCanvas({ onRequestSegment, onRequestImport }: Props) {
     setZoom(1)
     setFlipped(false)
   }, [showEmpty])
+
+  useEffect(() => {
+    const root = panSurfaceRef.current
+    if (!root) return
+    const face = root.querySelector<HTMLElement>('[data-studio-card-face]')
+    if (!face) return
+    const sync = () => {
+      const width = Math.round(face.offsetWidth)
+      const height = Math.round(face.offsetHeight)
+      if (width < 1 || height < 1) return
+      setFaceBoxPx((prev) =>
+        prev && prev.width === width && prev.height === height ? prev : { width, height },
+      )
+    }
+    sync()
+    const ro = new ResizeObserver(sync)
+    ro.observe(face)
+    return () => ro.disconnect()
+  }, [settleKey, showEmpty, flipped, zoom])
 
   const dismissTip = useCallback(() => {
     setShowTip(false)
@@ -278,6 +299,11 @@ function StudioCanvas({ onRequestSegment, onRequestImport }: Props) {
                     alt="Card back"
                     className="studio-card-back-img"
                     draggable={false}
+                    style={
+                      faceBoxPx
+                        ? { width: faceBoxPx.width, height: faceBoxPx.height }
+                        : undefined
+                    }
                   />
                 </div>
               ) : null}
@@ -289,11 +315,11 @@ function StudioCanvas({ onRequestSegment, onRequestImport }: Props) {
           className="studio-canvas-chrome shrink-0 border-t border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--surface-raised)_88%,transparent)] px-4 py-3"
           data-no-canvas-pan
         >
-          <div className="mx-auto flex w-full max-w-[44rem] flex-wrap items-center justify-center gap-2 sm:justify-between">
-            <div className="flex flex-wrap items-center justify-center gap-2">
+          <div className="studio-canvas-chrome__row mx-auto flex w-full max-w-[56rem] flex-nowrap items-center justify-center gap-2 overflow-x-auto sm:justify-between">
+            <div className="flex shrink-0 flex-nowrap items-center justify-center gap-2">
               {showEmpty ? (
                 <>
-                  <p className="w-full text-center text-[0.8125rem] font-medium tracking-[-0.01em] text-[var(--text-secondary)] sm:w-auto sm:text-left">
+                  <p className="shrink-0 whitespace-nowrap text-center text-[0.8125rem] font-medium tracking-[-0.01em] text-[var(--text-secondary)] sm:text-left">
                     Start a proxy
                   </p>
                   <button
@@ -313,12 +339,12 @@ function StudioCanvas({ onRequestSegment, onRequestImport }: Props) {
                   </button>
                 </>
               ) : (
-                <span className="text-[0.75rem] text-[var(--text-tertiary)]">
+                <span className="whitespace-nowrap text-[0.75rem] text-[var(--text-tertiary)]">
                   Pan · pinch / Ctrl+scroll zoom · drag art to reposition
                 </span>
               )}
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-2">
+            <div className="flex shrink-0 flex-nowrap items-center justify-center gap-2">
               <button
                 type="button"
                 className="studio-empty-cta studio-empty-cta--danger"
@@ -360,7 +386,7 @@ function StudioCanvas({ onRequestSegment, onRequestImport }: Props) {
               </div>
               <button
                 type="button"
-                className="studio-empty-cta"
+                className="studio-empty-cta studio-empty-cta--flip"
                 onClick={() => setFlipped((v) => !v)}
                 aria-pressed={flipped}
                 aria-label={flipped ? 'Show card front' : 'Show card back'}

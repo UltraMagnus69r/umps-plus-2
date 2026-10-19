@@ -323,11 +323,16 @@ function KonvaStage({
   return (
     <div ref={containerRef} className={shellClass}>
       {exportPngIncludeBleed ? (
-        <div style={{ width: previewW, height: previewH }} className="relative">
+        <div
+          data-studio-card-face
+          style={{ width: previewW, height: previewH }}
+          className="relative"
+        >
           {stageInner}
         </div>
       ) : (
         <div
+          data-studio-card-face
           style={{
             width: Math.max(1, Math.round(tw * stageScaleX)),
             height: Math.max(1, Math.round(th * stageScaleY)),

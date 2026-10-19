@@ -167,11 +167,15 @@ export function shouldShowSpellTextBoxSelector(input: {
   return input.layout.variant === 'pre-modern' && input.layoutFamily === 'spell'
 }
 
-/** Crown / Armor asset pickers — Modern layout variant only. */
+/** Crown / Armor asset pickers — Modern + Station chrome twins. */
 export function shouldShowCrownArmorSelectors(input: {
   layout: LayoutId
 }): boolean {
-  return input.layout.variant === 'modern'
+  return (
+    input.layout.variant === 'modern' ||
+    input.layout.variant === 'station-artifact' ||
+    input.layout.variant === 'station-land'
+  )
 }
 
 export function shouldShowPreModernTextBoxSelector(input: {
@@ -180,13 +184,17 @@ export function shouldShowPreModernTextBoxSelector(input: {
 }): boolean {
   if (
     input.layoutFamily === 'standard' &&
-    (input.layout.variant === 'modern' || input.layout.variant === 'borderless')
+    (input.layout.variant === 'modern' ||
+      input.layout.variant === 'station-artifact' ||
+      input.layout.variant === 'borderless')
   ) {
     return true
   }
   if (
     input.layoutFamily === 'land' &&
-    (input.layout.variant === 'modern' || input.layout.variant === 'borderless')
+    (input.layout.variant === 'modern' ||
+      input.layout.variant === 'station-land' ||
+      input.layout.variant === 'borderless')
   ) {
     return true
   }
