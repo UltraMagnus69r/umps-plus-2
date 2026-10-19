@@ -1,5 +1,5 @@
 /**
- * Scryfall Import + full-card overlay controls — lazy-loaded off the main editor chunk.
+ * Custom Proxy from Scryfall + full-card overlay controls — lazy-loaded off the main editor chunk.
  */
 import { useEffect, useMemo, useState } from 'react'
 import { Check } from 'lucide-react'
@@ -89,14 +89,14 @@ export default function ScryfallImportSection({
 
   return (
     <>
-      <FieldRow label="Scryfall Import" layout="stacked">
+      <FieldRow label="Custom Proxy from Scryfall" layout="stacked">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2 min-w-0">
           <input
             value={scryfallSearchQuery}
             onChange={(e) => setScryfallSearchQuery(e.target.value)}
             className={`${INPUT_CLASS} flex-1 min-w-0`}
             placeholder="Name, Scryfall URL, or SET 123"
-            aria-label="Scryfall search"
+            aria-label="Custom Proxy from Scryfall search"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
@@ -109,7 +109,7 @@ export default function ScryfallImportSection({
               void fetchAndApplyScryfallData(scryfallSearchQuery)
             }}
             disabled={asyncScryfallFetch.status === 'loading'}
-            ariaLabel="Fetch metadata from Scryfall"
+            ariaLabel="Custom Proxy from Scryfall — search and import"
             className="w-full shrink-0 sm:w-auto"
           >
             {asyncScryfallFetch.status === 'loading' ? (
@@ -244,8 +244,8 @@ export default function ScryfallImportSection({
         <div className="space-y-1">
           <div className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">Full-card overlay</div>
           <p className={`${UI_TEXT_HELP_COMPACT} leading-snug`}>
-            For Hidden layout: drop in a printable full-card image. Unlike Import, this does not fill name,
-            rules, or art fields.
+            For Hidden layout: drop in a printable full-card image. Unlike Custom Proxy from Scryfall, this
+            does not fill name, rules, or art fields. Whichever you apply last wins.
           </p>
         </div>
 

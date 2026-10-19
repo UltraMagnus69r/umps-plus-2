@@ -741,6 +741,21 @@ async function routeScryfallInput(
 }
 
 /**
+ * Last-action wins between Custom Proxy from Scryfall (import) and Full-card overlay (clone).
+ * Bumped when either path starts so a slower in-flight fetch cannot overwrite a newer selection.
+ */
+let scryfallContentActionSeq = 0
+
+function beginScryfallContentAction(): number {
+  scryfallContentActionSeq += 1
+  return scryfallContentActionSeq
+}
+
+function isLatestScryfallContentAction(token: number): boolean {
+  return token === scryfallContentActionSeq
+}
+
+/**
  * Scryfall fetch: for each CardData key present in the automation payload, clear the matching
  * Module 4.1 dirty flag via `CARD_KEY_TO_DIRTY_KEY` (handles `collector_number` → `collectorNumber`, etc.).
  * Never clears `filename` — filename / filenameSlug ownership must not be overridden by fetch.
@@ -1952,6 +1967,8 @@ colorBlendDirection: 'vertical',
           set(() => ({ scryfallImportStatus: { status: 'failure', message: 'Missing print id' } }))
           return
         }
+        // Custom Proxy from Scryfall is the latest content action — supersedes in-flight overlay applies.
+        const actionToken = beginScryfallContentAction()
         set((state) => ({
           scryfallChosenPrint: state.scryfallSearchResults.find((p) => p.id === id) ?? state.scryfallChosenPrint,
         }))
@@ -1960,6 +1977,10 @@ colorBlendDirection: 'vertical',
         try {
           const { fetchScryfallCardById } = await loadScryfallService()
           const data = prefetched ?? (await fetchScryfallCardById(id))
+          if (!isLatestScryfallContentAction(actionToken)) {
+            get().setAsyncStatus('scryfallFetch', 'idle')
+            return
+          }
           const mapped = buildScryfallImportMappedUpdate(data, scryfallFieldsToSystemUpdate(data))
           const pwExtras = buildScryfallPlaneswalkerExtras(data)
           const sagaClassExtras = buildScryfallSagaClassExtras(data)
@@ -1967,9 +1988,14 @@ colorBlendDirection: 'vertical',
           if (mapped.artImage) {
             await loadSharedImage(String(mapped.artImage))
           }
+          if (!isLatestScryfallContentAction(actionToken)) {
+            get().setAsyncStatus('scryfallFetch', 'idle')
+            return
+          }
 
           let shouldRefitArt = false
           set((state) => {
+            if (!isLatestScryfallContentAction(actionToken)) return state
             const dirty = nextFieldDirtyAfterScryfallMappedClear(state.isFieldDirty, mapped)
             const normalizedLayout = normalizeRequestedLayoutSwitch(state.cardData.layout, data.inferred_layout)
             const hidePtForLayout =
@@ -1981,11 +2007,13 @@ colorBlendDirection: 'vertical',
             let cardData: CardData = {
               ...state.cardData,
               layout: normalizedLayout,
+              // Fresh Custom Proxy wins over any prior full-card overlay.
+              clonedCardImage: '',
               ...(hidePtForLayout ? { showPowerToughness: false } : null),
             }
 
             const systemResult = applySystemUpdateToCardData(cardData, dirty, mapped)
-            cardData = systemResult.cardData
+            cardData = { ...systemResult.cardData, clonedCardImage: '' }
             shouldRefitArt = systemResult.shouldRefitArt
 
             if (pwExtras) {
@@ -2018,6 +2046,9 @@ colorBlendDirection: 'vertical',
               const t = normalizeStoreRulesText(cardData.cardText)
               if (t !== cardData.cardText) cardData = { ...cardData, cardText: t }
             }
+
+            // Keep overlay cleared after structured extras merges.
+            cardData = { ...cardData, clonedCardImage: '' }
 
             const currentLayout = layoutToLegacyMode(normalizedLayout)
             const current = normalizeSnapshot(cardData)
@@ -2061,6 +2092,11 @@ colorBlendDirection: 'vertical',
             }
           })
 
+          if (!isLatestScryfallContentAction(actionToken)) {
+            get().setAsyncStatus('scryfallFetch', 'idle')
+            return
+          }
+
           if (shouldRefitArt) await get().refitArtPlacement()
 
           get().setAsyncStatus('scryfallFetch', 'success', null)
@@ -2070,6 +2106,10 @@ colorBlendDirection: 'vertical',
             }
           }, 2000)
         } catch (e) {
+          if (!isLatestScryfallContentAction(actionToken)) {
+            get().setAsyncStatus('scryfallFetch', 'idle')
+            return
+          }
           const msg = e instanceof Error ? e.message : 'Scryfall import failed'
           set(() => ({ scryfallImportStatus: { status: 'failure', message: msg } }))
           get().setAsyncStatus('scryfallFetch', 'error', msg)
@@ -2083,6 +2123,8 @@ colorBlendDirection: 'vertical',
           set(() => ({ scryfallCloneApplyStatus: { status: 'failure', message: 'Missing print id' } }))
           return
         }
+        // Full-card overlay is the latest content action — supersedes in-flight Custom Proxy imports.
+        const actionToken = beginScryfallContentAction()
         set((state) => ({
           scryfallCloneChosenPrint:
             state.scryfallCloneSearchResults.find((p) => p.id === id) ?? state.scryfallCloneChosenPrint,
@@ -2091,6 +2133,7 @@ colorBlendDirection: 'vertical',
         try {
           const { fetchScryfallCardById } = await loadScryfallService()
           const data = prefetched ?? (await fetchScryfallCardById(id))
+          if (!isLatestScryfallContentAction(actionToken)) return
           const png = String(data.png_uri ?? '').trim()
           if (!png) throw new Error('Selected print has no cloneable PNG image')
 
@@ -2104,13 +2147,16 @@ colorBlendDirection: 'vertical',
           } else {
             mapped.showPowerToughness = true
           }
+          if (!isLatestScryfallContentAction(actionToken)) return
           get().setLayout(data.inferred_layout)
           set((state) => ({
             isFieldDirty: nextFieldDirtyAfterScryfallMappedClear(state.isFieldDirty, mapped),
           }))
           get().applySystemUpdate(mapped)
+          if (!isLatestScryfallContentAction(actionToken)) return
           const sagaClassExtras = buildScryfallSagaClassExtras(data)
           set((state) => {
+            if (!isLatestScryfallContentAction(actionToken)) return state
             const d = state.cardData
             const patch: Partial<CardData> = {}
             if (!state.isFieldDirty.manaCost) {
@@ -2134,7 +2180,14 @@ colorBlendDirection: 'vertical',
             if (Object.keys(patch).length === 0) return state
             return { cardData: { ...d, ...patch } }
           })
-          get().setClonedCardImage(png)
+          if (!isLatestScryfallContentAction(actionToken)) return
+          set((state) => ({
+            cardData: {
+              ...state.cardData,
+              clonedCardImage: png,
+            },
+            currentLayout: 'Hidden',
+          }))
           get().commitState()
           const after = get()
           const colorPatch = syncColorIdentity({
@@ -2162,6 +2215,7 @@ colorBlendDirection: 'vertical',
             }
           }, 2000)
         } catch (e) {
+          if (!isLatestScryfallContentAction(actionToken)) return
           const msg = e instanceof Error ? e.message : 'Scryfall clone failed'
           set(() => ({ scryfallCloneApplyStatus: { status: 'failure', message: msg } }))
         }
@@ -2553,6 +2607,8 @@ colorBlendDirection: 'vertical',
 
       setClonedCardImage: (url: string) => {
         const nextUrl = String(url ?? '').trim()
+        // Overlay URL apply is a content action — supersedes in-flight Custom Proxy imports.
+        if (nextUrl) beginScryfallContentAction()
         set((state) => ({
           cardData: {
             ...state.cardData,
@@ -2563,6 +2619,7 @@ colorBlendDirection: 'vertical',
       },
 
       clearClonedCardImage: () => {
+        beginScryfallContentAction()
         set((state) => ({
           cardData: {
             ...state.cardData,

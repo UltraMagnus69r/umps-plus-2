@@ -15,14 +15,17 @@ const CLONE_EDGE_MATTE_STROKE_PX = 2
  */
 function ClonedCardLayer() {
   const { x: trimX, y: trimY, width: trimW, height: trimH } = getTrimLineRect()
-  const { clonedCardImage, bleedFillColor, outerBorderColor } = useCardStore(
+  const { clonedCardImage, bleedFillColor, outerBorderColor, currentLayout } = useCardStore(
     (s) => ({
       clonedCardImage: s.cardData.clonedCardImage,
       bleedFillColor: s.cardData.bleedFillColor,
       outerBorderColor: s.cardData.outerBorderColor ?? 'black',
+      currentLayout: s.currentLayout,
     }),
     shallow,
   )
+  /** Only paint overlay in Hidden mode so a stale clone image cannot cover a Custom Proxy import. */
+  const overlayActive = currentLayout === 'Hidden' && String(clonedCardImage ?? '').trim().length > 0
   const stageW = DIMENSIONS.FULL_BLEED.width
   const stageH = DIMENSIONS.FULL_BLEED.height
   const [img, setImg] = useState<HTMLImageElement | null>(null)
@@ -50,6 +53,10 @@ function ClonedCardLayer() {
   }, [bleedFillColor, outerBorderColor])
 
   useEffect(() => {
+    if (!overlayActive) {
+      setImg(null)
+      return
+    }
     const src = String(clonedCardImage ?? '').trim()
     if (!src) {
       setImg(null)
@@ -60,7 +67,7 @@ function ClonedCardLayer() {
     im.onload = () => setImg(im)
     im.onerror = () => setImg(null)
     im.src = src
-  }, [clonedCardImage])
+  }, [clonedCardImage, overlayActive])
 
   const fit = useMemo(() => {
     if (!img) return null

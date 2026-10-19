@@ -3362,6 +3362,16 @@ html[data-theme="light"] .mana-picker-sheet-veil.is-top {
   color: var(--on-accent);
 }
 
+.studio-empty-cta--danger {
+  background: color-mix(in srgb, var(--danger) 88%, #1a1010);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+.studio-empty-cta--danger:hover {
+  background: color-mix(in srgb, var(--danger) 96%, #1a1010);
+}
+
 .studio-onboarding-tip {
   position: absolute;
   left: 50%;
