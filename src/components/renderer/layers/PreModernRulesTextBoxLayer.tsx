@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useState } from 'react'
-import { Image, Layer, Shape } from 'react-konva'
+import { Image, Layer, Rect, Shape } from 'react-konva'
 import { shallow } from 'zustand/shallow'
 import { BEVEL_INSET } from '../../../authority/geometryAuthority'
 import { getModernDummyTextBoxInnerRect } from '../../../authority/modernDummyLayoutAuthority'
@@ -11,16 +11,23 @@ import {
 } from '../../../authority/planeswalkerModernV2LayoutAuthority'
 import { getActiveLayoutCapabilitiesFromState } from '../../../authority/layoutRegistry'
 import type { LayoutId } from '../../../authority/layoutTaxonomy'
-import { resolvePreModernRulesTextBoxPublicUrl } from '../../../data/preModernRulesTextBoxOptions'
+import {
+  isNonePreModernRulesTextBoxId,
+  resolvePreModernRulesTextBoxPublicUrl,
+} from '../../../data/preModernRulesTextBoxOptions'
 import { useCardStore } from '../../../store/useCardStore'
 import {
   createImagePatternForBowedRulesPanel,
   fillPlaneswalkerModernV2RulesPanel,
 } from './planeswalkerModernV2RulesPanelPath'
 
+/** Plain white fill when Rules Text Box = None (no plate/parchment chrome). */
+const NONE_RULES_BOX_FILL = '#ffffff'
+
 /**
  * Standard / Land / Planeswalker — bundled rules text box background inside the recessed frame.
  * Modern V2 fills the bowed rules panel silhouette (flat top/sides, bowed bottom).
+ * `none` draws a plain white plate (no parchment chrome asset).
  */
 function PreModernRulesTextBoxLayer() {
   const { currentLayout, activeLayout, panelId } = useCardStore(
@@ -39,7 +46,8 @@ function PreModernRulesTextBoxLayer() {
 
   const modernV2Layout = caps.supportsPlaneswalkerModernV2Layout
   const showBundledRulesPanel = caps.supportsPreModernTextBoxFrame || modernV2Layout
-  const url = showBundledRulesPanel ? resolvePreModernRulesTextBoxPublicUrl(panelId) : null
+  const noneFill = isNonePreModernRulesTextBoxId(panelId)
+  const url = showBundledRulesPanel && !noneFill ? resolvePreModernRulesTextBoxPublicUrl(panelId) : null
 
   const innerRect = useMemo(() => {
     if (!showBundledRulesPanel) return null
@@ -76,7 +84,8 @@ function PreModernRulesTextBoxLayer() {
     }
   }, [url])
 
-  if (!showBundledRulesPanel || !url || !img) return null
+  if (!showBundledRulesPanel) return null
+  if (!noneFill && (!url || !img)) return null
 
   if (modernV2Panel) {
     const { x, y, panelW, panelH, bowDepth, bottomCornerR } = modernV2Panel
@@ -88,7 +97,11 @@ function PreModernRulesTextBoxLayer() {
           listening={false}
           sceneFunc={(ctx, _shape) => {
             const c = ctx as unknown as CanvasRenderingContext2D
-            const pattern = createImagePatternForBowedRulesPanel(c, img, panelW, panelH, bowDepth)
+            const fill =
+              noneFill || !img
+                ? NONE_RULES_BOX_FILL
+                : (createImagePatternForBowedRulesPanel(c, img, panelW, panelH, bowDepth) ??
+                  NONE_RULES_BOX_FILL)
             fillPlaneswalkerModernV2RulesPanel(
               c,
               BEVEL_INSET,
@@ -96,7 +109,7 @@ function PreModernRulesTextBoxLayer() {
               panelW,
               panelH,
               bowDepth,
-              pattern ?? '#f2ebe0',
+              fill,
               bottomCornerR,
             )
           }}
@@ -107,10 +120,25 @@ function PreModernRulesTextBoxLayer() {
 
   if (!innerRect) return null
 
+  if (noneFill) {
+    return (
+      <Layer listening={false}>
+        <Rect
+          x={innerRect.x}
+          y={innerRect.y}
+          width={innerRect.width}
+          height={innerRect.height}
+          fill={NONE_RULES_BOX_FILL}
+          listening={false}
+        />
+      </Layer>
+    )
+  }
+
   return (
     <Layer listening={false}>
       <Image
-        image={img}
+        image={img!}
         x={innerRect.x}
         y={innerRect.y}
         width={innerRect.width}
