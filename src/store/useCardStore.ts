@@ -55,7 +55,13 @@ import {
   normalizeBoxGradientReversed,
 } from '../authority/boxPanelFillAuthority'
 import { DEFAULT_PANEL_BOX_HEX } from '../authority/boxColorUiAuthority'
-import { sanitizePanelBackground, type PanelBackgroundPreview } from '../authority/panelBackgroundAuthority'
+import {
+  DEFAULT_PANEL_FROST_OPACITY,
+  normalizePanelFrostEnabled,
+  normalizePanelFrostOpacity,
+  sanitizePanelBackground,
+  type PanelBackgroundPreview,
+} from '../authority/panelBackgroundAuthority'
 import type { CardLayoutMode } from '../authority/geometryAuthority'
 import {
   normalizeCardLayoutMode,
@@ -293,6 +299,14 @@ export interface CardData {
   ptBoxGradientDirection: BoxColorGradientDirection
   ptBoxGradientSaturation: number
   ptBoxGradientReversed: boolean
+
+  /**
+   * Panels frost — semi-transparent white scrim over name / type / rules / P/T fills
+   * (hex or Classic texture) so text stays readable. Shared across all four boxes.
+   */
+  panelFrostEnabled: boolean
+  /** 0–1 white scrim opacity when `panelFrostEnabled` is on. */
+  panelFrostOpacity: number
 
   /** Outer border (trim) color key; see OUTER_BORDER_COLORS. */
   outerBorderColor: string
@@ -1158,6 +1172,8 @@ export const defaultCardData: CardData = {
   ptBoxGradientDirection: 'vertical',
   ptBoxGradientSaturation: 100,
   ptBoxGradientReversed: false,
+  panelFrostEnabled: true,
+  panelFrostOpacity: DEFAULT_PANEL_FROST_OPACITY,
   outerBorderColor: 'black',
   colorIdentity: [],
   setIconImage: '',
@@ -1294,6 +1310,10 @@ function normalizeSnapshot(s: Snapshot): Snapshot {
       ptBarShape: anyS?.ptBarShape,
     }),
     ptBoxColor: sanitizePanelBackground(anyS?.ptBoxColor, defaultCardData.ptBoxColor),
+    panelFrostEnabled: normalizePanelFrostEnabled(anyS?.panelFrostEnabled),
+    panelFrostOpacity: normalizePanelFrostOpacity(
+      anyS?.panelFrostOpacity ?? defaultCardData.panelFrostOpacity,
+    ),
     nameBoxGradientEnabled: migrateLegacyBoxGradient
       ? legacyGradEnabled
       : typeof anyS?.nameBoxGradientEnabled === 'boolean'
@@ -1746,6 +1766,10 @@ colorBlendDirection: 'vertical',
             next.rulesTextBoxGradientReversed = normalizeBoxGradientReversed(value)
           }
           if (key === 'ptBoxGradientReversed') next.ptBoxGradientReversed = normalizeBoxGradientReversed(value)
+          if (key === 'panelFrostEnabled') next.panelFrostEnabled = Boolean(value)
+          if (key === 'panelFrostOpacity') {
+            next.panelFrostOpacity = normalizePanelFrostOpacity(value)
+          }
           if (key === 'nameBarShape') {
             next.nameBarShape = normalizeNameplateBoxShape(value)
           }

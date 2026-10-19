@@ -116,6 +116,8 @@ function NamePlateLayer() {
   )
 
   const panelBackgroundPreview = useCardStore((s) => s.panelBackgroundPreview)
+  const panelFrostEnabled = useCardStore((s) => s.cardData.panelFrostEnabled)
+  const panelFrostOpacity = useCardStore((s) => s.cardData.panelFrostOpacity)
   const effectiveNameBoxColor = useMemo(
     () => effectivePanelBackground('nameBoxColor', nameBoxColor, panelBackgroundPreview),
     [nameBoxColor, panelBackgroundPreview],
@@ -337,6 +339,8 @@ function NamePlateLayer() {
             nameBoxGradientSaturation,
             nameBoxGradientReversed,
             nameBoxBgImage,
+            panelFrostEnabled,
+            panelFrostOpacity,
           )
           drawBeveledFrameOnContext(c, nameOuterW, nameOuterH, plateBarRadius, inner, 'raised', outerStrokeColor, bevelColors, {
             shape: effectiveNameBarShape,

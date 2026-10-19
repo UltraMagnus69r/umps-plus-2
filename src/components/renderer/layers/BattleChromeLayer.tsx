@@ -27,11 +27,14 @@ import {
   layoutUsesBattleChrome,
   normalizeBattleDefense,
 } from '../../../authority/battleLayoutAuthority'
+import { createBoxPanelInnerFillStyle } from '../../../authority/boxPanelFillAuthority'
 import { DEFAULT_PANEL_BOX_HEX } from '../../../authority/boxColorUiAuthority'
 import {
   effectivePanelBackground,
+  isPanelTextureBackground,
   resolvePanelBackgroundContrastHex,
 } from '../../../authority/panelBackgroundAuthority'
+import { usePanelBackgroundImage } from '../../../hooks/usePanelBackgroundImage'
 import { addBattleArtInnerClipPathForRect, addBattleRoundRectPath } from './battleArtPath'
 import { getActiveLayoutCapabilitiesFromState } from '../../../authority/layoutRegistry'
 import type { LayoutId } from '../../../authority/layoutTaxonomy'
@@ -88,9 +91,16 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r},${g},${b},${Math.max(0, Math.min(1, alpha))})`
 }
 
-/** Default cream box color → MotM outline plate; any other Advanced color = opt-in solid fill. */
+/**
+ * Default cream hex → MotM outline plate.
+ * Classic texture/solid PNG keys and any other hex are opt-in fills (textures must not
+ * collapse to outline via contrast-hex fallback).
+ */
 function isBattleOutlinePlate(stored: string): boolean {
-  return resolvePanelBackgroundContrastHex(stored).toLowerCase() === DEFAULT_PANEL_BOX_HEX.toLowerCase()
+  const t = typeof stored === 'string' ? stored.trim() : ''
+  if (!t) return true
+  if (isPanelTextureBackground(t)) return false
+  return t.toLowerCase() === DEFAULT_PANEL_BOX_HEX.toLowerCase()
 }
 
 /** MotM name/type plate — 25px circular end-cap radii on left/right ends. */
@@ -155,6 +165,8 @@ function BattleChromeLayer() {
     nameBoxColor,
     typeLineBoxColor,
     rulesTextBoxColor,
+    panelFrostEnabled,
+    panelFrostOpacity,
     panelBackgroundPreview,
   } = useCardStore(
     (s) => ({
@@ -187,6 +199,8 @@ function BattleChromeLayer() {
       nameBoxColor: s.cardData.nameBoxColor,
       typeLineBoxColor: s.cardData.typeLineBoxColor,
       rulesTextBoxColor: s.cardData.rulesTextBoxColor,
+      panelFrostEnabled: s.cardData.panelFrostEnabled,
+      panelFrostOpacity: s.cardData.panelFrostOpacity,
       panelBackgroundPreview: s.panelBackgroundPreview,
     }),
     shallow,
@@ -319,6 +333,9 @@ function BattleChromeLayer() {
     rulesTextBoxColor,
     panelBackgroundPreview,
   )
+  const nameBoxBgImage = usePanelBackgroundImage(effectiveNameBox)
+  const typeBoxBgImage = usePanelBackgroundImage(effectiveTypeBox)
+  const rulesBoxBgImage = usePanelBackgroundImage(effectiveRulesBox)
   const nameOutline = isBattleOutlinePlate(effectiveNameBox)
   const typeOutline = isBattleOutlinePlate(effectiveTypeBox)
   const rulesOutline = isBattleOutlinePlate(effectiveRulesBox)
@@ -465,12 +482,47 @@ function BattleChromeLayer() {
             c.strokeStyle = plateBorder
             c.lineWidth = 2.5
             c.stroke()
+          } else if (nameBoxBgImage && isPanelTextureBackground(effectiveNameBox)) {
+            c.fillStyle = createBoxPanelInnerFillStyle(
+              c,
+              nameR.width,
+              nameR.height,
+              effectiveNameBox,
+              false,
+              'vertical',
+              100,
+              false,
+              nameBoxBgImage,
+              panelFrostEnabled,
+              panelFrostOpacity,
+            )
+            c.fill()
+            c.strokeStyle = darkenHex(nameFillHex, 0.35)
+            c.lineWidth = 2
+            c.stroke()
           } else {
-            const g = c.createLinearGradient(0, 0, 0, nameR.height)
-            g.addColorStop(0, lightenHex(nameFillHex, 0.22))
-            g.addColorStop(0.45, nameFillHex)
-            g.addColorStop(1, darkenHex(nameFillHex, 0.28))
-            c.fillStyle = g
+            const frosted = createBoxPanelInnerFillStyle(
+              c,
+              nameR.width,
+              nameR.height,
+              effectiveNameBox,
+              false,
+              'vertical',
+              100,
+              false,
+              null,
+              panelFrostEnabled,
+              panelFrostOpacity,
+            )
+            if (typeof frosted === 'string' && panelFrostEnabled && panelFrostOpacity > 0) {
+              c.fillStyle = frosted
+            } else {
+              const g = c.createLinearGradient(0, 0, 0, nameR.height)
+              g.addColorStop(0, lightenHex(nameFillHex, 0.22))
+              g.addColorStop(0.45, nameFillHex)
+              g.addColorStop(1, darkenHex(nameFillHex, 0.28))
+              c.fillStyle = g
+            }
             c.fill()
             c.strokeStyle = darkenHex(nameFillHex, 0.35)
             c.lineWidth = 2
@@ -612,12 +664,47 @@ function BattleChromeLayer() {
             c.strokeStyle = plateBorder
             c.lineWidth = 2.5
             c.stroke()
+          } else if (typeBoxBgImage && isPanelTextureBackground(effectiveTypeBox)) {
+            c.fillStyle = createBoxPanelInnerFillStyle(
+              c,
+              typeR.width,
+              typeR.height,
+              effectiveTypeBox,
+              false,
+              'vertical',
+              100,
+              false,
+              typeBoxBgImage,
+              panelFrostEnabled,
+              panelFrostOpacity,
+            )
+            c.fill()
+            c.strokeStyle = darkenHex(typeFillHex, 0.35)
+            c.lineWidth = 2
+            c.stroke()
           } else {
-            const g = c.createLinearGradient(0, 0, 0, typeR.height)
-            g.addColorStop(0, lightenHex(typeFillHex, 0.22))
-            g.addColorStop(0.5, typeFillHex)
-            g.addColorStop(1, darkenHex(typeFillHex, 0.28))
-            c.fillStyle = g
+            const frosted = createBoxPanelInnerFillStyle(
+              c,
+              typeR.width,
+              typeR.height,
+              effectiveTypeBox,
+              false,
+              'vertical',
+              100,
+              false,
+              null,
+              panelFrostEnabled,
+              panelFrostOpacity,
+            )
+            if (typeof frosted === 'string' && panelFrostEnabled && panelFrostOpacity > 0) {
+              c.fillStyle = frosted
+            } else {
+              const g = c.createLinearGradient(0, 0, 0, typeR.height)
+              g.addColorStop(0, lightenHex(typeFillHex, 0.22))
+              g.addColorStop(0.5, typeFillHex)
+              g.addColorStop(1, darkenHex(typeFillHex, 0.28))
+              c.fillStyle = g
+            }
             c.fill()
             c.strokeStyle = darkenHex(typeFillHex, 0.35)
             c.lineWidth = 2
@@ -662,7 +749,33 @@ function BattleChromeLayer() {
             c.lineWidth = 2.5
             c.stroke()
           } else {
-            c.fillStyle = rulesFillHex
+            const fillStyle = createBoxPanelInnerFillStyle(
+              c,
+              rulesR.width,
+              rulesR.height,
+              effectiveRulesBox,
+              false,
+              'vertical',
+              100,
+              false,
+              rulesBoxBgImage,
+              panelFrostEnabled,
+              panelFrostOpacity,
+            )
+            // Rules path is in stage space (Shape has no x/y); align pattern origin to the plate.
+            if (
+              typeof fillStyle !== 'string' &&
+              typeof (fillStyle as CanvasPattern).setTransform === 'function'
+            ) {
+              try {
+                ;(fillStyle as CanvasPattern).setTransform(
+                  new DOMMatrix().translateSelf(rulesR.x, rulesR.y),
+                )
+              } catch {
+                /* older engines */
+              }
+            }
+            c.fillStyle = fillStyle
             c.fill()
             c.strokeStyle = darkenHex(rulesFillHex, 0.35)
             c.lineWidth = 2

@@ -56,11 +56,86 @@ export function resolvePanelBackgroundContrastHex(raw: string | undefined): stri
   return resolveRulesPanelColor(v)
 }
 
+/** Default frost opacity when the Panels frost toggle is on (0–1). */
+export const DEFAULT_PANEL_FROST_OPACITY = 0.32
+
+export function normalizePanelFrostEnabled(raw: unknown): boolean {
+  if (raw === false) return false
+  if (raw === true) return true
+  return true
+}
+
+export function normalizePanelFrostOpacity(raw: unknown): number {
+  const n = typeof raw === 'number' ? raw : Number(raw)
+  if (!Number.isFinite(n)) return DEFAULT_PANEL_FROST_OPACITY
+  return Math.max(0, Math.min(1, n))
+}
+
+/**
+ * Uniform slice/crop for panel textures — never anisotropic stretch.
+ *
+ * Height-first cover: scale so the box height is filled (`auto 100%`), then if the
+ * scaled width is still short of the box, grow to cover width too. Overflow is
+ * clipped (centered). Matches CSS `object-fit: cover` with a height-priority bias
+ * so short name/type bars show a horizontal band of the texture, not a squashed frame.
+ */
+export function panelTextureSliceDrawRect(
+  imageWidth: number,
+  imageHeight: number,
+  boxWidth: number,
+  boxHeight: number,
+): { dx: number; dy: number; dw: number; dh: number } {
+  const iw = Math.max(1, imageWidth)
+  const ih = Math.max(1, imageHeight)
+  const w = Math.max(1, boxWidth)
+  const h = Math.max(1, boxHeight)
+  // Height-first: at least fill height; also fill width when needed (cover).
+  const scale = Math.max(h / ih, w / iw)
+  const dw = iw * scale
+  const dh = ih * scale
+  return { dx: (w - dw) / 2, dy: (h - dh) / 2, dw, dh }
+}
+
+/** Draw a panel texture into a box without squashing (height-fit, width clip). */
+export function drawPanelTextureSlice(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  width: number,
+  height: number,
+): void {
+  const w = Math.max(1, Math.ceil(width))
+  const h = Math.max(1, Math.ceil(height))
+  const iw = image.naturalWidth || image.width || 1
+  const ih = image.naturalHeight || image.height || 1
+  const { dx, dy, dw, dh } = panelTextureSliceDrawRect(iw, ih, w, h)
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(0, 0, w, h)
+  ctx.clip()
+  ctx.imageSmoothingEnabled = true
+  ctx.drawImage(image, dx, dy, dw, dh)
+  ctx.restore()
+}
+
+/** Semi-transparent white scrim for panel legibility. */
+export function paintPanelFrostScrim(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  opacity: number,
+): void {
+  const a = Math.max(0, Math.min(1, opacity))
+  if (a <= 0) return
+  ctx.fillStyle = `rgba(255,255,255,${a})`
+  ctx.fillRect(0, 0, Math.max(1, width), Math.max(1, height))
+}
+
 export function createPanelTexturePattern(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
   image: HTMLImageElement,
+  frostOpacity = 0,
 ): CanvasPattern | string {
   const w = Math.max(1, Math.ceil(width))
   const h = Math.max(1, Math.ceil(height))
@@ -69,7 +144,7 @@ export function createPanelTexturePattern(
   canvas.height = h
   const sctx = canvas.getContext('2d')
   if (!sctx) return DEFAULT_PANEL_BOX_HEX
-  sctx.imageSmoothingEnabled = true
-  sctx.drawImage(image, 0, 0, w, h)
+  drawPanelTextureSlice(sctx, image, w, h)
+  paintPanelFrostScrim(sctx, w, h, frostOpacity)
   return ctx.createPattern(canvas, 'no-repeat') ?? DEFAULT_PANEL_BOX_HEX
 }

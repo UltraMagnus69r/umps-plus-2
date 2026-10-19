@@ -146,6 +146,8 @@ function PowerToughnessOverlayLayer() {
     shallow,
   )
   const panelBackgroundPreview = useCardStore((s) => s.panelBackgroundPreview)
+  const panelFrostEnabled = useCardStore((s) => s.cardData.panelFrostEnabled)
+  const panelFrostOpacity = useCardStore((s) => s.cardData.panelFrostOpacity)
   const effectivePtBoxColor = useMemo(
     () => effectivePanelBackground('ptBoxColor', ptBoxColor, panelBackgroundPreview),
     [ptBoxColor, panelBackgroundPreview],
@@ -311,6 +313,8 @@ function PowerToughnessOverlayLayer() {
         ptBoxGradientSaturation,
         ptBoxGradientReversed,
         ptBoxBgImage,
+        panelFrostEnabled,
+        panelFrostOpacity,
       )
       drawBeveledFrameOnContext(ctx, ptFrameW, ptFrameH, ptCornerRadius, inner, 'raised', outerStrokeColor, bevelColors, {
         omitOuterStroke: true,
@@ -330,6 +334,8 @@ function PowerToughnessOverlayLayer() {
       ptBoxGradientSaturation,
       ptBoxGradientReversed,
       ptBoxBgImage,
+      panelFrostEnabled,
+      panelFrostOpacity,
       outerStrokeColor,
       bevelColors,
     ],

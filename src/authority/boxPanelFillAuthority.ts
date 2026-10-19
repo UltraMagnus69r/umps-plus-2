@@ -8,7 +8,10 @@
 import { blendHex } from './colorAuthority'
 import {
   createPanelTexturePattern,
+  drawPanelTextureSlice,
   isPanelTextureBackground,
+  normalizePanelFrostOpacity,
+  paintPanelFrostScrim,
   resolvePanelBackgroundContrastHex,
 } from './panelBackgroundAuthority'
 import {
@@ -338,6 +341,41 @@ export function resolveReadableInkOnBoxPanel(
   return resolveReadableInkOnPanelSamples(samples, preferredInk, minRatio)
 }
 
+function effectiveFrostOpacity(frostEnabled: boolean, frostOpacity: number): number {
+  if (!frostEnabled) return 0
+  return normalizePanelFrostOpacity(frostOpacity)
+}
+
+/** Lighten a contrast sample toward white by frost amount (ink stays readable on frosted panels). */
+export function frostPanelContrastHex(hex: string, frostEnabled: boolean, frostOpacity: number): string {
+  const a = effectiveFrostOpacity(frostEnabled, frostOpacity)
+  if (a <= 0) return hex
+  return blendHex(hex, '#ffffff', a)
+}
+
+function frostBlendStop(hex: string, frostA: number): string {
+  return frostA > 0 ? blendHex(hex, '#ffffff', frostA) : hex
+}
+
+function bakeFrostedFillPattern(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  paint: (sctx: CanvasRenderingContext2D, w: number, h: number) => void,
+  frostA: number,
+): CanvasPattern | string {
+  const w = Math.max(1, Math.ceil(width))
+  const h = Math.max(1, Math.ceil(height))
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const sctx = canvas.getContext('2d')
+  if (!sctx) return resolvePanelBackgroundContrastHex('')
+  paint(sctx, w, h)
+  paintPanelFrostScrim(sctx, w, h, frostA)
+  return ctx.createPattern(canvas, 'no-repeat') ?? resolvePanelBackgroundContrastHex('')
+}
+
 /**
  * Canvas fill style for the inner (flat) region of a beveled panel, in local coords (0,0)–(w,h).
  */
@@ -351,27 +389,41 @@ export function createBoxPanelInnerFillStyle(
   saturationPercent = 100,
   gradientReversed = false,
   textureImage?: HTMLImageElement | null,
+  frostEnabled = false,
+  frostOpacity = 0,
 ): string | CanvasGradient | CanvasPattern {
   const w = Math.max(1, width)
   const h = Math.max(1, height)
+  const frostA = effectiveFrostOpacity(frostEnabled, frostOpacity)
 
   if (textureImage && isPanelTextureBackground(baseRaw)) {
-    return createPanelTexturePattern(ctx, w, h, textureImage)
+    return createPanelTexturePattern(ctx, w, h, textureImage, frostA)
   }
 
   const base = resolvePanelBackgroundContrastHex(baseRaw)
 
-  if (!gradientEnabled) return base
+  if (!gradientEnabled) {
+    return frostBlendStop(base, frostA)
+  }
 
   if (dir === 'swirl') {
     const scaled = buildBoxPanelSwirlFillSurface(w, h, baseRaw, saturationPercent, gradientReversed)
-    if (!scaled) return base
-    return ctx.createPattern(scaled, 'no-repeat') ?? base
+    if (!scaled) return frostBlendStop(base, frostA)
+    if (frostA <= 0) return ctx.createPattern(scaled, 'no-repeat') ?? base
+    return bakeFrostedFillPattern(
+      ctx,
+      w,
+      h,
+      (sctx, bw, bh) => {
+        sctx.drawImage(scaled, 0, 0, bw, bh)
+      },
+      frostA,
+    )
   }
 
   const { light, rich } = deriveBoxPanelGradientEndpoints(base, saturationPercent)
-  const c0 = gradientReversed ? rich : light
-  const c1 = gradientReversed ? light : rich
+  const c0 = frostBlendStop(gradientReversed ? rich : light, frostA)
+  const c1 = frostBlendStop(gradientReversed ? light : rich, frostA)
 
   if (dir === 'vertical') {
     const g = ctx.createLinearGradient(0, 0, 0, h)
@@ -391,7 +443,7 @@ export function createBoxPanelInnerFillStyle(
     g.addColorStop(1, c1)
     return g
   }
-  return base
+  return frostBlendStop(base, frostA)
 }
 
 /** Konva `Rect` props for rules-text base layer (same fills as canvas path). */
@@ -404,9 +456,12 @@ export function getKonvaBoxPanelRectProps(
   saturationPercent = 100,
   gradientReversed = false,
   textureImage?: HTMLImageElement | null,
+  frostEnabled = false,
+  frostOpacity = 0,
 ): Record<string, unknown> {
   const w = Math.max(1, width)
   const h = Math.max(1, height)
+  const frostA = effectiveFrostOpacity(frostEnabled, frostOpacity)
 
   if (textureImage && isPanelTextureBackground(baseRaw)) {
     const canvas = document.createElement('canvas')
@@ -414,8 +469,8 @@ export function getKonvaBoxPanelRectProps(
     canvas.height = h
     const ctx = canvas.getContext('2d')
     if (ctx) {
-      ctx.imageSmoothingEnabled = true
-      ctx.drawImage(textureImage, 0, 0, w, h)
+      drawPanelTextureSlice(ctx, textureImage, w, h)
+      paintPanelFrostScrim(ctx, w, h, frostA)
       return {
         fillPatternImage: canvas as unknown as HTMLImageElement,
         fillPatternRepeat: 'no-repeat',
@@ -428,24 +483,43 @@ export function getKonvaBoxPanelRectProps(
   }
 
   const base = resolvePanelBackgroundContrastHex(baseRaw)
-  if (!gradientEnabled) return { fill: base }
+  if (!gradientEnabled) return { fill: frostBlendStop(base, frostA) }
 
   if (dir === 'swirl') {
     const scaled = buildBoxPanelSwirlFillSurface(w, h, baseRaw, saturationPercent, gradientReversed)
-    if (!scaled) return { fill: base }
-    return {
-      fillPatternImage: scaled as unknown as HTMLImageElement,
-      fillPatternRepeat: 'no-repeat',
-      fillPatternX: 0,
-      fillPatternY: 0,
-      fillPatternScaleX: 1,
-      fillPatternScaleY: 1,
+    if (!scaled) return { fill: frostBlendStop(base, frostA) }
+    if (frostA <= 0) {
+      return {
+        fillPatternImage: scaled as unknown as HTMLImageElement,
+        fillPatternRepeat: 'no-repeat',
+        fillPatternX: 0,
+        fillPatternY: 0,
+        fillPatternScaleX: 1,
+        fillPatternScaleY: 1,
+      }
     }
+    const canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext('2d')
+    if (ctx) {
+      ctx.drawImage(scaled, 0, 0, w, h)
+      paintPanelFrostScrim(ctx, w, h, frostA)
+      return {
+        fillPatternImage: canvas as unknown as HTMLImageElement,
+        fillPatternRepeat: 'no-repeat',
+        fillPatternX: 0,
+        fillPatternY: 0,
+        fillPatternScaleX: 1,
+        fillPatternScaleY: 1,
+      }
+    }
+    return { fill: frostBlendStop(base, frostA) }
   }
 
   const { light, rich } = deriveBoxPanelGradientEndpoints(base, saturationPercent)
-  const c0 = gradientReversed ? rich : light
-  const c1 = gradientReversed ? light : rich
+  const c0 = frostBlendStop(gradientReversed ? rich : light, frostA)
+  const c1 = frostBlendStop(gradientReversed ? light : rich, frostA)
 
   if (dir === 'vertical') {
     return {
@@ -468,7 +542,7 @@ export function getKonvaBoxPanelRectProps(
       fillLinearGradientColorStops: [0, c0, 1, c1],
     }
   }
-  return { fill: base }
+  return { fill: frostBlendStop(base, frostA) }
 }
 
 export function normalizeBoxGradientReversed(raw: unknown): boolean {
