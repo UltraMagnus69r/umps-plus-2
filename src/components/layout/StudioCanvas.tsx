@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
-import { CloudDownload, Minus, Plus, RotateCcw } from 'lucide-react'
+import { CloudDownload, Minus, Plus, RefreshCw, RotateCcw } from 'lucide-react'
 import { WORKING_PREVIEW_FOCUS_ID } from '../../data/layoutConstants'
 import {
   isCardEffectivelyEmptyForGuidance,
@@ -319,6 +319,16 @@ function StudioCanvas({ onRequestSegment, onRequestImport }: Props) {
               )}
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2">
+              <button
+                type="button"
+                className="studio-empty-cta studio-empty-cta--danger"
+                onClick={startBlank}
+                aria-label="Reset Card"
+                title="Reset card — same as New Card"
+              >
+                <RefreshCw className="h-4 w-4" />
+                RESET CARD
+              </button>
               <div
                 className="studio-preview-zoom"
                 role="group"
