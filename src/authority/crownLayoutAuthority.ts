@@ -2,9 +2,9 @@
  * Modern nameplate crown placement.
  * Crown PNGs sit behind the raised name plate (Showcase-style) and over art.
  *
- * Assets are authored so a transparent nameplate slot maps 1:1 onto the Modern
- * outer plate (see CROWN_ASSET_*). Placement scales/positions by that slot —
- * never by the full canvas — so the plate sits in the hole.
+ * Assets are authored so a transparent nameplate slot (~9.7:1) maps onto the
+ * Modern outer plate 1260×130 (see CROWN_ASSET_*). Placement scales/positions
+ * by that slot — never by the full canvas — so the plate sits in the hole.
  */
 
 import { BEVEL_INSET, getStandardLayoutGeometry, type CardLayoutMode } from './geometryAuthority'
@@ -20,8 +20,11 @@ import { shouldShowCrownArmorSelectors } from './progressiveDisclosureAuthority'
 export const CROWN_ASSET_CANVAS_W = 2200
 export const CROWN_ASSET_CANVAS_H = 420
 
-/** Transparent nameplate hole inside the crown canvas (matches Modern outer plate 1288×95). */
-export const CROWN_ASSET_SLOT = { x: 456, y: 110, w: 1288, h: 95 } as const
+/**
+ * Transparent nameplate hole inside the crown canvas.
+ * Authored ~9.7:1 to match Modern outer plate 1260×130 (width-lock placement).
+ */
+export const CROWN_ASSET_SLOT = { x: 471, y: 123, w: 1259, h: 130 } as const
 
 /** Near-white threshold for edge flood-fill knockout (ChatGPT assets ship on opaque white). */
 export const CROWN_WHITE_KEY_THRESHOLD = 245

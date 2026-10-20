@@ -47,7 +47,15 @@ import {
 } from '../../authority/progressiveDisclosureAuthority'
 import { SPELL_PANEL_OPTIONS } from '../../data/spellPanelOptions'
 import { PRE_MODERN_RULES_TEXT_BOX_OPTIONS } from '../../data/preModernRulesTextBoxOptions'
-import { CROWN_OPTIONS } from '../../data/crownOptions'
+import {
+  CROWN_OPTIONS,
+  CROWN_TINT_PRESETS,
+  getCrownTintPreset,
+  normalizeCrownTintPreset,
+  rgbToHex,
+  type CrownTintPresetId,
+} from '../../data/crownOptions'
+import ColorSwatchPopover from '../ui/ColorSwatchPopover'
 import { CONSTRAINT_COPY } from '../../authority/constraintFeedbackAuthority'
 import CollapsibleSection from './CollapsibleSection'
 import SwitchRow from '../ui/SwitchRow'
@@ -205,6 +213,11 @@ const activeLayoutCapabilities = useMemo(
   const spellTextBoxId = useCardStore((s) => s.cardData.spellTextBoxId)
   const preModernRulesTextBoxId = useCardStore((s) => s.cardData.preModernRulesTextBoxId)
   const crownAssetId = useCardStore((s) => s.cardData.crownAssetId)
+  const crownTintPreset = useCardStore((s) => s.cardData.crownTintPreset)
+  const crownColor = useCardStore((s) => s.cardData.crownColor)
+  const crownShadowEnabled = useCardStore((s) => s.cardData.crownShadowEnabled)
+  const crownShadowColor = useCardStore((s) => s.cardData.crownShadowColor)
+  const crownShadowColorManual = useCardStore((s) => s.cardData.crownShadowColorManual)
   const pdColorInput = useMemo(
     () => ({ autoColorEnabled: !!autoColorEnabled }),
     [autoColorEnabled],
@@ -852,23 +865,90 @@ const activeLayoutCapabilities = useMemo(
         />
       ) : null}
       {shouldShowCrownArmorSelectors({ layout: activeLayout }) ? (
-        <FieldRow label="Crown" layout="stacked">
-          <select
-            value={crownAssetId}
-            onChange={(e) => {
-              setField('crownAssetId', e.target.value)
-              commitState()
-            }}
-            className="w-full h-10 rounded-xl border border-neutral-200 bg-white px-3 ui-text-control outline-none ui-focus-ring-control dark:border-[var(--sb-border)] dark:bg-[var(--sb-surface-soft)]"
-            aria-label="Crown asset"
-          >
-            {CROWN_OPTIONS.map((o) => (
-              <option key={o.id || 'none'} value={o.id}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </FieldRow>
+        <>
+          <FieldRow label="Crown" layout="stacked">
+            <select
+              value={crownAssetId}
+              onChange={(e) => {
+                setField('crownAssetId', e.target.value)
+                commitState()
+              }}
+              className="w-full h-10 rounded-xl border border-neutral-200 bg-white px-3 ui-text-control outline-none ui-focus-ring-control dark:border-[var(--sb-border)] dark:bg-[var(--sb-surface-soft)]"
+              aria-label="Crown asset"
+            >
+              {CROWN_OPTIONS.map((o) => (
+                <option key={o.id || 'none'} value={o.id}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </FieldRow>
+          {crownAssetId ? (
+            <>
+              <FieldRow label="Crown tint" layout="stacked">
+                <select
+                  value={crownTintPreset}
+                  onChange={(e) => {
+                    const presetId = normalizeCrownTintPreset(e.target.value) as CrownTintPresetId
+                    const preset = getCrownTintPreset(presetId)
+                    setField('crownTintPreset', presetId)
+                    setField('crownColor', rgbToHex(...preset.crownRgb))
+                    if (crownShadowEnabled && !crownShadowColorManual) {
+                      setField('crownShadowColor', rgbToHex(...preset.shadowRgb))
+                    }
+                    commitState()
+                  }}
+                  className="w-full h-10 rounded-xl border border-neutral-200 bg-white px-3 ui-text-control outline-none ui-focus-ring-control dark:border-[var(--sb-border)] dark:bg-[var(--sb-surface-soft)]"
+                  aria-label="Crown tint preset"
+                >
+                  {CROWN_TINT_PRESETS.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </FieldRow>
+              <FieldRow label="Crown color" layout="stacked">
+                <ColorSwatchPopover
+                  value={crownColor}
+                  ariaLabel="Crown fill color"
+                  onChange={(hex) => {
+                    setField('crownColor', hex)
+                    setField('crownTintPreset', 'custom')
+                    commitState()
+                  }}
+                />
+              </FieldRow>
+              <SwitchRow
+                label="Crown shadow"
+                checked={!!crownShadowEnabled}
+                onToggle={() => {
+                  const next = !crownShadowEnabled
+                  setField('crownShadowEnabled', next)
+                  if (next && !crownShadowColorManual) {
+                    const preset = getCrownTintPreset(crownTintPreset)
+                    setField('crownShadowColor', rgbToHex(...preset.shadowRgb))
+                  }
+                  commitState()
+                }}
+                ariaLabel="Crown shadow"
+              />
+              {crownShadowEnabled ? (
+                <FieldRow label="Shadow color" layout="stacked">
+                  <ColorSwatchPopover
+                    value={crownShadowColor}
+                    ariaLabel="Crown shadow color"
+                    onChange={(hex) => {
+                      setField('crownShadowColor', hex)
+                      setField('crownShadowColorManual', true)
+                      commitState()
+                    }}
+                  />
+                </FieldRow>
+              ) : null}
+            </>
+          ) : null}
+        </>
       ) : null}
     </div>
   </CollapsibleSection>

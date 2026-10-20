@@ -148,7 +148,15 @@ import {
 import { resolveSetSymbolBoxPx } from '../authority/symbolAuthority'
 import { normalizeSpellTextBoxId } from '../data/spellPanelOptions'
 import { normalizePreModernRulesTextBoxId } from '../data/preModernRulesTextBoxOptions'
-import { normalizeCrownId } from '../data/crownOptions'
+import {
+  DEFAULT_CROWN_COLOR,
+  DEFAULT_CROWN_SHADOW_COLOR,
+  DEFAULT_CROWN_TINT_PRESET,
+  normalizeCrownId,
+  normalizeCrownTintPreset,
+  normalizeHexColor,
+  type CrownTintPresetId,
+} from '../data/crownOptions'
 import { normalizeArmorId } from '../data/armorOptions'
 
 export type { ColorIdentityPip, ManualColorKey } from '../authority/colorAuthority'
@@ -223,6 +231,16 @@ export interface CardData {
   preModernRulesTextBoxId: string
   /** Modern / Borderless: Crown asset id from `public/assets/crowns` (Showcase nameplate flourish). */
   crownAssetId: string
+  /** Land-tint preset for crown fill / default shadow (`custom` = free pickers). */
+  crownTintPreset: CrownTintPresetId
+  /** Crown fill multiply tint (#RRGGBB). */
+  crownColor: string
+  /** Soft drop-shadow + stroke overlay on/off. */
+  crownShadowEnabled: boolean
+  /** Shadow overlay color (#RRGGBB); defaults follow tint preset mana RGB. */
+  crownShadowColor: string
+  /** When true, changing tint preset does not overwrite `crownShadowColor`. */
+  crownShadowColorManual: boolean
   /** Modern / Borderless: Armor asset id from `public/armor` (UI only until preview wiring). */
   armorAssetId: string
   /** Land / Full Art only — single basic-land style pip in the name-plate mana circle (`manaData` keys). */
@@ -1125,6 +1143,11 @@ export const defaultCardData: CardData = {
   spellTextBoxId: 'white',
   preModernRulesTextBoxId: 'white',
   crownAssetId: '',
+  crownTintPreset: DEFAULT_CROWN_TINT_PRESET,
+  crownColor: DEFAULT_CROWN_COLOR,
+  crownShadowEnabled: true,
+  crownShadowColor: DEFAULT_CROWN_SHADOW_COLOR,
+  crownShadowColorManual: false,
   armorAssetId: '',
   landFullArtManaCircleKey: 'c',
   layout: { ...DEFAULT_LAYOUT_ID },
@@ -1377,6 +1400,12 @@ function normalizeSnapshot(s: Snapshot): Snapshot {
     spellTextBoxId: normalizeSpellTextBoxId(anyS?.spellTextBoxId),
     preModernRulesTextBoxId: normalizePreModernRulesTextBoxId(anyS?.preModernRulesTextBoxId),
     crownAssetId: normalizeCrownId(anyS?.crownAssetId),
+    crownTintPreset: normalizeCrownTintPreset(anyS?.crownTintPreset),
+    crownColor: normalizeHexColor(anyS?.crownColor, DEFAULT_CROWN_COLOR),
+    crownShadowEnabled:
+      typeof anyS?.crownShadowEnabled === 'boolean' ? anyS.crownShadowEnabled : defaultCardData.crownShadowEnabled,
+    crownShadowColor: normalizeHexColor(anyS?.crownShadowColor, DEFAULT_CROWN_SHADOW_COLOR),
+    crownShadowColorManual: !!anyS?.crownShadowColorManual,
     armorAssetId: normalizeArmorId(anyS?.armorAssetId),
     artIntrinsicWidth,
     artIntrinsicHeight,
