@@ -3,8 +3,12 @@
  * Crown PNGs sit behind the raised name plate (Showcase-style) and over art.
  *
  * Assets are authored so a transparent nameplate slot (~9.7:1) maps onto the
- * drawn nameplate outer (art-aligned when applicable). Placement scales X/Y
- * independently so the hole matches the plate in both axes.
+ * Modern outer plate 1260×130 (see CROWN_ASSET_*). Placement scales/positions
+ * by that slot — never by the full canvas — so the plate sits in the hole.
+ *
+ * Do not art-align or independently X/Y-scale the crown onto the drawn bar:
+ * that disconnects the flourish (split wings / gap). Lock to the contract
+ * outer plate; NamePlateLayer may still art-align wider on top of the hole.
  */
 
 import { BEVEL_INSET, getStandardLayoutGeometry, type CardLayoutMode } from './geometryAuthority'
@@ -14,16 +18,6 @@ import {
   layoutRegionToStageRect,
 } from './layoutRegistry'
 import type { LayoutId } from './layoutTaxonomy'
-import { buildModernDummyStageRects } from './modernDummyLayoutAuthority'
-import {
-  type NameplateBoxShape,
-  resolveEffectiveNameplateShape,
-} from './nameplateShapeAuthority'
-import { resolveArtAlignedPlateOuterRect } from './plateArtAlignmentAuthority'
-import {
-  getPlaneswalkerModernV2ArtOuterRect,
-  PW_MODERN_V2_PLATE_RADIUS_MULTIPLIER,
-} from './planeswalkerModernV2LayoutAuthority'
 import { shouldShowCrownArmorSelectors } from './progressiveDisclosureAuthority'
 
 /** Authored crown canvas (Batch 1 remaster for Modern). */
@@ -32,14 +26,10 @@ export const CROWN_ASSET_CANVAS_H = 420
 
 /**
  * Transparent nameplate hole inside the crown canvas.
- * Authored ~9.7:1; runtime non-uniform scale maps it onto the drawn plate.
+ * Measured from current fill PNGs (stadium mid ≈1259×130); matches Modern
+ * outer plate 1260×130 under width-lock placement.
  */
-/**
- * Slightly larger than the authored transparent stadium so independent X/Y scale
- * tucks ~2px of gold under the nameplate edge (MotM recessed lips, no gray gap).
- * Visual hole in PNGs remains ~471,69,1259×130.
- */
-export const CROWN_ASSET_SLOT = { x: 469, y: 67, w: 1263, h: 134 } as const
+export const CROWN_ASSET_SLOT = { x: 471, y: 69, w: 1259, h: 130 } as const
 
 /** Near-white threshold for edge flood-fill knockout (ChatGPT assets ship on opaque white). */
 export const CROWN_WHITE_KEY_THRESHOLD = 245
@@ -72,13 +62,12 @@ function plateOuterFromInner(inner: { x: number; y: number; width: number; heigh
 }
 
 /**
- * Drawn nameplate outer the crown hole must match — same art-aligned box as NamePlateLayer.
+ * Contract outer nameplate the crown hole locks to (1260×130 Modern).
+ * Same rect FrameLayer / recipe outer use — not the art-aligned drawn bar.
  */
 export function resolveCrownNamePlateOuter(input: {
   layout: LayoutId
   currentLayout?: CardLayoutMode
-  bezierPlateEnabled?: boolean
-  nameBarShape?: NameplateBoxShape
 }): CrownStageRect | null {
   const caps = getActiveLayoutCapabilitiesFromState({
     currentLayout: input.currentLayout,
@@ -90,58 +79,20 @@ export function resolveCrownNamePlateOuter(input: {
     currentLayout: input.currentLayout,
     cardData: { layout: input.layout },
   })
+
+  if (caps.supportsModernDummyLayout || caps.useLandFullArtManaCircle) {
+    return plateOuterFromInner(layoutRegionToStageRect(regions.nameBar))
+  }
+
   const g = getStandardLayoutGeometry()
-
-  let base: CrownStageRect
-  if (caps.supportsModernDummyLayout || caps.useLandFullArtManaCircle || caps.supportsSagaClassChrome) {
-    base = plateOuterFromInner(layoutRegionToStageRect(regions.nameBar))
-  } else {
-    base = { x: g.nameX, y: g.nameY, w: g.nameW, h: g.nameH }
-  }
-
-  // Land full-art mana circle keeps contract outer (no art-column end caps).
-  if (caps.useLandFullArtManaCircle) return base
-
-  let artAperture: { x: number; width: number } | null = null
-  if (caps.supportsPlaneswalkerModernV2Layout) {
-    const art = getPlaneswalkerModernV2ArtOuterRect()
-    artAperture = { x: art.x, width: art.width }
-  } else if (caps.supportsSagaClassChrome) {
-    const nameInner = layoutRegionToStageRect(regions.nameBar)
-    artAperture = { x: nameInner.x, width: nameInner.width }
-  } else if (caps.supportsModernDummyLayout) {
-    const art = buildModernDummyStageRects().art
-    artAperture = {
-      x: art.x - BEVEL_INSET,
-      width: art.width + 2 * BEVEL_INSET,
-    }
-  } else {
-    artAperture = { x: g.artX, width: g.artW }
-  }
-
-  if (!artAperture) return base
-
-  const plateBarRadius = caps.supportsPlaneswalkerModernV2Layout
-    ? Math.round(g.barRadius * PW_MODERN_V2_PLATE_RADIUS_MULTIPLIER)
-    : g.barRadius
-  const shape = resolveEffectiveNameplateShape(
-    input.bezierPlateEnabled !== false,
-    input.nameBarShape ?? 'reverseBezierPlate',
-  )
-  const aligned = resolveArtAlignedPlateOuterRect({
-    artX: artAperture.x,
-    artW: artAperture.width,
-    plateY: base.y,
-    plateH: base.h,
-    shape,
-    barRadius: plateBarRadius,
-  })
-  return { x: aligned.x, y: aligned.y, w: aligned.width, h: aligned.height }
+  return { x: g.nameX, y: g.nameY, w: g.nameW, h: g.nameH }
 }
 
 /**
- * Map crown image → stage so `slot` (in image px) lands exactly on `plate`.
- * Independent X/Y scale so art-aligned plates (wider than 1260) still fill the hole.
+ * Map crown image → stage so `slot` (in image px) lands on `plate`.
+ * Uniform width-lock scale: slot aspect matches the contract plate (~9.7:1),
+ * so height locks with width. Independent X/Y scale is intentionally avoided —
+ * it warps the flourish into split wings.
  */
 export function resolveCrownDrawRect(
   plate: CrownStageRect,
@@ -152,14 +103,14 @@ export function resolveCrownDrawRect(
   const nw = Math.max(1, naturalWidth)
   const nh = Math.max(1, naturalHeight)
   const sw = Math.max(1, slot.w)
-  const sh = Math.max(1, slot.h)
-  const scaleX = plate.w / sw
-  const scaleY = plate.h / sh
+  const scale = plate.w / sw
+  const w = nw * scale
+  const h = nh * scale
   return {
-    x: plate.x - slot.x * scaleX,
-    y: plate.y - slot.y * scaleY,
-    w: nw * scaleX,
-    h: nh * scaleY,
+    x: plate.x - slot.x * scale,
+    y: plate.y - slot.y * scale,
+    w,
+    h,
   }
 }
 

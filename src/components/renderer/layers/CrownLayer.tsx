@@ -7,7 +7,6 @@ import {
   shouldRenderNameplateCrown,
 } from '../../../authority/crownLayoutAuthority'
 import type { LayoutId } from '../../../authority/layoutTaxonomy'
-import type { NameplateBoxShape } from '../../../authority/nameplateShapeAuthority'
 import {
   normalizeHexColor,
   resolveCrownPublicUrl,
@@ -128,8 +127,6 @@ function CrownLayer() {
     crownShadowColor,
     currentLayout,
     activeLayout,
-    bezierPlateEnabled,
-    nameBarShape,
   } = useCardStore(
     (s) => ({
       crownAssetId: s.cardData.crownAssetId,
@@ -138,8 +135,6 @@ function CrownLayer() {
       crownShadowColor: s.cardData.crownShadowColor,
       currentLayout: s.currentLayout,
       activeLayout: s.cardData.layout as LayoutId,
-      bezierPlateEnabled: s.cardData.bezierPlateEnabled,
-      nameBarShape: s.cardData.nameBarShape as NameplateBoxShape,
     }),
     shallow,
   )
@@ -216,11 +211,9 @@ function CrownLayer() {
         ? resolveCrownNamePlateOuter({
             layout: activeLayout,
             currentLayout,
-            bezierPlateEnabled: !!bezierPlateEnabled,
-            nameBarShape,
           })
         : null,
-    [enabled, activeLayout, currentLayout, bezierPlateEnabled, nameBarShape],
+    [enabled, activeLayout, currentLayout],
   )
 
   const draw = useMemo(() => {
