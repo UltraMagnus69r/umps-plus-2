@@ -51,11 +51,18 @@ function tintCrownFill(source: HTMLImageElement, tintHex: string): HTMLCanvasEle
   return canvas
 }
 
+type CrownShadowPass = 'drop' | 'stroke'
+
 /**
- * Recolor shadow overlay: bright pixels stay light (stroke); dark pixels → shadow color.
- * Soft low-alpha body pixels are boosted so the toggle is visibly different.
+ * Recolor shadow overlay into a single pass:
+ * - `drop`: dark body + outer ring → shadow color (drawn under fill)
+ * - `stroke`: bright edge highlight only (drawn above fill, low opacity)
  */
-function tintCrownShadowOverlay(source: HTMLImageElement, shadowHex: string): HTMLCanvasElement {
+function tintCrownShadowOverlay(
+  source: HTMLImageElement,
+  shadowHex: string,
+  pass: CrownShadowPass,
+): HTMLCanvasElement {
   const w = Math.max(1, source.naturalWidth || source.width)
   const h = Math.max(1, source.naturalHeight || source.height)
   const canvas = document.createElement('canvas')
@@ -73,18 +80,27 @@ function tintCrownShadowOverlay(source: HTMLImageElement, shadowHex: string): HT
     const a = data[i + 3]
     if (!a) continue
     const lum = (data[i] + data[i + 1] + data[i + 2]) / 3
-    if (lum >= 160) {
+    const isStroke = lum >= 160
+    if (pass === 'stroke') {
+      if (!isStroke) {
+        data[i + 3] = 0
+        continue
+      }
       data[i] = 255
       data[i + 1] = 255
       data[i + 2] = 255
-      data[i + 3] = Math.min(255, Math.max(a, 160))
-    } else {
-      data[i] = sr
-      data[i + 1] = sg
-      data[i + 2] = sb
-      // Ensure soft authored alphas still read as a shadow on tinted fill.
-      data[i + 3] = Math.min(255, Math.max(a, Math.round(a * 1.35 + 24)))
+      data[i + 3] = Math.min(220, Math.max(a, 120))
+      continue
     }
+    // drop pass — keep dark body / outer ring only
+    if (isStroke) {
+      data[i + 3] = 0
+      continue
+    }
+    data[i] = sr
+    data[i + 1] = sg
+    data[i + 2] = sb
+    data[i + 3] = Math.min(255, Math.max(a, Math.round(a * 1.25 + 28)))
   }
   ctx.putImageData(imageData, 0, 0)
   return canvas
@@ -184,9 +200,14 @@ function CrownLayer() {
     return tintCrownFill(fillSrc, tintHex)
   }, [fillSrc, tintHex])
 
-  const tintedShadow = useMemo(() => {
+  const tintedShadowDrop = useMemo(() => {
     if (!shadowSrc || !crownShadowEnabled) return null
-    return tintCrownShadowOverlay(shadowSrc, shadowHex)
+    return tintCrownShadowOverlay(shadowSrc, shadowHex, 'drop')
+  }, [shadowSrc, crownShadowEnabled, shadowHex])
+
+  const tintedShadowStroke = useMemo(() => {
+    if (!shadowSrc || !crownShadowEnabled) return null
+    return tintCrownShadowOverlay(shadowSrc, shadowHex, 'stroke')
   }, [shadowSrc, crownShadowEnabled, shadowHex])
 
   const plate = useMemo(
@@ -210,22 +231,22 @@ function CrownLayer() {
   if (!assetUrl || !tintedFill || !draw) return null
 
   // Soft drop offset in stage px — keeps shadow readable under/around the fill.
-  const dropY = crownShadowEnabled ? Math.max(2, Math.round(draw.h * 0.012)) : 0
-  const dropX = crownShadowEnabled ? Math.max(1, Math.round(draw.w * 0.002)) : 0
+  const dropY = crownShadowEnabled ? Math.max(3, Math.round(draw.h * 0.014)) : 0
+  const dropX = crownShadowEnabled ? Math.max(1, Math.round(draw.w * 0.0025)) : 0
 
   return (
     <Layer listening={false}>
-      {tintedShadow ? (
+      {tintedShadowDrop ? (
         <Image
-          key={`crown-shadow-${crownAssetId}-${shadowHex}`}
-          image={tintedShadow}
+          key={`crown-drop-${crownAssetId}-${shadowHex}`}
+          image={tintedShadowDrop}
           x={draw.x + dropX}
           y={draw.y + dropY}
           width={draw.w}
           height={draw.h}
           listening={false}
           imageSmoothingEnabled={true}
-          opacity={0.92}
+          opacity={0.95}
         />
       ) : null}
       <Image
@@ -238,17 +259,17 @@ function CrownLayer() {
         listening={false}
         imageSmoothingEnabled={true}
       />
-      {tintedShadow ? (
+      {tintedShadowStroke ? (
         <Image
           key={`crown-stroke-${crownAssetId}-${shadowHex}`}
-          image={tintedShadow}
+          image={tintedShadowStroke}
           x={draw.x}
           y={draw.y}
           width={draw.w}
           height={draw.h}
           listening={false}
           imageSmoothingEnabled={true}
-          opacity={0.55}
+          opacity={0.35}
         />
       ) : null}
     </Layer>

@@ -34,7 +34,12 @@ export const CROWN_ASSET_CANVAS_H = 420
  * Transparent nameplate hole inside the crown canvas.
  * Authored ~9.7:1; runtime non-uniform scale maps it onto the drawn plate.
  */
-export const CROWN_ASSET_SLOT = { x: 471, y: 69, w: 1259, h: 130 } as const
+/**
+ * Slightly larger than the authored transparent stadium so independent X/Y scale
+ * tucks ~2px of gold under the nameplate edge (MotM recessed lips, no gray gap).
+ * Visual hole in PNGs remains ~471,69,1259×130.
+ */
+export const CROWN_ASSET_SLOT = { x: 469, y: 67, w: 1263, h: 134 } as const
 
 /** Near-white threshold for edge flood-fill knockout (ChatGPT assets ship on opaque white). */
 export const CROWN_WHITE_KEY_THRESHOLD = 245
