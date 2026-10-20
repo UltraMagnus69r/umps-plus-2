@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
-# Launch Cursor agent worker for PipMint/UMPS (background, no terminal)
-# and open the IDE into the project.
+# PipMint / UMPS+2 ONLY — start Cursor My Machines agent worker + open Cursor.
+#
+# Hardcoded project: /home/g/Desktop/UMPS
+# Does NOT touch FilmCraft, speededitor-filmcraft, or any other directory.
+# Does NOT open a terminal window.
 set -euo pipefail
 
+# Absolute path only — never derive from $PWD / launcher cwd / other projects.
 UMPS_DIR="/home/g/Desktop/UMPS"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/pipmint"
 LOG_FILE="$STATE_DIR/agent-worker.log"
@@ -48,13 +52,25 @@ find_cursor() {
   return 1
 }
 
+find_agent() {
+  if command -v agent >/dev/null 2>&1; then
+    command -v agent
+    return 0
+  fi
+  if [[ -x "$HOME/.local/bin/agent" ]]; then
+    printf '%s\n' "$HOME/.local/bin/agent"
+    return 0
+  fi
+  return 1
+}
+
 worker_pid_alive() {
   local pid="$1"
   [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null
 }
 
-# True if this pid is a My Machines `agent worker start` for UMPS
-# (not a Cursor IDE private-worker wrapper, not a shell that merely embeds the command).
+# True if this pid is a My Machines `agent worker start` whose cwd is UMPS_DIR
+# (not FilmCraft, not a Cursor IDE private-worker wrapper, not a shell wrapper).
 is_umps_agent_worker() {
   local pid="$1"
   local cmdline cwd exe base
@@ -63,8 +79,10 @@ is_umps_agent_worker() {
   # Skip IDE/cloud private-worker wrappers.
   [[ "$cmdline" == *worker-api-socket* ]] && return 1
   [[ "$cmdline" == *cursor-agent-worker* ]] && return 1
+  # Never treat FilmCraft / other projects as our worker.
+  [[ "$cmdline" == *[Ff]ilm[Cc]raft* ]] && return 1
+  [[ "$cmdline" == *speededitor-filmcraft* ]] && return 1
   [[ "$cmdline" == *'worker start'* ]] || return 1
-  # Must be the agent/node binary, not konsole/bash wrappers that embed the command text.
   exe="$(readlink -f "/proc/$pid/exe" 2>/dev/null || true)"
   base="$(basename "$exe")"
   case "$base" in
@@ -75,7 +93,6 @@ is_umps_agent_worker() {
   [[ "$cwd" == "$UMPS_DIR" ]]
 }
 
-# True if a PipMint/UMPS agent worker is already running.
 find_existing_worker_pid() {
   if [[ -f "$PID_FILE" ]]; then
     local pid
@@ -98,19 +115,19 @@ find_existing_worker_pid() {
 }
 
 start_worker_background() {
+  local agent_bin="$1"
   mkdir -p "$STATE_DIR"
   {
-    echo "===== $(date -Iseconds) starting agent worker from $UMPS_DIR ====="
+    echo "===== $(date -Iseconds) starting UMPS agent worker from $UMPS_DIR ====="
   } >>"$LOG_FILE"
 
-  # Detach fully: no controlling terminal, survive launcher exit.
+  # Detach fully: no terminal, survive launcher exit.
+  # --worker-dir pins the workspace to UMPS even if something else changes cwd.
   (
-    cd "$UMPS_DIR"
-    exec setsid -f agent worker start >>"$LOG_FILE" 2>&1
+    cd "$UMPS_DIR" || exit 1
+    exec setsid -f "$agent_bin" worker --worker-dir "$UMPS_DIR" start >>"$LOG_FILE" 2>&1
   ) &
 
-  # setsid -f forks; give the child a moment, then resolve the real worker pid.
-  # Give the forked worker a moment to appear in /proc.
   local pid="" i
   for ((i = 0; i < 20; i++)); do
     pid="$(find_existing_worker_pid || true)"
@@ -121,13 +138,15 @@ start_worker_background() {
   done
   if [[ -n "$pid" ]] && worker_pid_alive "$pid"; then
     printf '%s\n' "$pid" >"$PID_FILE"
-    info_message "Agent worker started (pid $pid). Log: $LOG_FILE"
+    info_message "PipMint/UMPS agent worker started (pid $pid). Log: $LOG_FILE"
     return 0
   fi
 
-  error_message "Failed to start agent worker. Check $LOG_FILE"
+  error_message "Failed to start UMPS agent worker. Check $LOG_FILE"
   return 1
 }
+
+# --- UMPS only from here ---
 
 if [[ ! -d "$UMPS_DIR" ]]; then
   error_message "UMPS project directory not found: $UMPS_DIR"
@@ -136,13 +155,10 @@ fi
 
 cd "$UMPS_DIR"
 
-if ! command -v agent >/dev/null 2>&1 && [[ ! -x "$HOME/.local/bin/agent" ]]; then
+AGENT_BIN=""
+if ! AGENT_BIN="$(find_agent)"; then
   error_message "Cursor agent CLI not found. Install it, or ensure ~/.local/bin/agent is on PATH."
   exit 1
-fi
-
-if ! command -v agent >/dev/null 2>&1; then
-  export PATH="$HOME/.local/bin:$PATH"
 fi
 
 CURSOR_BIN=""
@@ -151,15 +167,17 @@ if ! CURSOR_BIN="$(find_cursor)"; then
   exit 1
 fi
 
+mkdir -p "$STATE_DIR"
+
 EXISTING_PID=""
 if EXISTING_PID="$(find_existing_worker_pid)"; then
-  info_message "Agent worker already running (pid $EXISTING_PID); not starting a second one."
+  info_message "UMPS agent worker already running (pid $EXISTING_PID); not starting a second one."
   printf '%s\n' "$EXISTING_PID" >"$PID_FILE"
 else
-  start_worker_background || exit 1
+  start_worker_background "$AGENT_BIN" || exit 1
 fi
 
-# Open Cursor into the UMPS project (non-blocking).
+# Open Cursor into UMPS only (never FilmCraft or another path).
 nohup "$CURSOR_BIN" "$UMPS_DIR" >/dev/null 2>&1 &
 disown || true
 
