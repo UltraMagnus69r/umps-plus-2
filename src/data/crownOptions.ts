@@ -1,7 +1,8 @@
 /**
  * Bundled Crown options — served from `public/assets/crowns/`.
  * Drawn behind the Modern nameplate (Showcase-style crown).
- * Canvas 2200×420 with transparent slot ~1260×130 (see CROWN_ASSET_SLOT).
+ * Canvas 2200×420 with transparent slot ~1259×130 (see CROWN_ASSET_SLOT).
+ * Fill is a near-white luminance map for multiply land tints; `*-shadow.png` is stroke+soft drop.
  */
 
 export type CrownOption = {

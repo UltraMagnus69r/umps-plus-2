@@ -7,6 +7,7 @@ import {
   shouldRenderNameplateCrown,
 } from '../../../authority/crownLayoutAuthority'
 import type { LayoutId } from '../../../authority/layoutTaxonomy'
+import type { NameplateBoxShape } from '../../../authority/nameplateShapeAuthority'
 import {
   normalizeHexColor,
   resolveCrownPublicUrl,
@@ -21,14 +22,17 @@ function parseHexRgb(hex: string): { r: number; g: number; b: number } | null {
   return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 }
 }
 
-/** Multiply-tint a crown fill (gold/white base) toward `tintHex`. */
+/**
+ * Multiply-tint a near-white crown fill toward `tintHex`.
+ * Gold-base assets made multiply a no-op vs default `#efc263` — white luminance fixes that.
+ */
 function tintCrownFill(source: HTMLImageElement, tintHex: string): HTMLCanvasElement {
   const w = Math.max(1, source.naturalWidth || source.width)
   const h = Math.max(1, source.naturalHeight || source.height)
   const canvas = document.createElement('canvas')
   canvas.width = w
   canvas.height = h
-  const ctx = canvas.getContext('2d')
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })
   if (!ctx) return canvas
   ctx.drawImage(source, 0, 0, w, h)
   const rgb = parseHexRgb(tintHex)
@@ -49,6 +53,7 @@ function tintCrownFill(source: HTMLImageElement, tintHex: string): HTMLCanvasEle
 
 /**
  * Recolor shadow overlay: bright pixels stay light (stroke); dark pixels → shadow color.
+ * Soft low-alpha body pixels are boosted so the toggle is visibly different.
  */
 function tintCrownShadowOverlay(source: HTMLImageElement, shadowHex: string): HTMLCanvasElement {
   const w = Math.max(1, source.naturalWidth || source.width)
@@ -56,7 +61,7 @@ function tintCrownShadowOverlay(source: HTMLImageElement, shadowHex: string): HT
   const canvas = document.createElement('canvas')
   canvas.width = w
   canvas.height = h
-  const ctx = canvas.getContext('2d')
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })
   if (!ctx) return canvas
   ctx.drawImage(source, 0, 0, w, h)
   const rgb = parseHexRgb(shadowHex)
@@ -69,14 +74,16 @@ function tintCrownShadowOverlay(source: HTMLImageElement, shadowHex: string): HT
     if (!a) continue
     const lum = (data[i] + data[i + 1] + data[i + 2]) / 3
     if (lum >= 160) {
-      // Light stroke — keep near-white (recolorable later if needed)
       data[i] = 255
       data[i + 1] = 255
       data[i + 2] = 255
+      data[i + 3] = Math.min(255, Math.max(a, 160))
     } else {
       data[i] = sr
       data[i + 1] = sg
       data[i + 2] = sb
+      // Ensure soft authored alphas still read as a shadow on tinted fill.
+      data[i + 3] = Math.min(255, Math.max(a, Math.round(a * 1.35 + 24)))
     }
   }
   ctx.putImageData(imageData, 0, 0)
@@ -105,6 +112,8 @@ function CrownLayer() {
     crownShadowColor,
     currentLayout,
     activeLayout,
+    bezierPlateEnabled,
+    nameBarShape,
   } = useCardStore(
     (s) => ({
       crownAssetId: s.cardData.crownAssetId,
@@ -113,6 +122,8 @@ function CrownLayer() {
       crownShadowColor: s.cardData.crownShadowColor,
       currentLayout: s.currentLayout,
       activeLayout: s.cardData.layout as LayoutId,
+      bezierPlateEnabled: s.cardData.bezierPlateEnabled,
+      nameBarShape: s.cardData.nameBarShape as NameplateBoxShape,
     }),
     shallow,
   )
@@ -181,9 +192,14 @@ function CrownLayer() {
   const plate = useMemo(
     () =>
       enabled
-        ? resolveCrownNamePlateOuter({ layout: activeLayout, currentLayout })
+        ? resolveCrownNamePlateOuter({
+            layout: activeLayout,
+            currentLayout,
+            bezierPlateEnabled: !!bezierPlateEnabled,
+            nameBarShape,
+          })
         : null,
-    [enabled, activeLayout, currentLayout],
+    [enabled, activeLayout, currentLayout, bezierPlateEnabled, nameBarShape],
   )
 
   const draw = useMemo(() => {
@@ -193,9 +209,27 @@ function CrownLayer() {
 
   if (!assetUrl || !tintedFill || !draw) return null
 
+  // Soft drop offset in stage px — keeps shadow readable under/around the fill.
+  const dropY = crownShadowEnabled ? Math.max(2, Math.round(draw.h * 0.012)) : 0
+  const dropX = crownShadowEnabled ? Math.max(1, Math.round(draw.w * 0.002)) : 0
+
   return (
     <Layer listening={false}>
+      {tintedShadow ? (
+        <Image
+          key={`crown-shadow-${crownAssetId}-${shadowHex}`}
+          image={tintedShadow}
+          x={draw.x + dropX}
+          y={draw.y + dropY}
+          width={draw.w}
+          height={draw.h}
+          listening={false}
+          imageSmoothingEnabled={true}
+          opacity={0.92}
+        />
+      ) : null}
       <Image
+        key={`crown-fill-${crownAssetId}-${tintHex}`}
         image={tintedFill}
         x={draw.x}
         y={draw.y}
@@ -206,6 +240,7 @@ function CrownLayer() {
       />
       {tintedShadow ? (
         <Image
+          key={`crown-stroke-${crownAssetId}-${shadowHex}`}
           image={tintedShadow}
           x={draw.x}
           y={draw.y}
@@ -213,6 +248,7 @@ function CrownLayer() {
           height={draw.h}
           listening={false}
           imageSmoothingEnabled={true}
+          opacity={0.55}
         />
       ) : null}
     </Layer>
