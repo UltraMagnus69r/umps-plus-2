@@ -2,9 +2,12 @@
  * Modern nameplate crown placement.
  * Crown PNGs sit behind the raised name plate (Showcase-style) and over art.
  *
- * Assets are authored so a transparent nameplate slot (~9.7:1) maps onto the
- * drawn nameplate outer (art-aligned when applicable). Placement scales X/Y
- * independently so the hole matches the plate in both axes.
+ * Ground truth is the same outer rect NamePlateLayer draws (art-aligned when
+ * applicable). The authored transparent slot maps 1:1 onto that plate in both
+ * axes — hole center = plate center, hole size = plate size.
+ *
+ * Do not invent MotM “top compress” / inflated slots that disconnect the
+ * flourish (split wings / gap behind the name bar).
  */
 
 import { BEVEL_INSET, getStandardLayoutGeometry, type CardLayoutMode } from './geometryAuthority'
@@ -31,15 +34,10 @@ export const CROWN_ASSET_CANVAS_W = 2200
 export const CROWN_ASSET_CANVAS_H = 420
 
 /**
- * Transparent nameplate hole inside the crown canvas.
- * Authored ~9.7:1; runtime non-uniform scale maps it onto the drawn plate.
+ * Transparent nameplate hole inside the crown canvas — measured from current
+ * fill PNGs (stadium mid ≈1259×130 at y=69). Maps 1:1 onto the drawn plate.
  */
-/**
- * Slightly larger than the authored transparent stadium so independent X/Y scale
- * tucks ~2px of gold under the nameplate edge (MotM recessed lips, no gray gap).
- * Visual hole in PNGs remains ~471,69,1259×130.
- */
-export const CROWN_ASSET_SLOT = { x: 469, y: 67, w: 1263, h: 134 } as const
+export const CROWN_ASSET_SLOT = { x: 471, y: 69, w: 1259, h: 130 } as const
 
 /** Near-white threshold for edge flood-fill knockout (ChatGPT assets ship on opaque white). */
 export const CROWN_WHITE_KEY_THRESHOLD = 245
@@ -140,8 +138,9 @@ export function resolveCrownNamePlateOuter(input: {
 }
 
 /**
- * Map crown image → stage so `slot` (in image px) lands exactly on `plate`.
- * Independent X/Y scale so art-aligned plates (wider than 1260) still fill the hole.
+ * Map crown image → stage so `slot` lands exactly on `plate` in both axes.
+ * Width-lock and height-lock (independent scale only to match plate aspect —
+ * slot is already ~9.7:1; art-aligned plates are wider, not taller).
  */
 export function resolveCrownDrawRect(
   plate: CrownStageRect,
