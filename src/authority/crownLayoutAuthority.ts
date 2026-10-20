@@ -3,14 +3,21 @@
  * Crown PNGs sit behind the raised name plate (Showcase-style) and over art.
  *
  * Ground truth is the same outer rect NamePlateLayer draws (art-aligned when
- * applicable). The authored transparent slot maps 1:1 onto that plate in both
- * axes — hole center = plate center, hole size = plate size.
+ * applicable). The transparent slot is centered on that plate. Scale is
+ * uniform (no silhouette squash); width is clamped so opaque left/right edges
+ * stay inside trim with CROWN_TRIM_PAD_X on both sides.
  *
  * Do not invent MotM “top compress” / inflated slots that disconnect the
  * flourish (split wings / gap behind the name bar).
  */
 
-import { BEVEL_INSET, getStandardLayoutGeometry, type CardLayoutMode } from './geometryAuthority'
+import {
+  BLEED_PX,
+  BEVEL_INSET,
+  getStandardLayoutGeometry,
+  TRIM_WIDTH,
+  type CardLayoutMode,
+} from './geometryAuthority'
 import {
   getActiveLayoutCapabilitiesFromState,
   getActiveLayoutRegionsFromState,
@@ -35,9 +42,18 @@ export const CROWN_ASSET_CANVAS_H = 420
 
 /**
  * Transparent nameplate hole inside the crown canvas — measured from current
- * fill PNGs (stadium mid ≈1259×130 at y=69). Maps 1:1 onto the drawn plate.
+ * fill PNGs (stadium mid ≈1259×130 at y=69). Centered on the drawn plate.
  */
 export const CROWN_ASSET_SLOT = { x: 471, y: 69, w: 1259, h: 130 } as const
+
+/**
+ * Farthest colored (non-transparent) pixel bounds in the remastered fill PNGs
+ * after edge white-key knockout — left x=57, right x=2143 inclusive.
+ */
+export const CROWN_ASSET_OPAQUE = { x: 57, y: 12, w: 2087, h: 236 } as const
+
+/** Horizontal inset from trim to farthest crown opaque edge (each side). */
+export const CROWN_TRIM_PAD_X = 10
 
 /** Near-white threshold for edge flood-fill knockout (ChatGPT assets ship on opaque white). */
 export const CROWN_WHITE_KEY_THRESHOLD = 245
@@ -138,27 +154,51 @@ export function resolveCrownNamePlateOuter(input: {
 }
 
 /**
- * Map crown image → stage so `slot` lands exactly on `plate` in both axes.
- * Width-lock and height-lock (independent scale only to match plate aspect —
- * slot is already ~9.7:1; art-aligned plates are wider, not taller).
+ * Map crown image → stage with uniform scale.
+ * Prefer the largest uniform scale that still matches the plate when possible
+ * (`min(plate/slot)`), then clamp so opaque width fits trim ± CROWN_TRIM_PAD_X.
+ * Hole center is then re-registered to the plate center (translate only).
  */
 export function resolveCrownDrawRect(
   plate: CrownStageRect,
   naturalWidth: number,
   naturalHeight: number,
   slot: CrownSlotRect = CROWN_ASSET_SLOT,
+  opaque: CrownSlotRect = CROWN_ASSET_OPAQUE,
 ): CrownStageRect {
   const nw = Math.max(1, naturalWidth)
   const nh = Math.max(1, naturalHeight)
   const sw = Math.max(1, slot.w)
   const sh = Math.max(1, slot.h)
-  const scaleX = plate.w / sw
-  const scaleY = plate.h / sh
+  const ow = Math.max(1, opaque.w)
+
+  const trimInnerLeft = BLEED_PX + CROWN_TRIM_PAD_X
+  const trimInnerRight = BLEED_PX + TRIM_WIDTH - CROWN_TRIM_PAD_X
+  const maxOpaqueW = Math.max(1, trimInnerRight - trimInnerLeft)
+
+  let scale = Math.min(plate.w / sw, plate.h / sh)
+  const maxScaleForTrim = maxOpaqueW / ow
+  if (scale > maxScaleForTrim) scale = maxScaleForTrim
+
+  const slotCx = slot.x + sw / 2
+  const slotCy = slot.y + sh / 2
+  const plateCx = plate.x + plate.w / 2
+  const plateCy = plate.y + plate.h / 2
+
+  let x = plateCx - slotCx * scale
+  const y = plateCy - slotCy * scale
+
+  // Plate may not be perfectly trim-centered — nudge so opaque L/R stay in pad.
+  const opaqueLeft = x + opaque.x * scale
+  const opaqueRight = x + (opaque.x + ow) * scale
+  if (opaqueLeft < trimInnerLeft) x += trimInnerLeft - opaqueLeft
+  else if (opaqueRight > trimInnerRight) x -= opaqueRight - trimInnerRight
+
   return {
-    x: plate.x - slot.x * scaleX,
-    y: plate.y - slot.y * scaleY,
-    w: nw * scaleX,
-    h: nh * scaleY,
+    x,
+    y,
+    w: nw * scale,
+    h: nh * scale,
   }
 }
 
