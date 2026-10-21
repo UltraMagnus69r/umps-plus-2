@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=PipMint
+Comment=Update UMPS, start agent worker + Vite, open Cursor and Edge
+Exec=env PIPMINT_WORKER_NAME=bazzite "/var/home/UltraMagnus69r/Projects/UMPS/scripts/start-pipmint-agent.sh"
+Icon=/var/home/UltraMagnus69r/Projects/UMPS/scripts/pipmint-agent.png
+Path=/var/home/UltraMagnus69r/Projects/UMPS
+Terminal=false
+StartupNotify=false
+Categories=Development;
+Keywords=UMPS;PipMint;Vite;Cursor;
