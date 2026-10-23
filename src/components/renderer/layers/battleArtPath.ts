@@ -1,17 +1,16 @@
 /**
  * Battle art / inner-border aperture path — shared by ArtLayer clip and
- * BattleChromeLayer punch so the art window matches the inner-border shape.
+ * BattleChromeLayer punch so the art window matches the center-column hole.
  */
 import {
   getBattleInnerBorderCornerRadii,
   getBattleInnerBorderRect,
-  getBattleLeftCornerHorizontalRadius,
+  getBattleTrimCornerRadii,
 } from '../../../authority/battleLayoutAuthority'
 
 /**
  * Rounded rect with per-corner radii (TL, TR, BR, BL).
- * Left corners keep vertical anchors at `tl`/`bl` but push the top/bottom
- * tangent points further right by `leftTangentExtra` so the arc starts later.
+ * Optional `leftTangentExtra` kept for API compat (portrait default 0).
  */
 export function addBattleRoundRectPath(
   ctx: CanvasRenderingContext2D,
@@ -36,15 +35,24 @@ export function addBattleRoundRectPath(
   ctx.lineTo(x + w, y + h - br)
   ctx.quadraticCurveTo(x + w, y + h, x + w - br, y + h)
   ctx.lineTo(x + blH, y + h)
-  // BL: vertical anchor at y+h-bl stays; bottom tangent at x+blH
   ctx.quadraticCurveTo(x, y + h, x, y + h - bl)
   ctx.lineTo(x, y + tl)
-  // TL: vertical anchor at y+tl stays; top tangent at x+tlH
   ctx.quadraticCurveTo(x, y, x + tlH, y)
   ctx.closePath()
 }
 
-/** Inner-border / art aperture path in stage px (bounds + corner radii). */
+/** Outer trim silhouette (Standard Modern corner language). */
+export function addBattleTrimPath(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): void {
+  addBattleRoundRectPath(ctx, x, y, w, h, getBattleTrimCornerRadii(), 0)
+}
+
+/** Inner-border / art aperture path in stage px (center column). */
 export function addBattleArtInnerClipPath(ctx: CanvasRenderingContext2D): void {
   const border = getBattleInnerBorderRect()
   addBattleArtInnerClipPathForRect(ctx, border.x, border.y, border.width, border.height)
@@ -59,6 +67,5 @@ export function addBattleArtInnerClipPathForRect(
   h: number,
 ): void {
   const radii = getBattleInnerBorderCornerRadii()
-  const leftTangentExtra = getBattleLeftCornerHorizontalRadius() - radii[0]
-  addBattleRoundRectPath(ctx, x, y, w, h, radii, leftTangentExtra)
+  addBattleRoundRectPath(ctx, x, y, w, h, radii, 0)
 }

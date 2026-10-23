@@ -1018,7 +1018,7 @@ function buildPreparedModernContract(): LayoutContract {
   })
 }
 
-/** Battle / Siege — true landscape stage (2250×1650); chrome owns plates/text. */
+/** Battle / Siege — portrait side-column on Standard 1650×2250; chrome owns plates/text. */
 function buildBattleModernContract(): LayoutContract {
   const toNorm = (r: { x: number; y: number; width: number; height: number }) => ({
     left: r.x / BATTLE_STAGE_WIDTH,
@@ -1048,14 +1048,18 @@ function buildBattleModernContract(): LayoutContract {
       supportsSecondaryStructuralRegions: true,
       supportsNamePlateBox: false,
       supportsTypeLineBox: false,
-      /** Left-frame stamp is drawn by BattleChromeLayer only. */
+      /** Stamp is drawn by BattleChromeLayer only. */
       supportsHologramSeal: false,
       supportsRulesTextBoxFrame: false,
       supportsRulesTextBoxTexture: false,
       supportsModernDummyLayout: false,
       suppressRulesTextRendering: true,
+      suppressNameBarTextRendering: true,
+      suppressNameBarManaCostRendering: true,
+      suppressTypeLineTextRendering: true,
       supportsBattleChrome: true,
-      usesLandscapeStage: true,
+      /** Portrait 1500×2100 — same stage as Standard; MotM landscape retired. */
+      usesLandscapeStage: false,
     },
     bleedBehavior: 'trim-contained',
     compliance: {

@@ -1,10 +1,8 @@
 /**
- * Battle / Siege landscape stack chrome —
- * top nameplate (name + Classic/Legacy mana pips), art aperture, type line,
- * upright rules (inline mana), defense shield, left-edge collector, hologram.
- * MotM default: bordered name/type/rules plates (stroke + translucent interior);
- * solid panel fill is opt-in via Advanced → Name/Type/Rules box colors.
- * Name / type / rules typography follow the same studio FontMenu controls as other layouts.
+ * Battle / Siege portrait side-column chrome —
+ * left name plate (vertical glyphs, mana top, transform bottom), center art aperture,
+ * mid-right type plate, far-right rules column, defense + 4/4 at TR of rules,
+ * bottom horizontal collector. MotM landscape stack is not the Studio default.
  */
 import { Fragment, memo, useCallback, useMemo, useRef, useState } from 'react'
 import { Ellipse, Group, Image, Layer, Shape, Text } from 'react-konva'
@@ -18,12 +16,12 @@ import {
   getBattleDefenseRect,
   getBattleHologramRect,
   getBattleInnerBorderCornerRadii,
-  getBattleLeftCornerHorizontalRadius,
   getBattleManaRect,
   getBattleNameRect,
   getBattleRulesRect,
   getBattleStageSize,
   getBattleTransformRect,
+  getBattleTrimCornerRadii,
   getBattleTrimRect,
   getBattleTypeRect,
   layoutUsesBattleChrome,
@@ -58,7 +56,7 @@ import {
   scaleManaPipDisplaySizePx,
 } from './textIconsShared'
 
-/** sizePt 12 ≈ prior hardcoded sizes on the landscape face. */
+/** sizePt 12 ≈ prior hardcoded sizes on the MotM face; reused as pt→px refs. */
 const BATTLE_NAME_PT_REF_PX = 44
 const BATTLE_TYPE_PT_REF_PX = 32
 const BATTLE_RULES_PT_REF_PX = 34
@@ -94,9 +92,8 @@ function hexToRgba(hex: string, alpha: number): string {
 }
 
 /**
- * Default cream hex → MotM outline plate.
- * Classic texture/solid PNG keys and any other hex are opt-in fills (textures must not
- * collapse to outline via contrast-hex fallback).
+ * Default cream hex → outline plate.
+ * Classic texture/solid PNG keys and any other hex are opt-in fills.
  */
 function isBattleOutlinePlate(stored: string): boolean {
   const t = typeof stored === 'string' ? stored.trim() : ''
@@ -105,7 +102,7 @@ function isBattleOutlinePlate(stored: string): boolean {
   return t.toLowerCase() === DEFAULT_PANEL_BOX_HEX.toLowerCase()
 }
 
-/** MotM name/type plate — 25px circular end-cap radii on left/right ends. */
+/** Name/type plate — rounded ends (works for tall vertical pillars). */
 const BATTLE_PLATE_END_RADIUS_PX = 25
 
 function addPlatePath(ctx: CanvasRenderingContext2D, w: number, h: number): void {
@@ -326,7 +323,6 @@ function BattleChromeLayer() {
   )
 
   const fill = identity.stroke
-  /** MotM light plate border (thin light/identity stroke around translucent boxes). */
   const plateBorder = useMemo(() => lightenHex(fill, 0.55), [fill])
   const effectiveNameBox = effectivePanelBackground('nameBoxColor', nameBoxColor, panelBackgroundPreview)
   const effectiveTypeBox = effectivePanelBackground(
@@ -360,9 +356,8 @@ function BattleChromeLayer() {
   const collectorR = getBattleCollectorRect()
   const artR = getBattleArtRect()
   const holoR = getBattleHologramRect()
-  const cornerRadii = getBattleInnerBorderCornerRadii()
-  const leftTangentExtra =
-    getBattleLeftCornerHorizontalRadius() - cornerRadii[0]
+  const trimRadii = getBattleTrimCornerRadii()
+  const artRadii = getBattleInnerBorderCornerRadii()
 
   const defense = normalizeBattleDefense(battleDefense) || '0'
   const backFacePT = formatBattleBackFacePT(power, toughness)
@@ -380,7 +375,7 @@ function BattleChromeLayer() {
     .filter(Boolean)
     .join('  ·  ')
 
-  const nameManaIconSize = Math.max(28, Math.min(64, Math.round(manaR.height * 0.82)))
+  const nameManaIconSize = Math.max(28, Math.min(56, Math.round(Math.min(manaR.width, manaR.height) * 0.72)))
   const manaCostRender = useMemo(() => {
     const chunks = resolveChunks(normalizeMana(manaCost ?? '') || '{0}')
     let totalWidth = 0
@@ -393,22 +388,27 @@ function BattleChromeLayer() {
     return { chunks, totalWidth }
   }, [manaCost, nameManaIconSize, measureTextWidth, nameFace.fontStack, nameFace.fontStyle])
 
-  /** Zendikar rules text insets (trim ≈ L36 R44 T30 B56); clear back-face P/T + defense. */
-  const rulesPadL = 36
-  const rulesPadT = 30
-  const rulesPadB = 56
-  const rulesPadR = Math.max(44, Math.round(rulesR.x + rulesR.width - backFacePTR.x + 8))
-  const rulesInnerW = Math.max(8, rulesR.width - rulesPadL - rulesPadR)
-  const rulesInnerH = Math.max(8, rulesR.height - rulesPadT - rulesPadB)
+  /**
+   * Rules laid out in rotated space (−90°): local +x runs bottom→top along the column.
+   * Clear defense / 4/4 at the top of the column (end of local +x).
+   */
+  const rulesPadAcross = 28
+  const rulesPadBottom = 36
+  const rulesPadTop = Math.max(
+    48,
+    Math.round(defenseR.y + defenseR.height - rulesR.y + 16),
+  )
+  const rulesLayoutW = Math.max(8, rulesR.height - rulesPadBottom - rulesPadTop)
+  const rulesLayoutH = Math.max(8, rulesR.width - rulesPadAcross * 2)
   const rulesLineHeight = Math.round(rulesFontSize * 1.2)
   const rulesItems = useMemo(
     () =>
       layoutRichTextItems({
         chunks: resolveChunks(rulesBody),
-        originX: rulesR.x + rulesPadL,
-        originY: rulesR.y + rulesPadT,
-        maxWidth: rulesInnerW,
-        maxHeight: rulesInnerH,
+        originX: 0,
+        originY: 0,
+        maxWidth: rulesLayoutW,
+        maxHeight: rulesLayoutH,
         fontSize: rulesFontSize,
         lineHeightPx: rulesLineHeight,
         iconSize: rulesFontSize,
@@ -419,12 +419,8 @@ function BattleChromeLayer() {
       }),
     [
       rulesBody,
-      rulesR.x,
-      rulesR.y,
-      rulesPadL,
-      rulesPadT,
-      rulesInnerW,
-      rulesInnerH,
+      rulesLayoutW,
+      rulesLayoutH,
       rulesFontSize,
       rulesLineHeight,
       rulesFace.fontStack,
@@ -435,167 +431,134 @@ function BattleChromeLayer() {
 
   if (!enabled) return null
 
-  const nameTextLeft = transformR.x + transformR.width + 16
-  const nameTextWidth = Math.max(
-    40,
-    manaR.x - nameTextLeft - 12 - (manaCostRender.totalWidth > 0 ? manaCostRender.totalWidth + 12 : 0),
-  )
-  /** Battle chrome owns the left-frame stamp; TextIcons seal is disabled for battle. */
+  /**
+   * Vertical name run: first letters just above transform (bottom), extending
+   * upward (−90°) to just below mana.
+   */
+  const nameTextBottom = transformR.y + transformR.height + 12
+  const nameTextTop = manaR.y + manaR.height + 10
+  const nameTextRun = Math.max(40, nameTextBottom - nameTextTop)
+  const nameTextCross = Math.max(24, nameR.width - 16)
+  /** Vertical type run below set-symbol band, upward along the pillar. */
+  const typeTextBottom = typeR.y + typeR.height - 36
+  const typeTextTop = typeR.y + 110
+  const typeTextRun = Math.max(40, typeTextBottom - typeTextTop)
+  const typeTextCross = Math.max(24, typeR.width - 16)
+
   const showStamp = showHologram !== false
+
+  const paintPlate = (
+    c: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    outline: boolean,
+    boxKey: string,
+    fillHex: string,
+    bgImage: HTMLImageElement | null,
+  ) => {
+    c.beginPath()
+    addPlatePath(c, w, h)
+    if (outline) {
+      c.fillStyle = hexToRgba(fill, 0.38)
+      c.fill()
+      c.strokeStyle = plateBorder
+      c.lineWidth = 2.5
+      c.stroke()
+    } else if (bgImage && isPanelTextureBackground(boxKey)) {
+      c.fillStyle = createBoxPanelInnerFillStyle(
+        c,
+        w,
+        h,
+        boxKey,
+        false,
+        'vertical',
+        100,
+        false,
+        bgImage,
+        panelFrostEnabled,
+        panelFrostOpacity,
+      )
+      c.fill()
+      c.strokeStyle = darkenHex(fillHex, 0.35)
+      c.lineWidth = 2
+      c.stroke()
+    } else {
+      const frosted = createBoxPanelInnerFillStyle(
+        c,
+        w,
+        h,
+        boxKey,
+        false,
+        'vertical',
+        100,
+        false,
+        null,
+        panelFrostEnabled,
+        panelFrostOpacity,
+      )
+      if (typeof frosted === 'string' && panelFrostEnabled && panelFrostOpacity > 0) {
+        c.fillStyle = frosted
+      } else {
+        const g = c.createLinearGradient(0, 0, w, 0)
+        g.addColorStop(0, lightenHex(fillHex, 0.22))
+        g.addColorStop(0.45, fillHex)
+        g.addColorStop(1, darkenHex(fillHex, 0.28))
+        c.fillStyle = g
+      }
+      c.fill()
+      c.strokeStyle = darkenHex(fillHex, 0.35)
+      c.lineWidth = 2
+      c.stroke()
+    }
+  }
 
   return (
     <Layer listening={false}>
       {/*
-        Bleed + MotM outer border chrome.
-        Art cover-fills the shared aperture (left-inset for black collector strip;
-        flush top/right/bottom). No identity-green mat on the left. Plates/rules draw on top.
+        Bleed + outer border. Art = center column only; black fills name/type/rules/collector
+        zones under chrome plates.
       */}
       <Shape
         listening={false}
         sceneFunc={(ctx) => {
           const c = ctx as unknown as CanvasRenderingContext2D
-          // Bleed: stage rect minus trim (black outside the card).
           c.beginPath()
           c.rect(0, 0, stage.width, stage.height)
-          addBattleRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, cornerRadii, leftTangentExtra)
+          addBattleRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, trimRadii, 0)
           c.fillStyle = '#0a0a0a'
           c.fill('evenodd')
-          // Left collector strip (= trim − art aperture): black outer border, not identity green.
-          // No identity stroke on the trim path (#49). Punch hole is inset 2px into art on the
-          // left so black covers the art-edge AA fringe that read as a thin grey/green trim
-          // stroke along the inner frame curve in the collector strip.
-          // Cover art-edge AA / leftover trim fringe in the collector strip.
-          const seamCoverPx = 4
+          // Trim minus art aperture → black mat (collector bottom + column beds).
           c.beginPath()
-          addBattleRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, cornerRadii, leftTangentExtra)
-          addBattleArtInnerClipPathForRect(
-            c,
-            artR.x + seamCoverPx,
-            artR.y,
-            Math.max(1, artR.width - seamCoverPx),
-            artR.height,
-          )
+          addBattleRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, trimRadii, 0)
+          addBattleArtInnerClipPathForRect(c, artR.x, artR.y, artR.width, artR.height)
           c.fillStyle = '#0a0a0a'
           c.fill('evenodd')
         }}
       />
 
-      {/* Top nameplate — MotM bordered box (outline default; solid fill opt-in). */}
+      {/* Left name pillar */}
       <Shape
         x={nameR.x}
         y={nameR.y}
         listening={false}
         sceneFunc={(ctx) => {
-          const c = ctx as unknown as CanvasRenderingContext2D
-          c.beginPath()
-          addPlatePath(c, nameR.width, nameR.height)
-          if (nameOutline) {
-            c.fillStyle = hexToRgba(fill, 0.38)
-            c.fill()
-            c.strokeStyle = plateBorder
-            c.lineWidth = 2.5
-            c.stroke()
-          } else if (nameBoxBgImage && isPanelTextureBackground(effectiveNameBox)) {
-            c.fillStyle = createBoxPanelInnerFillStyle(
-              c,
-              nameR.width,
-              nameR.height,
-              effectiveNameBox,
-              false,
-              'vertical',
-              100,
-              false,
-              nameBoxBgImage,
-              panelFrostEnabled,
-              panelFrostOpacity,
-            )
-            c.fill()
-            c.strokeStyle = darkenHex(nameFillHex, 0.35)
-            c.lineWidth = 2
-            c.stroke()
-          } else {
-            const frosted = createBoxPanelInnerFillStyle(
-              c,
-              nameR.width,
-              nameR.height,
-              effectiveNameBox,
-              false,
-              'vertical',
-              100,
-              false,
-              null,
-              panelFrostEnabled,
-              panelFrostOpacity,
-            )
-            if (typeof frosted === 'string' && panelFrostEnabled && panelFrostOpacity > 0) {
-              c.fillStyle = frosted
-            } else {
-              const g = c.createLinearGradient(0, 0, 0, nameR.height)
-              g.addColorStop(0, lightenHex(nameFillHex, 0.22))
-              g.addColorStop(0.45, nameFillHex)
-              g.addColorStop(1, darkenHex(nameFillHex, 0.28))
-              c.fillStyle = g
-            }
-            c.fill()
-            c.strokeStyle = darkenHex(nameFillHex, 0.35)
-            c.lineWidth = 2
-            c.stroke()
-          }
+          paintPlate(
+            ctx as unknown as CanvasRenderingContext2D,
+            nameR.width,
+            nameR.height,
+            nameOutline,
+            effectiveNameBox,
+            nameFillHex,
+            nameBoxBgImage,
+          )
         }}
       />
 
-      {/* Transform mark — black circle, white down triangle, 2px grey stroke (MotM) */}
-      <Shape
-        x={transformR.x}
-        y={transformR.y}
-        listening={false}
-        sceneFunc={(ctx) => {
-          const c = ctx as unknown as CanvasRenderingContext2D
-          const w = transformR.width
-          const h = transformR.height
-          const cx = w / 2
-          const cy = h / 2
-          const r = Math.min(w, h) * 0.46
-          c.beginPath()
-          c.arc(cx, cy, r, 0, Math.PI * 2)
-          c.fillStyle = '#111111'
-          c.fill()
-          c.strokeStyle = '#9a9a9a'
-          c.lineWidth = 2
-          c.stroke()
-          // White downward triangle (stack: points into the card / art)
-          const triR = r * 0.72
-          c.beginPath()
-          c.moveTo(cx, cy + triR)
-          c.lineTo(cx - triR * (Math.sqrt(3) / 2), cy - triR * 0.5)
-          c.lineTo(cx + triR * (Math.sqrt(3) / 2), cy - triR * 0.5)
-          c.closePath()
-          c.fillStyle = '#ffffff'
-          c.fill()
-        }}
-      />
-
-      <Text
-        listening={false}
-        x={nameTextLeft}
-        y={nameR.y}
-        width={nameTextWidth}
-        height={nameR.height}
-        text={nameLabel}
-        fontFamily={nameFace.fontStack}
-        fontStyle={nameFace.fontStyle}
-        fontSize={nameFontSize}
-        fill={nameInk}
-        align="left"
-        verticalAlign="middle"
-        wrap="none"
-        ellipsis
-      />
-
+      {/* Mana — upright at top of name strip */}
       {manaCostRender.chunks.length > 0 ? (
         <Group
           listening={false}
-          x={Math.round(manaR.x + manaR.width - manaCostRender.totalWidth)}
+          x={Math.round(manaR.x + (manaR.width - manaCostRender.totalWidth) / 2)}
           y={Math.round(manaR.y + (manaR.height - nameManaIconSize) / 2)}
         >
           {(() => {
@@ -663,99 +626,110 @@ function BattleChromeLayer() {
         </Group>
       ) : null}
 
+      {/* Name glyphs — 90° CCW, read bottom→top along strip */}
+      <Group
+        x={nameR.x + (nameR.width - nameTextCross) / 2}
+        y={nameTextBottom}
+        rotation={-90}
+        listening={false}
+      >
+        <Text
+          listening={false}
+          x={0}
+          y={0}
+          width={nameTextRun}
+          height={nameTextCross}
+          text={nameLabel}
+          fontFamily={nameFace.fontStack}
+          fontStyle={nameFace.fontStyle}
+          fontSize={nameFontSize}
+          fill={nameInk}
+          align="left"
+          verticalAlign="middle"
+          wrap="none"
+          ellipsis
+        />
+      </Group>
+
+      {/* Transform mark — bottom of name strip */}
+      <Shape
+        x={transformR.x}
+        y={transformR.y}
+        listening={false}
+        sceneFunc={(ctx) => {
+          const c = ctx as unknown as CanvasRenderingContext2D
+          const w = transformR.width
+          const h = transformR.height
+          const cx = w / 2
+          const cy = h / 2
+          const r = Math.min(w, h) * 0.46
+          c.beginPath()
+          c.arc(cx, cy, r, 0, Math.PI * 2)
+          c.fillStyle = '#111111'
+          c.fill()
+          c.strokeStyle = '#9a9a9a'
+          c.lineWidth = 2
+          c.stroke()
+          const triR = r * 0.72
+          c.beginPath()
+          c.moveTo(cx, cy + triR)
+          c.lineTo(cx - triR * (Math.sqrt(3) / 2), cy - triR * 0.5)
+          c.lineTo(cx + triR * (Math.sqrt(3) / 2), cy - triR * 0.5)
+          c.closePath()
+          c.fillStyle = '#ffffff'
+          c.fill()
+        }}
+      />
+
+      {/* Type pillar */}
       <Shape
         x={typeR.x}
         y={typeR.y}
         listening={false}
         sceneFunc={(ctx) => {
-          const c = ctx as unknown as CanvasRenderingContext2D
-          c.beginPath()
-          addPlatePath(c, typeR.width, typeR.height)
-          if (typeOutline) {
-            c.fillStyle = hexToRgba(fill, 0.38)
-            c.fill()
-            c.strokeStyle = plateBorder
-            c.lineWidth = 2.5
-            c.stroke()
-          } else if (typeBoxBgImage && isPanelTextureBackground(effectiveTypeBox)) {
-            c.fillStyle = createBoxPanelInnerFillStyle(
-              c,
-              typeR.width,
-              typeR.height,
-              effectiveTypeBox,
-              false,
-              'vertical',
-              100,
-              false,
-              typeBoxBgImage,
-              panelFrostEnabled,
-              panelFrostOpacity,
-            )
-            c.fill()
-            c.strokeStyle = darkenHex(typeFillHex, 0.35)
-            c.lineWidth = 2
-            c.stroke()
-          } else {
-            const frosted = createBoxPanelInnerFillStyle(
-              c,
-              typeR.width,
-              typeR.height,
-              effectiveTypeBox,
-              false,
-              'vertical',
-              100,
-              false,
-              null,
-              panelFrostEnabled,
-              panelFrostOpacity,
-            )
-            if (typeof frosted === 'string' && panelFrostEnabled && panelFrostOpacity > 0) {
-              c.fillStyle = frosted
-            } else {
-              const g = c.createLinearGradient(0, 0, 0, typeR.height)
-              g.addColorStop(0, lightenHex(typeFillHex, 0.22))
-              g.addColorStop(0.5, typeFillHex)
-              g.addColorStop(1, darkenHex(typeFillHex, 0.28))
-              c.fillStyle = g
-            }
-            c.fill()
-            c.strokeStyle = darkenHex(typeFillHex, 0.35)
-            c.lineWidth = 2
-            c.stroke()
-          }
+          paintPlate(
+            ctx as unknown as CanvasRenderingContext2D,
+            typeR.width,
+            typeR.height,
+            typeOutline,
+            effectiveTypeBox,
+            typeFillHex,
+            typeBoxBgImage,
+          )
         }}
       />
-      <Text
+      <Group
+        x={typeR.x + (typeR.width - typeTextCross) / 2}
+        y={typeTextBottom}
+        rotation={-90}
         listening={false}
-        x={typeR.x + 28}
-        y={typeR.y}
-        width={typeR.width - 140}
-        height={typeR.height}
-        text={typeLabel}
-        fontFamily={typeFace.fontStack}
-        fontStyle={typeFace.fontStyle}
-        fontSize={typeFontSize}
-        fill={typeInk}
-        align="left"
-        verticalAlign="middle"
-        wrap="none"
-        ellipsis
-      />
+      >
+        <Text
+          listening={false}
+          x={0}
+          y={0}
+          width={typeTextRun}
+          height={typeTextCross}
+          text={typeLabel}
+          fontFamily={typeFace.fontStack}
+          fontStyle={typeFace.fontStyle}
+          fontSize={typeFontSize}
+          fill={typeInk}
+          align="left"
+          verticalAlign="middle"
+          wrap="none"
+          ellipsis
+        />
+      </Group>
 
+      {/* Rules column */}
       <Shape
         listening={false}
         sceneFunc={(ctx) => {
           const c = ctx as unknown as CanvasRenderingContext2D
           c.beginPath()
-          const r = 18
-          c.moveTo(rulesR.x + r, rulesR.y)
-          c.arcTo(rulesR.x + rulesR.width, rulesR.y, rulesR.x + rulesR.width, rulesR.y + rulesR.height, r)
-          c.arcTo(rulesR.x + rulesR.width, rulesR.y + rulesR.height, rulesR.x, rulesR.y + rulesR.height, r)
-          c.arcTo(rulesR.x, rulesR.y + rulesR.height, rulesR.x, rulesR.y, r)
-          c.arcTo(rulesR.x, rulesR.y, rulesR.x + rulesR.width, rulesR.y, r)
-          c.closePath()
+          addBattleRoundRectPath(c, rulesR.x, rulesR.y, rulesR.width, rulesR.height, artRadii, 0)
           if (rulesOutline) {
-            // MotM parchment: translucent interior + light identity stroke border.
             c.fillStyle = 'rgba(244, 235, 224, 0.52)'
             c.fill()
             c.strokeStyle = plateBorder
@@ -775,7 +749,6 @@ function BattleChromeLayer() {
               panelFrostEnabled,
               panelFrostOpacity,
             )
-            // Rules path is in stage space (Shape has no x/y); align pattern origin to the plate.
             if (
               typeof fillStyle !== 'string' &&
               typeof (fillStyle as CanvasPattern).setTransform === 'function'
@@ -796,55 +769,64 @@ function BattleChromeLayer() {
           }
         }}
       />
-      {rulesItems.map((it, idx) =>
-        it.kind === 'icon'
-          ? (() => {
-              const img = getManaImage(it.key, it.dataUrl)
-              const useFallback = !img || (img.complete && img.naturalWidth === 0)
-              return useFallback ? (
-                <Text
-                  key={`battle-rules-fb-${idx}-${it.key}`}
-                  listening={false}
-                  text={it.rawToken}
-                  x={it.x}
-                  y={it.y}
-                  width={it.size}
-                  height={it.size}
-                  fontFamily={rulesFace.fontStack}
-                  fontStyle={rulesFace.fontStyle}
-                  fontSize={rulesFontSize}
-                  fill={rulesInk}
-                />
-              ) : (
-                <Image
-                  key={`battle-rules-icon-${idx}-${it.key}`}
-                  image={img}
-                  x={it.x}
-                  y={it.y}
-                  width={it.size}
-                  height={it.size}
-                  listening={false}
-                />
-              )
-            })()
-          : (
-            <Text
-              key={`battle-rules-tx-${idx}`}
-              listening={false}
-              text={it.text}
-              x={it.x}
-              y={it.y}
-              width={it.width}
-              height={rulesLineHeight}
-              fontFamily={rulesFace.fontStack}
-              fontStyle={rulesFace.fontStyle}
-              fontSize={rulesFontSize}
-              fill={rulesInk}
-            />
-          ),
-      )}
 
-      {/* Back-face P/T cue (e.g. 4/4) — left of defense when card has P/T */}
+      {/* Rules text — vertical (bottom→top), MotM-play cousin of upright landscape rules */}
+      <Group
+        x={rulesR.x + rulesPadAcross}
+        y={rulesR.y + rulesR.height - rulesPadBottom}
+        rotation={-90}
+        listening={false}
+      >
+        {rulesItems.map((it, idx) =>
+          it.kind === 'icon'
+            ? (() => {
+                const img = getManaImage(it.key, it.dataUrl)
+                const useFallback = !img || (img.complete && img.naturalWidth === 0)
+                return useFallback ? (
+                  <Text
+                    key={`battle-rules-fb-${idx}-${it.key}`}
+                    listening={false}
+                    text={it.rawToken}
+                    x={it.x}
+                    y={it.y}
+                    width={it.size}
+                    height={it.size}
+                    fontFamily={rulesFace.fontStack}
+                    fontStyle={rulesFace.fontStyle}
+                    fontSize={rulesFontSize}
+                    fill={rulesInk}
+                  />
+                ) : (
+                  <Image
+                    key={`battle-rules-icon-${idx}-${it.key}`}
+                    image={img}
+                    x={it.x}
+                    y={it.y}
+                    width={it.size}
+                    height={it.size}
+                    listening={false}
+                  />
+                )
+              })()
+            : (
+              <Text
+                key={`battle-rules-tx-${idx}`}
+                listening={false}
+                text={it.text}
+                x={it.x}
+                y={it.y}
+                width={it.width}
+                height={rulesLineHeight}
+                fontFamily={rulesFace.fontStack}
+                fontStyle={rulesFace.fontStyle}
+                fontSize={rulesFontSize}
+                fill={rulesInk}
+              />
+            ),
+        )}
+      </Group>
+
+      {/* Back-face P/T — upright near TR of rules */}
       {backFacePT ? (
         <Text
           listening={false}
@@ -855,14 +837,14 @@ function BattleChromeLayer() {
           text={backFacePT}
           fontFamily="Beleren, Georgia, serif"
           fontStyle="bold"
-          fontSize={Math.max(18, Math.min(36, Math.round(backFacePTR.height * 0.85)))}
+          fontSize={Math.max(18, Math.min(36, Math.round(backFacePTR.width * 0.55)))}
           fill={rulesInk}
           align="center"
           verticalAlign="middle"
         />
       ) : null}
 
-      {/* Spiky defense shield */}
+      {/* Defense shield — top-right of rules */}
       <Shape
         x={defenseR.x}
         y={defenseR.y}
@@ -881,19 +863,18 @@ function BattleChromeLayer() {
       <Text
         listening={false}
         x={defenseR.x}
-        y={defenseR.y + 6}
+        y={defenseR.y + 4}
         width={defenseR.width}
-        height={defenseR.height - 12}
+        height={defenseR.height - 10}
         text={defense}
         fontFamily="Beleren, Georgia, serif"
         fontStyle="bold"
-        fontSize={46}
+        fontSize={Math.max(28, Math.min(48, Math.round(defenseR.height * 0.42)))}
         fill="#ffffff"
         align="center"
         verticalAlign="middle"
       />
 
-      {/* Hologram / security stamp — left end of inner border */}
       {showStamp ? (
         <Group listening={false}>
           <Ellipse
@@ -921,25 +902,22 @@ function BattleChromeLayer() {
         </Group>
       ) : null}
 
-      <Group x={collectorR.x + collectorR.width} y={collectorR.y} rotation={90} listening={false}>
-        <Text
-          listening={false}
-          x={0}
-          y={0}
-          width={collectorR.height}
-          height={collectorR.width}
-          text={collectorLine}
-          fontFamily="Gill Sans, Arial, sans-serif"
-          fontSize={20}
-          fill="#f0ebe3"
-          align="left"
-          verticalAlign="middle"
-          wrap="none"
-          ellipsis
-        />
-      </Group>
-
-      {/* Left black border strip holds collector; art fills the aperture under these plates. */}
+      {/* Collector — bottom horizontal */}
+      <Text
+        listening={false}
+        x={collectorR.x + 8}
+        y={collectorR.y}
+        width={collectorR.width - 16}
+        height={collectorR.height}
+        text={collectorLine}
+        fontFamily="Gill Sans, Arial, sans-serif"
+        fontSize={Math.max(16, Math.min(22, Math.round(collectorR.height * 0.28)))}
+        fill="#f0ebe3"
+        align="left"
+        verticalAlign="middle"
+        wrap="none"
+        ellipsis
+      />
     </Layer>
   )
 }

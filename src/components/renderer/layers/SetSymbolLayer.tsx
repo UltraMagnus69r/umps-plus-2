@@ -1,6 +1,7 @@
 import { memo, useEffect, useState } from 'react'
 import { Group, Image, Layer } from 'react-konva'
 import { shallow } from 'zustand/shallow'
+import { getBattleSetSymbolRect } from '../../../authority/battleLayoutAuthority'
 import { getStandardLayoutGeometry, SPELL_PRE_MODERN_SET_SYMBOL_SCALE, SPELL_PRE_MODERN_TYPE_LINE_STRIP_PADDING_PX, BEVEL_INSET } from '../../../authority/geometryAuthority'
 import { getActiveLayoutCapabilitiesFromState, getActiveLayoutRegionsFromState, layoutRegionToStageRect } from '../../../authority/layoutRegistry'
 import { resolveSetSymbolBoxPx } from '../../../authority/symbolAuthority'
@@ -111,6 +112,7 @@ function SetSymbolLayer() {
     cardData: { layout: activeLayout },
   })
   const supportsPreModernFaceLayout = layoutCaps.supportsPreModernFaceLayout
+  const battleChrome = layoutCaps.supportsBattleChrome === true
 
   const iconBoxS =
     resolveSetSymbolBoxPx(iconScale) *
@@ -127,13 +129,20 @@ function SetSymbolLayer() {
   const typeCapEstimate = Math.max(1, Math.floor(layout.typeH * TYPE_LINE_BASE_HEIGHT_RATIO))
   const spellPreModernTypeTextY = artRect.y + artRect.height + BEVEL_INSET + SPELL_PRE_MODERN_TYPE_LINE_STRIP_PADDING_PX
   const slotRightX = preModernFaceText ? artRect.x + artRect.width : typeRect.x + typeRect.width
-  const slot = {
-    x: slotRightX - iconBoxS - setIconPad,
-    y: supportsPreModernFaceLayout
-      ? spellPreModernTypeTextY + (typeCapEstimate - iconBoxS) / 2
-      : typeRect.y + (typeRect.height - iconBoxS) / 2,
-    size: iconBoxS,
-  }
+  const battleSet = battleChrome ? getBattleSetSymbolRect() : null
+  const slot = battleSet
+    ? {
+        x: battleSet.x,
+        y: battleSet.y,
+        size: Math.min(battleSet.width, battleSet.height),
+      }
+    : {
+        x: slotRightX - iconBoxS - setIconPad,
+        y: supportsPreModernFaceLayout
+          ? spellPreModernTypeTextY + (typeCapEstimate - iconBoxS) / 2
+          : typeRect.y + (typeRect.height - iconBoxS) / 2,
+        size: iconBoxS,
+      }
   const fill = setSymbolFillFromRarity(rarity)
 
   const [symImg, setSymImg] = useState<HTMLImageElement | null>(null)
