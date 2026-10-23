@@ -14,7 +14,7 @@ import {
 import {
   isCardEffectivelyEmptyForGuidance,
 } from '../../authority/guidanceAuthority'
-import { isPkmnLayout } from '../../authority/layoutTaxonomy'
+import { isPkmnLayout, isSpaceGothicLayout } from '../../authority/layoutTaxonomy'
 import { useCardStore } from '../../store/useCardStore'
 import SidebarLeft from './SidebarLeft'
 import SidebarRight from './SidebarRight'
@@ -47,8 +47,10 @@ function StudioInspector({
   onOpenPrint,
   onSegmentChange,
 }: Props) {
-  const isPkmn = useCardStore((s) => isPkmnLayout(s.cardData.layout))
-  const visibleFlowSteps = isPkmn
+  const hideColorsStep = useCardStore(
+    (s) => isPkmnLayout(s.cardData.layout) || isSpaceGothicLayout(s.cardData.layout),
+  )
+  const visibleFlowSteps = hideColorsStep
     ? STUDIO_FLOW_STEPS.filter((s) => s.id !== 'colors')
     : STUDIO_FLOW_STEPS
   const cardEmpty = useCardStore((s) => {

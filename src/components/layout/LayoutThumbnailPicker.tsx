@@ -58,6 +58,15 @@ function FamilyGlyph({ family }: { family: LayoutFamily }) {
           <circle cx="20" cy="38" r="8" className={`${common} opacity-70`} />
         </svg>
       )
+    case 'space-gothic':
+      return (
+        <svg viewBox="0 0 40 56" className="h-10 w-7" aria-hidden>
+          <rect x="2" y="2" width="36" height="52" rx="3" className={`${common} opacity-25`} />
+          <rect x="6" y="5" width="28" height="8" rx="3" className={common} />
+          <rect x="10" y="16" width="20" height="20" rx="1" className={`${common} opacity-40`} />
+          <rect x="6" y="38" width="28" height="12" rx="2" className={`${common} opacity-70`} />
+        </svg>
+      )
     default:
       return (
         <svg viewBox="0 0 40 56" className="h-10 w-7" aria-hidden>

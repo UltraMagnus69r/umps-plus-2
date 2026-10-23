@@ -15,7 +15,7 @@ import {
 } from '../../../authority/m15ProxyPanelStyleAuthority'
 import {
   isBorderlessArtTreatmentLayout,
-  isPkmnLayout,
+  isStaticPngFrameLayout,
   isPreModernLayout,
   isStandardModernBorderlessLayout,
 } from '../../../authority/layoutTaxonomy'
@@ -187,7 +187,7 @@ function FrameLayer() {
   })
   const useContractArtChrome = supportsModernDummyLayout || supportsPreModernFaceLayout || supportsSagaClassChrome
   const borderlessLike = isBorderlessArtTreatmentLayout(activeLayout)
-  const pkmnStatic = isPkmnLayout(activeLayout)
+  const staticPngFrame = isStaticPngFrameLayout(activeLayout)
   const preModernShiftY = isPreModernLayout(activeLayout) ? getPreModernLayoutVerticalShiftPx() : 0
   const artYEff = artY - preModernShiftY
   const typeYEff = typeY - preModernShiftY
@@ -199,8 +199,8 @@ function FrameLayer() {
   const identityAutoColorEnabled = useLandFullArtManaCircle ? true : autoColorEnabled
 
   const contractRegions = getActiveLayoutRegionsFromState({ currentLayout, cardData: { layout: activeLayout } })
-  /** PKMN: art aperture matches the silver bezel hole (same rect ArtLayer clips to). */
-  const pkmnArtRect = pkmnStatic ? layoutRegionToStageRect(contractRegions.art) : null
+  /** Static PNG frames: art aperture matches the chrome hole (same rect ArtLayer clips to). */
+  const staticPngArtRect = staticPngFrame ? layoutRegionToStageRect(contractRegions.art) : null
 
   const plateOuterFromInner = useMemo(
     () => (inner: { x: number; y: number; width: number; height: number }) => ({
@@ -256,7 +256,7 @@ function FrameLayer() {
    * not the tall art hole alone — name/type bars span the whole face.
    */
   const artAperture = useMemo(() => {
-    if (pkmnStatic || useLandFullArtManaCircle) return null
+    if (staticPngFrame || useLandFullArtManaCircle) return null
     if (supportsPlaneswalkerModernV2Layout && modernV2ArtOuter) {
       return { x: modernV2ArtOuter.x, width: modernV2ArtOuter.width }
     }
@@ -276,7 +276,7 @@ function FrameLayer() {
       width: contractArt.width + 2 * BEVEL_INSET,
     }
   }, [
-    pkmnStatic,
+    staticPngFrame,
     useLandFullArtManaCircle,
     supportsPlaneswalkerModernV2Layout,
     modernV2ArtOuter,
@@ -424,19 +424,18 @@ function FrameLayer() {
 
   return (
     <Layer listening={false}>
-      {/* PKMN: empty grey fills the bezel hole only; hide all procedural art chrome once art is set
-          (PNG frame supplies the silver window — MTG bevel/stroke would ghost over it). */}
-      {pkmnStatic && !artImage && pkmnArtRect && (
+      {/* Static PNG frames: empty grey fills the art hole only; hide procedural art chrome once art is set. */}
+      {staticPngFrame && !artImage && staticPngArtRect && (
         <Rect
           listening={false}
-          x={pkmnArtRect.x}
-          y={pkmnArtRect.y}
-          width={pkmnArtRect.width}
-          height={pkmnArtRect.height}
+          x={staticPngArtRect.x}
+          y={staticPngArtRect.y}
+          width={staticPngArtRect.width}
+          height={staticPngArtRect.height}
           fill="#bfbfbf"
         />
       )}
-      {!borderlessLike && !pkmnStatic && (
+      {!borderlessLike && !staticPngFrame && (
         <Shape
           x={artFrameX}
           y={artFrameY}

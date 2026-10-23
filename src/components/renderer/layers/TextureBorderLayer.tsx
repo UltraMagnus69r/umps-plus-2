@@ -9,7 +9,7 @@ import {
   getInnerBorderCornerRadius,
   getInnerBorderStageRect,
   isBorderlessArtTreatmentLayout,
-  isPkmnLayout,
+  isStaticPngFrameLayout,
 } from '../../../authority/layoutTaxonomy'
 import { getActiveLayoutCapabilitiesFromState } from '../../../authority/layoutRegistry'
 import { landFullArtManaCircleKeyToBracketToken } from '../../../authority/landFullArtManaCircle'
@@ -353,10 +353,10 @@ function TextureBorderLayer() {
     [activeLayout],
   )
 
-  const pkmnStatic = isPkmnLayout(activeLayout)
+  const staticPngFrame = isStaticPngFrameLayout(activeLayout)
 
-  /** PKMN: neutral base only — frame PNG supplies color; no identity recolor / shade. */
-  if (pkmnStatic) {
+  /** PKMN / Space Gothic: neutral base only — frame PNG supplies color; no identity recolor. */
+  if (staticPngFrame) {
     return (
       <Layer listening={false}>
         <Rect
