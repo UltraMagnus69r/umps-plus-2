@@ -1,11 +1,16 @@
 /**
  * Battle / Siege — portrait side-column face (Standard 1500×2100 trim).
  * Studio GT: Invasion of Zendikar as the user-attached portrait reference —
- * name left vertical, art center, type mid-right, rules far-right, collector bottom.
+ * name left vertical, near-full art under chrome, type mid-right, rules far-right,
+ * collector bottom. Art fills the Modern inner-border rect; plates overlay on top.
  * MotM landscape stack is legacy / play-rotated cousin only (not Studio default).
  * Seats: media/battle-zendikar-compare/remeasure-2026-10-23.json native → 1500×2100.
  */
-import { BLEED_PX, INNER_BORDER_CORNER_RADIUS_MODERN } from './geometryAuthority'
+import {
+  BLEED_PX,
+  getStandardLayoutGeometry,
+  INNER_BORDER_CORNER_RADIUS_MODERN,
+} from './geometryAuthority'
 import type { LayoutId } from './layoutTaxonomy'
 import { isBattleLayout } from './layoutTaxonomy'
 
@@ -17,8 +22,18 @@ export const BATTLE_STAGE_HEIGHT = BATTLE_TRIM_HEIGHT + 2 * BLEED_PX // 2250
 
 /** Outer trim corners — Standard Modern language (portrait card). */
 export const BATTLE_TRIM_CORNER_RADII = INNER_BORDER_CORNER_RADIUS_MODERN
-/** Art aperture corner soften (center column). */
-export const BATTLE_ART_CORNER_RADIUS_PX = 16
+/**
+ * Art / inner-face corner soften — uniform (not Modern’s 175px PT bottoms).
+ * Modern bottom radii would punch black into the BL transform/name seat.
+ */
+export const BATTLE_ART_CORNER_RADIUS_PX = 30
+/** TL, TR, BR, BL — near-full art under chrome. */
+export const BATTLE_ART_CORNER_RADII = [
+  BATTLE_ART_CORNER_RADIUS_PX,
+  BATTLE_ART_CORNER_RADIUS_PX,
+  BATTLE_ART_CORNER_RADIUS_PX,
+  BATTLE_ART_CORNER_RADIUS_PX,
+] as const
 
 export type BattleStageRect = { x: number; y: number; width: number; height: number }
 
@@ -34,31 +49,41 @@ function n(rect: { x: number; y: number; w: number; h: number }): BattleStageRec
 
 /**
  * Side-column FACE — native user-ref seats mapped to 1500×2100 (anisotropy ≈ 0.995).
- * Stage = trim + BLEED 75. See battle-zendikar-remeasure-next-edits.md.
+ * Stage = trim + BLEED 75. Art aperture is Modern inner-border (not FACE.art column).
+ * See battle-zendikar-remeasure-next-edits.md.
  */
 const FACE = {
   /** Bottom horizontal collector / legal band. */
   collector: { x: 58 / 1500, y: 1932 / 2100, w: 1384 / 1500, h: 166 / 2100 },
   /** Tall left name plate. */
   name: { x: 58 / 1500, y: 58 / 2100, w: 141 / 1500, h: 1873 / 2100 },
-  /** Mana cluster — top of name strip (upright pips). */
-  mana: { x: 71 / 1500, y: 117 / 2100, w: 116 / 1500, h: 139 / 2100 },
-  /** DFC / transform — bottom of name strip. */
-  transform: { x: 71 / 1500, y: 1768 / 2100, w: 116 / 1500, h: 117 / 2100 },
-  /** Center-column art aperture (between name and type). */
-  art: { x: 201 / 1500, y: 58 / 2100, w: 656 / 1500, h: 1873 / 2100 },
+  /**
+   * Mana cluster — top of name strip.
+   * Pips rotate −90° with name (cost order reads bottom→top toward the crown).
+   */
+  mana: { x: 71 / 1500, y: 80 / 2100, w: 116 / 1500, h: 160 / 2100 },
+  /**
+   * DFC / transform — bottom of name strip, clear of title glyphs.
+   * Seat sits in the plate footer so name run ends above this badge.
+   */
+  transform: { x: 80 / 1500, y: 1835 / 2100, w: 96 / 1500, h: 96 / 2100 },
+  /**
+   * Legacy center-column measure (chrome gap only) — art no longer clips to this.
+   * Kept for MotM cross-check / docs; getBattleArtRect uses Modern inner face.
+   */
+  artColumn: { x: 201 / 1500, y: 58 / 2100, w: 656 / 1500, h: 1873 / 2100 },
   /** Narrow type column left of rules. */
   type: { x: 857 / 1500, y: 58 / 2100, w: 145 / 1500, h: 1873 / 2100 },
   /** Set symbol — near top of type column. */
   setSymbol: { x: 893 / 1500, y: 76 / 2100, w: 94 / 1500, h: 94 / 2100 },
   /** Far-right rules column. */
   rules: { x: 1002 / 1500, y: 58 / 2100, w: 442 / 1500, h: 1873 / 2100 },
-  /** Defense shield — top-right of rules. */
-  defense: { x: 1330 / 1500, y: 58 / 2100, w: 112 / 1500, h: 119 / 2100 },
-  /** Back-face P/T cue — beside defense inside rules. */
-  backFacePT: { x: 1250 / 1500, y: 90 / 2100, w: 71 / 1500, h: 123 / 2100 },
+  /** Defense shield — top-right of rules (−90° with side-column text). */
+  defense: { x: 1320 / 1500, y: 70 / 2100, w: 120 / 1500, h: 120 / 2100 },
+  /** Back-face P/T cue — beside defense inside rules (−90°). */
+  backFacePT: { x: 1220 / 1500, y: 78 / 2100, w: 90 / 1500, h: 110 / 2100 },
   /**
-   * Optional MotM security stamp — art left seam mid-height.
+   * Optional MotM security stamp — mid-height on art under type seam.
    * Not present on Uncommon Zendikar; keep for rare/mythic / toggle.
    */
   hologram: {
@@ -96,16 +121,27 @@ export function getBattleStageSize(): { width: number; height: number } {
 }
 
 /**
- * Art aperture — center column between name and type.
- * ArtLayer cover-fills + clips this; chrome evenodd hole matches.
+ * Art aperture — Modern inner-border rect (same seat/size as Standard Modern).
+ * ArtLayer cover-fills + clips this; chrome evenodd hole matches; plates overlay.
  */
 export function getBattleArtRect(): BattleStageRect {
   return getBattleInnerBorderRect()
 }
 
-/** Art / chrome-hole aperture (stage px). */
+/**
+ * Art / chrome-hole aperture (stage px).
+ * Same X/W/Y as Modern inner-border; height extends to Battle column bottoms
+ * so art continues under name/type/rules/transform (not cut short above collector).
+ */
 export function getBattleInnerBorderRect(): BattleStageRect {
-  return n(FACE.art)
+  const g = getStandardLayoutGeometry()
+  const colBottom = n(FACE.name).y + n(FACE.name).height
+  return {
+    x: g.innerX,
+    y: g.innerY,
+    width: g.innerW,
+    height: Math.max(g.innerH, colBottom - g.innerY),
+  }
 }
 
 export function getBattleNameRect(): BattleStageRect {
@@ -163,10 +199,9 @@ export function getBattleTrimCornerRadii(): readonly [number, number, number, nu
   return BATTLE_TRIM_CORNER_RADII
 }
 
-/** Art aperture corner radii (TL, TR, BR, BL). */
+/** Art / inner-face corner radii — uniform (Modern rect size, Battle corner language). */
 export function getBattleInnerBorderCornerRadii(): readonly [number, number, number, number] {
-  const r = BATTLE_ART_CORNER_RADIUS_PX
-  return [r, r, r, r]
+  return BATTLE_ART_CORNER_RADII
 }
 
 /** @deprecated No left-tangent extra on portrait; equals art corner radius. */

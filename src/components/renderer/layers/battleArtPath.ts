@@ -1,6 +1,6 @@
 /**
  * Battle art / inner-border aperture path — shared by ArtLayer clip and
- * BattleChromeLayer punch so the art window matches the center-column hole.
+ * BattleChromeLayer punch so art fills the Modern inner-face rect under chrome.
  */
 import {
   getBattleInnerBorderCornerRadii,
@@ -52,7 +52,7 @@ export function addBattleTrimPath(
   addBattleRoundRectPath(ctx, x, y, w, h, getBattleTrimCornerRadii(), 0)
 }
 
-/** Inner-border / art aperture path in stage px (center column). */
+/** Inner-border / art aperture path in stage px (Modern inner face). */
 export function addBattleArtInnerClipPath(ctx: CanvasRenderingContext2D): void {
   const border = getBattleInnerBorderRect()
   addBattleArtInnerClipPathForRect(ctx, border.x, border.y, border.width, border.height)

@@ -62,7 +62,7 @@ function ArtLayer() {
   })
   const modernV2Layout = capabilities.supportsPlaneswalkerModernV2Layout
   const battleLayout = capabilities.supportsBattleChrome === true
-  /** Battle: center-column art aperture (same as chrome ring hole). */
+  /** Battle: Modern inner-face aperture (same as chrome ring hole; plates overlay). */
   const artR = modernV2Layout
     ? getPlaneswalkerModernV2ArtInnerRect()
     : battleLayout
