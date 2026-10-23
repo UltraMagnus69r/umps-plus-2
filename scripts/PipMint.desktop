@@ -2,7 +2,7 @@
 Version=1.0
 Type=Application
 Name=PipMint
-Comment=Update UMPS, start agent worker + Vite, open Cursor and Edge
+Comment=Start UMPS agent worker, git pull, Vite, then open Cursor + http://localhost:5173/ (default browser)
 Exec=env PIPMINT_WORKER_NAME=bazzite "/var/home/UltraMagnus69r/Projects/UMPS/scripts/start-pipmint-agent.sh"
 Icon=/var/home/UltraMagnus69r/Projects/UMPS/scripts/pipmint-agent.png
 Path=/var/home/UltraMagnus69r/Projects/UMPS
