@@ -1,8 +1,9 @@
 /**
  * Battle / Siege portrait side-column chrome —
- * left name plate (vertical glyphs, mana top, transform bottom), center art aperture,
- * mid-right type plate, far-right rules column, defense + 4/4 at TR of rules,
- * bottom horizontal collector. MotM landscape stack is not the Studio default.
+ * near-full art under Modern inner-face; left name plate (vertical glyphs, mana top,
+ * transform bottom clear of title), mid-right type plate, far-right rules column,
+ * defense + 4/4 at TR of rules (−90° with side-column text), bottom collector.
+ * MotM landscape stack is not the Studio default.
  */
 import { Fragment, memo, useCallback, useMemo, useRef, useState } from 'react'
 import { Ellipse, Group, Image, Layer, Shape, Text } from 'react-konva'
@@ -432,11 +433,11 @@ function BattleChromeLayer() {
   if (!enabled) return null
 
   /**
-   * Vertical name run: first letters just above transform (bottom), extending
-   * upward (−90°) to just below mana.
+   * Vertical name run: first letters end well above transform (bottom), extending
+   * upward (−90°) to just below mana — transform must not cover “Invasion…”.
    */
-  const nameTextBottom = transformR.y + transformR.height + 12
-  const nameTextTop = manaR.y + manaR.height + 10
+  const nameTextBottom = transformR.y - 36
+  const nameTextTop = manaR.y + manaR.height + 8
   const nameTextRun = Math.max(40, nameTextBottom - nameTextTop)
   const nameTextCross = Math.max(24, nameR.width - 16)
   /** Vertical type run below set-symbol band, upward along the pillar. */
@@ -459,7 +460,8 @@ function BattleChromeLayer() {
     c.beginPath()
     addPlatePath(c, w, h)
     if (outline) {
-      c.fillStyle = hexToRgba(fill, 0.38)
+      // Keep plates translucent so near-full art reads behind name/type chrome.
+      c.fillStyle = hexToRgba(fill, 0.28)
       c.fill()
       c.strokeStyle = plateBorder
       c.lineWidth = 2.5
@@ -515,8 +517,8 @@ function BattleChromeLayer() {
   return (
     <Layer listening={false}>
       {/*
-        Bleed + outer border. Art = center column only; black fills name/type/rules/collector
-        zones under chrome plates.
+        Bleed + outer border. Art fills Modern inner face; black mat is only outside
+        that aperture (frame ring + collector). Translucent plates overlay art.
       */}
       <Shape
         listening={false}
@@ -527,7 +529,7 @@ function BattleChromeLayer() {
           addBattleRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, trimRadii, 0)
           c.fillStyle = '#0a0a0a'
           c.fill('evenodd')
-          // Trim minus art aperture → black mat (collector bottom + column beds).
+          // Trim minus Modern inner-face → black mat (collector + outer frame ring).
           c.beginPath()
           addBattleRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, trimRadii, 0)
           addBattleArtInnerClipPathForRect(c, artR.x, artR.y, artR.width, artR.height)
@@ -554,20 +556,21 @@ function BattleChromeLayer() {
         }}
       />
 
-      {/* Mana — upright at top of name strip */}
+      {/* Mana — −90° at top of name strip (cost order bottom→top, matches official) */}
       {manaCostRender.chunks.length > 0 ? (
         <Group
           listening={false}
-          x={Math.round(manaR.x + (manaR.width - manaCostRender.totalWidth) / 2)}
-          y={Math.round(manaR.y + (manaR.height - nameManaIconSize) / 2)}
+          x={Math.round(manaR.x + manaR.width / 2)}
+          y={Math.round(manaR.y + manaR.height / 2)}
+          rotation={-90}
         >
           {(() => {
-            let dx = 0
+            let dx = -manaCostRender.totalWidth / 2
             const lastIdx = manaCostRender.chunks.length - 1
             return manaCostRender.chunks.map((c, i) => {
               if (c.kind === 'icon') {
                 const iconSize = scaleManaPipDisplaySizePx(nameManaIconSize, c.symbolSet)
-                const yOffset = (nameManaIconSize - iconSize) / 2
+                const yOffset = -iconSize / 2
                 const img = getManaImage(c.key, c.dataUrl)
                 const useFallback = !img || (img.complete && img.naturalWidth === 0)
                 const node = useFallback ? (
@@ -608,7 +611,7 @@ function BattleChromeLayer() {
                   listening={false}
                   text={c.value}
                   x={dx}
-                  y={0}
+                  y={-nameManaIconSize / 2}
                   width={wText}
                   height={nameManaIconSize}
                   fontFamily={nameFace.fontStack}
@@ -730,7 +733,8 @@ function BattleChromeLayer() {
           c.beginPath()
           addBattleRoundRectPath(c, rulesR.x, rulesR.y, rulesR.width, rulesR.height, artRadii, 0)
           if (rulesOutline) {
-            c.fillStyle = 'rgba(244, 235, 224, 0.52)'
+            // Translucent parchment so art fills behind the rules column (official Battle).
+            c.fillStyle = 'rgba(244, 235, 224, 0.38)'
             c.fill()
             c.strokeStyle = plateBorder
             c.lineWidth = 2.5
@@ -826,54 +830,68 @@ function BattleChromeLayer() {
         )}
       </Group>
 
-      {/* Back-face P/T — upright near TR of rules */}
+      {/* Back-face P/T — −90° near TR of rules (same reading as name/rules) */}
       {backFacePT ? (
+        <Group
+          listening={false}
+          x={backFacePTR.x + backFacePTR.width / 2}
+          y={backFacePTR.y + backFacePTR.height / 2}
+          rotation={-90}
+        >
+          <Text
+            listening={false}
+            x={-backFacePTR.height / 2}
+            y={-backFacePTR.width / 2}
+            width={backFacePTR.height}
+            height={backFacePTR.width}
+            text={backFacePT}
+            fontFamily="Beleren, Georgia, serif"
+            fontStyle="bold"
+            fontSize={Math.max(18, Math.min(36, Math.round(Math.min(backFacePTR.width, backFacePTR.height) * 0.55)))}
+            fill={rulesInk}
+            align="center"
+            verticalAlign="middle"
+          />
+        </Group>
+      ) : null}
+
+      {/* Defense shield — top-right of rules, −90° with side-column face */}
+      <Group
+        listening={false}
+        x={defenseR.x + defenseR.width / 2}
+        y={defenseR.y + defenseR.height / 2}
+        rotation={-90}
+      >
+        <Shape
+          x={-defenseR.width / 2}
+          y={-defenseR.height / 2}
+          listening={false}
+          sceneFunc={(ctx) => {
+            const c = ctx as unknown as CanvasRenderingContext2D
+            c.beginPath()
+            addSpikyShieldPath(c, defenseR.width, defenseR.height)
+            c.fillStyle = '#121212'
+            c.fill()
+            c.strokeStyle = '#f5f0e8'
+            c.lineWidth = 2.5
+            c.stroke()
+          }}
+        />
         <Text
           listening={false}
-          x={backFacePTR.x}
-          y={backFacePTR.y}
-          width={backFacePTR.width}
-          height={backFacePTR.height}
-          text={backFacePT}
+          x={-defenseR.width / 2}
+          y={-defenseR.height / 2 + 4}
+          width={defenseR.width}
+          height={defenseR.height - 10}
+          text={defense}
           fontFamily="Beleren, Georgia, serif"
           fontStyle="bold"
-          fontSize={Math.max(18, Math.min(36, Math.round(backFacePTR.width * 0.55)))}
-          fill={rulesInk}
+          fontSize={Math.max(28, Math.min(48, Math.round(defenseR.height * 0.42)))}
+          fill="#ffffff"
           align="center"
           verticalAlign="middle"
         />
-      ) : null}
-
-      {/* Defense shield — top-right of rules */}
-      <Shape
-        x={defenseR.x}
-        y={defenseR.y}
-        listening={false}
-        sceneFunc={(ctx) => {
-          const c = ctx as unknown as CanvasRenderingContext2D
-          c.beginPath()
-          addSpikyShieldPath(c, defenseR.width, defenseR.height)
-          c.fillStyle = '#121212'
-          c.fill()
-          c.strokeStyle = '#f5f0e8'
-          c.lineWidth = 2.5
-          c.stroke()
-        }}
-      />
-      <Text
-        listening={false}
-        x={defenseR.x}
-        y={defenseR.y + 4}
-        width={defenseR.width}
-        height={defenseR.height - 10}
-        text={defense}
-        fontFamily="Beleren, Georgia, serif"
-        fontStyle="bold"
-        fontSize={Math.max(28, Math.min(48, Math.round(defenseR.height * 0.42)))}
-        fill="#ffffff"
-        align="center"
-        verticalAlign="middle"
-      />
+      </Group>
 
       {showStamp ? (
         <Group listening={false}>
