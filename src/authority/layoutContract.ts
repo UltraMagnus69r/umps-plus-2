@@ -68,9 +68,12 @@ export type LayoutCapabilityFlags = {
   supportsPlaneswalkerModernV2Layout: boolean
   /** Spell Saga/Class — parchment column, vertical banner, chapter/level badges. */
   supportsSagaClassChrome: boolean
-  /** Battle / Siege — landscape chrome (name strip, parchment rules, defense shield). */
+  /** Battle / Siege — side-column chrome (name L, art, type, rules R, collector bottom). */
   supportsBattleChrome: boolean
-  /** Battle — landscape stage (2250×1650) instead of portrait. */
+  /**
+   * When true, Konva uses battleLayoutAuthority stage size instead of Standard
+   * 1650×2250. Battle portrait side-column shares Standard stage (false).
+   */
   usesLandscapeStage: boolean
   /** Prepared Creatures — split rules + nested mini-spell chrome. */
   supportsPreparedChrome: boolean

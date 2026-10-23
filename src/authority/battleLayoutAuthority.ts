@@ -1,29 +1,28 @@
 /**
- * Battle / Siege — landscape MotM stack face (wider than tall).
- * Ground truth: Invasion of Zendikar (MOM #194) measured landscape play —
- * Project face-spec + media/battle-zendikar-compare/zendikar-measurements.json.
- * Same MotM stack family as Ikoria; seats are Zendikar-measured (not a
- * left-name / right-column FACE). Art left-insets for the collector strip;
- * hologram / MotM left-seam stamp is optional chrome (absent on Uncommon Zendikar).
+ * Battle / Siege — portrait side-column face (Standard 1500×2100 trim).
+ * Studio GT: Invasion of Zendikar as the user-attached portrait reference —
+ * name left vertical, art center, type mid-right, rules far-right, collector bottom.
+ * MotM landscape stack is legacy / play-rotated cousin only (not Studio default).
+ * Seats: media/battle-zendikar-compare/remeasure-2026-10-23.json native → 1500×2100.
  */
 import { BLEED_PX, INNER_BORDER_CORNER_RADIUS_MODERN } from './geometryAuthority'
 import type { LayoutId } from './layoutTaxonomy'
 import { isBattleLayout } from './layoutTaxonomy'
 
-export const BATTLE_TRIM_WIDTH = 2100
-export const BATTLE_TRIM_HEIGHT = 1500
-export const BATTLE_STAGE_WIDTH = BATTLE_TRIM_WIDTH + 2 * BLEED_PX // 2250
-export const BATTLE_STAGE_HEIGHT = BATTLE_TRIM_HEIGHT + 2 * BLEED_PX // 1650
+/** Portrait trim — matches Standard card aspect (user ref 672×936, ~isotropic). */
+export const BATTLE_TRIM_WIDTH = 1500
+export const BATTLE_TRIM_HEIGHT = 2100
+export const BATTLE_STAGE_WIDTH = BATTLE_TRIM_WIDTH + 2 * BLEED_PX // 1650
+export const BATTLE_STAGE_HEIGHT = BATTLE_TRIM_HEIGHT + 2 * BLEED_PX // 2250
 
-/** Modern bottom inner-border radius (stage px) — used for Battle landscape left corners. */
-export const BATTLE_INNER_BORDER_LEFT_CORNER_RADIUS =
-  INNER_BORDER_CORNER_RADIUS_MODERN[2] /* bottom-right = bottom radius language */
-/** Modern top inner-border radius — used for Battle landscape right corners. */
-export const BATTLE_INNER_BORDER_RIGHT_CORNER_RADIUS = INNER_BORDER_CORNER_RADIUS_MODERN[0]
+/** Outer trim corners — Standard Modern language (portrait card). */
+export const BATTLE_TRIM_CORNER_RADII = INNER_BORDER_CORNER_RADIUS_MODERN
+/** Art aperture corner soften (center column). */
+export const BATTLE_ART_CORNER_RADIUS_PX = 16
 
 export type BattleStageRect = { x: number; y: number; width: number; height: number }
 
-/** Landscape trim-norm (0–1 of 2100×1500) → stage px. */
+/** Portrait trim-norm (0–1 of 1500×2100) → stage px. */
 function n(rect: { x: number; y: number; w: number; h: number }): BattleStageRect {
   return {
     x: Math.round(rect.x * BATTLE_TRIM_WIDTH + BLEED_PX),
@@ -34,50 +33,59 @@ function n(rect: { x: number; y: number; w: number; h: number }): BattleStageRec
 }
 
 /**
- * Zendikar-measured MotM stack (trim px → norm of 2100×1500).
- * Stage = trim + BLEED 75. See battle-zendikar-face-spec.md.
+ * Side-column FACE — native user-ref seats mapped to 1500×2100 (anisotropy ≈ 0.995).
+ * Stage = trim + BLEED 75. See battle-zendikar-remeasure-next-edits.md.
  */
 const FACE = {
-  /** Left vertical collector / legal strip in the black outer border. */
-  collector: { x: 8 / 2100, y: 91 / 1500, w: 202 / 2100, h: 1319 / 1500 },
-  /** Horizontal nameplate — green chrome + fill. */
-  name: { x: 218 / 2100, y: 58 / 1500, w: 1823 / 2100, h: 141 / 1500 },
-  /** DFC / transform mark — circle + △ at left of name. */
-  transform: { x: 218 / 2100, y: 58 / 1500, w: 141 / 2100, h: 141 / 1500 },
-  /** Mana cluster at right of name. */
-  mana: { x: 1793 / 2100, y: 77 / 1500, w: 222 / 2100, h: 105 / 1500 },
+  /** Bottom horizontal collector / legal band. */
+  collector: { x: 58 / 1500, y: 1932 / 2100, w: 1384 / 1500, h: 166 / 2100 },
+  /** Tall left name plate. */
+  name: { x: 58 / 1500, y: 58 / 2100, w: 141 / 1500, h: 1873 / 2100 },
+  /** Mana cluster — top of name strip (upright pips). */
+  mana: { x: 71 / 1500, y: 117 / 2100, w: 116 / 1500, h: 139 / 2100 },
+  /** DFC / transform — bottom of name strip. */
+  transform: { x: 71 / 1500, y: 1768 / 2100, w: 116 / 1500, h: 117 / 2100 },
+  /** Center-column art aperture (between name and type). */
+  art: { x: 201 / 1500, y: 58 / 2100, w: 656 / 1500, h: 1873 / 2100 },
+  /** Narrow type column left of rules. */
+  type: { x: 857 / 1500, y: 58 / 2100, w: 145 / 1500, h: 1873 / 2100 },
+  /** Set symbol — near top of type column. */
+  setSymbol: { x: 893 / 1500, y: 76 / 2100, w: 94 / 1500, h: 94 / 2100 },
+  /** Far-right rules column. */
+  rules: { x: 1002 / 1500, y: 58 / 2100, w: 442 / 1500, h: 1873 / 2100 },
+  /** Defense shield — top-right of rules. */
+  defense: { x: 1330 / 1500, y: 58 / 2100, w: 112 / 1500, h: 119 / 2100 },
+  /** Back-face P/T cue — beside defense inside rules. */
+  backFacePT: { x: 1250 / 1500, y: 90 / 2100, w: 71 / 1500, h: 123 / 2100 },
   /**
-   * Art full cover under chrome (left inset clears collector; top/right/bottom
-   * match inner face). Visible hole between name bottom & type top is chrome.
-   */
-  art: { x: 218 / 2100, y: 58 / 1500, w: 1823 / 2100, h: 1383 / 1500 },
-  /** Type line — full-width plate over rules. */
-  type: { x: 218 / 2100, y: 866 / 1500, w: 1823 / 2100, h: 135 / 1500 },
-  /** Set symbol — right end of type. */
-  setSymbol: { x: 1934 / 2100, y: 882 / 1500, w: 91 / 2100, h: 101 / 1500 },
-  /** Rules outer box — tall translucent panel. */
-  rules: { x: 218 / 2100, y: 1001 / 1500, w: 1823 / 2100, h: 441 / 1500 },
-  /** Defense shield — spiked badge, bottom-right of rules / inner face. */
-  defense: { x: 1894 / 2100, y: 1319 / 1500, w: 133 / 2100, h: 133 / 1500 },
-  /** Back-face P/T cue (e.g. 4/4) — left of defense in rules. */
-  backFacePT: { x: 1787 / 2100, y: 1313 / 1500, w: 105 / 2100, h: 48 / 1500 },
-  /**
-   * Optional MotM security stamp — straddles art left seam.
+   * Optional MotM security stamp — art left seam mid-height.
    * Not present on Uncommon Zendikar; keep for rare/mythic / toggle.
    */
   hologram: {
-    x: 218 / 2100 - 68 / 2100 / 2,
-    y: 58 / 1500 + 1383 / 1500 / 2 - 110 / 1500 / 2,
-    w: 68 / 2100,
-    h: 110 / 1500,
+    x: 201 / 1500 - 68 / 1500 / 2,
+    y: 58 / 2100 + 1873 / 2100 / 2 - 110 / 2100 / 2,
+    w: 68 / 1500,
+    h: 110 / 2100,
   },
 } as const
 
-/**
- * Extra trim-px on top/bottom left-corner tangents (arc starts later to the right).
- * Vertical left-edge anchors stay put.
+/*
+ * Legacy MotM landscape FACE (2100×1500 play-rotated) — kept for reference only.
+ * Not used as Studio default.
+ *
+ * collector: { x: 8/2100, y: 91/1500, w: 202/2100, h: 1319/1500 }
+ * name: { x: 218/2100, y: 58/1500, w: 1823/2100, h: 141/1500 }
+ * transform: { x: 218/2100, y: 58/1500, w: 141/2100, h: 141/1500 }
+ * mana: { x: 1793/2100, y: 77/1500, w: 222/2100, h: 105/1500 }
+ * art: { x: 218/2100, y: 58/1500, w: 1823/2100, h: 1383/1500 }
+ * type: { x: 218/2100, y: 866/1500, w: 1823/2100, h: 135/1500 }
+ * rules: { x: 218/2100, y: 1001/1500, w: 1823/2100, h: 441/1500 }
+ * defense: { x: 1894/2100, y: 1319/1500, w: 133/2100, h: 133/1500 }
+ * backFacePT: { x: 1787/2100, y: 1313/1500, w: 105/2100, h: 48/1500 }
  */
-export const BATTLE_LEFT_CORNER_TANGENT_EXTRA_PX = 50
+
+/** @deprecated MotM left-tangent hack — unused on portrait side-column. */
+export const BATTLE_LEFT_CORNER_TANGENT_EXTRA_PX = 0
 
 export function layoutUsesBattleChrome(layout: Partial<LayoutId> | null | undefined): boolean {
   return isBattleLayout(layout)
@@ -88,18 +96,14 @@ export function getBattleStageSize(): { width: number; height: number } {
 }
 
 /**
- * Art aperture — Zendikar art_full under name/type/rules/defense.
- * Identical to {@link getBattleInnerBorderRect}. ArtLayer cover-fills + clips this;
- * chrome evenodd hole matches so the left strip stays black for collector.
+ * Art aperture — center column between name and type.
+ * ArtLayer cover-fills + clips this; chrome evenodd hole matches.
  */
 export function getBattleArtRect(): BattleStageRect {
   return getBattleInnerBorderRect()
 }
 
-/**
- * Art / chrome-hole aperture (stage px) — ArtLayer clip and chrome frame-ring hole
- * share this rect and the Battle corner radii (including left tangent extra).
- */
+/** Art / chrome-hole aperture (stage px). */
 export function getBattleInnerBorderRect(): BattleStageRect {
   return n(FACE.art)
 }
@@ -132,7 +136,7 @@ export function getBattleDefenseRect(): BattleStageRect {
   return n(FACE.defense)
 }
 
-/** Back-face power/toughness cue seat (left of defense). */
+/** Back-face power/toughness cue seat (beside defense). */
 export function getBattleBackFacePTRect(): BattleStageRect {
   return n(FACE.backFacePT)
 }
@@ -154,21 +158,20 @@ export function getBattleTrimRect(): BattleStageRect {
   }
 }
 
-/**
- * Konva/canvas corner radii for the Battle inner mat (TL, TR, BR, BL).
- * Upper-left + lower-left match Standard Modern bottom inner-border radius.
- * Left corners also use {@link BATTLE_LEFT_CORNER_TANGENT_EXTRA_PX} on the
- * top/bottom tangent (horizontal) so the arc starts ~50 px later.
- */
-export function getBattleInnerBorderCornerRadii(): readonly [number, number, number, number] {
-  const left = BATTLE_INNER_BORDER_LEFT_CORNER_RADIUS
-  const right = BATTLE_INNER_BORDER_RIGHT_CORNER_RADIUS
-  return [left, right, right, left]
+/** Outer trim corner radii (TL, TR, BR, BL) — Standard Modern. */
+export function getBattleTrimCornerRadii(): readonly [number, number, number, number] {
+  return BATTLE_TRIM_CORNER_RADII
 }
 
-/** Horizontal tangent inset for left corners (= vertical radius + 50 px). */
+/** Art aperture corner radii (TL, TR, BR, BL). */
+export function getBattleInnerBorderCornerRadii(): readonly [number, number, number, number] {
+  const r = BATTLE_ART_CORNER_RADIUS_PX
+  return [r, r, r, r]
+}
+
+/** @deprecated No left-tangent extra on portrait; equals art corner radius. */
 export function getBattleLeftCornerHorizontalRadius(): number {
-  return BATTLE_INNER_BORDER_LEFT_CORNER_RADIUS + BATTLE_LEFT_CORNER_TANGENT_EXTRA_PX
+  return BATTLE_ART_CORNER_RADIUS_PX
 }
 
 /** Default Siege reminder (Scryfall / oracle). */
