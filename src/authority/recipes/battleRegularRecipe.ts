@@ -8,10 +8,10 @@ import { M15_REGULAR_MANA_PIP_SIZE_PX } from './m15RegularCreatureRecipe'
 const CC_PIP_SIZE_FRAC = 71 / 1638
 
 /**
- * Modern inner-border X/W/Y on Standard trim; height to Battle column bottoms
- * (stage ≈ 128,122,1394,1884). Art cover-fills; chrome plates overlay.
+ * Exact Modern inner-border on Standard trim (stage ≈ 128,122,1394,1840).
+ * Art cover-fills; chrome plates overlay.
  */
-const L_ART = { x: 53 / 1500, y: 47 / 2100, w: 1394 / 1500, h: 1884 / 2100 }
+const L_ART = { x: 53 / 1500, y: 47 / 2100, w: 1394 / 1500, h: 1840 / 2100 }
 /** Side-column — trim-norm of 1500×2100 (remeasure → portrait). */
 const L_COLLECTOR = { x: 58 / 1500, y: 1932 / 2100, w: 1384 / 1500, h: 166 / 2100 }
 const L_TITLE = { x: 58 / 1500, y: 58 / 2100, w: 141 / 1500, h: 1873 / 2100 }

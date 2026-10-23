@@ -264,7 +264,10 @@ function ArtLayer() {
 
   return (
     <Layer ref={layerRef} listening={true}>
-      {/* Battle: paint the full chrome aperture so empty/cover edges never read as a mat gap. */}
+      {/*
+        Battle: underpaint the Modern inner-face aperture. Use near-black (not grey)
+        so any uncovered edge never reads as a grey mat inside the frame line.
+      */}
       {battleLayout ? (
         <Shape
           listening={false}
@@ -272,7 +275,7 @@ function ArtLayer() {
             const c = ctx as unknown as CanvasRenderingContext2D
             c.beginPath()
             addBattleArtInnerClipPath(c)
-            c.fillStyle = '#bfbfbf'
+            c.fillStyle = '#0a0a0a'
             c.fill()
           }}
         />

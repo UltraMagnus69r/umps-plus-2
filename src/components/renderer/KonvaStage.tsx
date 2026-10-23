@@ -7,7 +7,11 @@ import {
   STAGE_EXPORT_HEIGHT,
   STAGE_EXPORT_WIDTH,
 } from '../../authority/geometryAuthority'
-import { getBattleStageSize } from '../../authority/battleLayoutAuthority'
+import {
+  BATTLE_STUDIO_PRESENTATION_ROTATION_DEG,
+  battleStudioPresentationActive,
+  getBattleStageSize,
+} from '../../authority/battleLayoutAuthority'
 import { getOuterBorderFill } from '../../authority/colorAuthority'
 import { UI_PREVIEW_SURFACE } from '../../authority/panelSurfaceAuthority'
 import { shouldRenderNameplateCrown } from '../../authority/crownLayoutAuthority'
@@ -123,6 +127,12 @@ function KonvaStage({
 
   const { ref: containerRef, size } = useContainerSize<HTMLDivElement>()
   const landscapeStage = layoutCaps.usesLandscapeStage === true
+  /**
+   * Battle Studio presentation: rotate portrait side-column +90° (CW) so the
+   * left name column becomes the top bar and name/rules read left-to-right.
+   * Export/print stay native portrait (no rotation).
+   */
+  const battlePresentation = battleStudioPresentationActive(activeLayout)
   const battleSize = getBattleStageSize()
   const w = landscapeStage ? battleSize.width : DIMENSIONS.FULL_BLEED.width
   const h = landscapeStage ? battleSize.height : DIMENSIONS.FULL_BLEED.height
@@ -134,11 +144,20 @@ function KonvaStage({
   const scale = useMemo(() => {
     const cw = size.width || 1
     const ch = size.height || 1
-    if (exportPngIncludeBleed) {
-      return Math.min(cw / w, ch / h)
-    }
-    return Math.min(cw / tw, ch / th)
-  }, [size.width, size.height, w, h, tw, th, exportPngIncludeBleed])
+    // When presenting Battle rotated, the on-screen box swaps axes — fit to that.
+    const fitW = battlePresentation ? (exportPngIncludeBleed ? h : th) : exportPngIncludeBleed ? w : tw
+    const fitH = battlePresentation ? (exportPngIncludeBleed ? w : tw) : exportPngIncludeBleed ? h : th
+    return Math.min(cw / fitW, ch / fitH)
+  }, [
+    size.width,
+    size.height,
+    w,
+    h,
+    tw,
+    th,
+    exportPngIncludeBleed,
+    battlePresentation,
+  ])
 
   const scaled = useMemo(
     () => ({ width: w * scale, height: h * scale }),
@@ -147,6 +166,9 @@ function KonvaStage({
 
   const previewW = Math.max(1, Math.round(scaled.width))
   const previewH = Math.max(1, Math.round(scaled.height))
+  /** On-screen shell size after optional Battle presentation rotation. */
+  const presentW = battlePresentation ? previewH : previewW
+  const presentH = battlePresentation ? previewW : previewH
   const stageScaleX = previewW / w
   const stageScaleY = previewH / h
   /** Cap retina backing store for live typing; export path uses explicit full resolution. */
@@ -322,36 +344,81 @@ function KonvaStage({
     </Stage>
   )
 
+  const trimPreviewW = Math.max(1, Math.round(tw * stageScaleX))
+  const trimPreviewH = Math.max(1, Math.round(th * stageScaleY))
+  const trimPresentW = battlePresentation ? trimPreviewH : trimPreviewW
+  const trimPresentH = battlePresentation ? trimPreviewW : trimPreviewH
+  const presentationRotateStyle = battlePresentation
+    ? {
+        transform: `rotate(${BATTLE_STUDIO_PRESENTATION_ROTATION_DEG}deg)`,
+        transformOrigin: 'center center',
+      }
+    : undefined
+
   return (
     <div ref={containerRef} className={shellClass}>
       {exportPngIncludeBleed ? (
         <div
           data-studio-card-face
-          style={{ width: previewW, height: previewH }}
+          data-battle-presentation={battlePresentation ? 'rotated-90' : undefined}
+          style={{
+            width: presentW,
+            height: presentH,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
           className="relative"
+          aria-label={
+            battlePresentation
+              ? 'Battle preview (rotated +90° for readability; export stays portrait)'
+              : undefined
+          }
         >
-          {stageInner}
+          <div
+            className="relative shrink-0"
+            style={{ width: previewW, height: previewH, ...presentationRotateStyle }}
+          >
+            {stageInner}
+          </div>
         </div>
       ) : (
         <div
           data-studio-card-face
+          data-battle-presentation={battlePresentation ? 'rotated-90' : undefined}
           style={{
-            width: Math.max(1, Math.round(tw * stageScaleX)),
-            height: Math.max(1, Math.round(th * stageScaleY)),
+            width: trimPresentW,
+            height: trimPresentH,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
           className="relative shrink-0 overflow-hidden"
-          aria-label="Trim preview (matches PNG export without bleed)"
+          aria-label={
+            battlePresentation
+              ? 'Battle trim preview (rotated +90°; PNG export stays portrait)'
+              : 'Trim preview (matches PNG export without bleed)'
+          }
         >
           <div
-            className="absolute"
+            className="relative shrink-0 overflow-hidden"
             style={{
-              left: -BLEED_PX * stageScaleX,
-              top: -BLEED_PX * stageScaleY,
-              width: previewW,
-              height: previewH,
+              width: trimPreviewW,
+              height: trimPreviewH,
+              ...presentationRotateStyle,
             }}
           >
-            {stageInner}
+            <div
+              className="absolute"
+              style={{
+                left: -BLEED_PX * stageScaleX,
+                top: -BLEED_PX * stageScaleY,
+                width: previewW,
+                height: previewH,
+              }}
+            >
+              {stageInner}
+            </div>
           </div>
         </div>
       )}

@@ -1,15 +1,16 @@
 /**
  * Battle / Siege — portrait side-column face (Standard 1500×2100 trim).
  * Studio GT: Invasion of Zendikar as the user-attached portrait reference —
- * name left vertical, near-full art under chrome, type mid-right, rules far-right,
- * collector bottom. Art fills the Modern inner-border rect; plates overlay on top.
- * MotM landscape stack is legacy / play-rotated cousin only (not Studio default).
+ * name left vertical, art = exact Modern inner-border, type mid-right, rules far-right,
+ * collector bottom. Plates overlay (solid white / black stroke by default).
+ * Studio preview rotates +90° (CW) for landscape readability; export stays portrait.
+ * MotM landscape stack is legacy / play-rotated cousin only (not the data model).
  * Seats: media/battle-zendikar-compare/remeasure-2026-10-23.json native → 1500×2100.
  */
 import {
   BLEED_PX,
   getStandardLayoutGeometry,
-  INNER_BORDER_CORNER_RADIUS_MODERN,
+  TRIM_CORNER_RADIUS_PX,
 } from './geometryAuthority'
 import type { LayoutId } from './layoutTaxonomy'
 import { isBattleLayout } from './layoutTaxonomy'
@@ -20,20 +21,31 @@ export const BATTLE_TRIM_HEIGHT = 2100
 export const BATTLE_STAGE_WIDTH = BATTLE_TRIM_WIDTH + 2 * BLEED_PX // 1650
 export const BATTLE_STAGE_HEIGHT = BATTLE_TRIM_HEIGHT + 2 * BLEED_PX // 2250
 
-/** Outer trim corners — Standard Modern language (portrait card). */
-export const BATTLE_TRIM_CORNER_RADII = INNER_BORDER_CORNER_RADIUS_MODERN
+/** Outer trim corners — Standard card silhouette (not Modern inner radii). */
+export const BATTLE_TRIM_CORNER_RADII = [
+  TRIM_CORNER_RADIUS_PX,
+  TRIM_CORNER_RADIUS_PX,
+  TRIM_CORNER_RADIUS_PX,
+  TRIM_CORNER_RADIUS_PX,
+] as const
 /**
- * Art / inner-face corner soften — uniform (not Modern’s 175px PT bottoms).
- * Modern bottom radii would punch black into the BL transform/name seat.
+ * Art / inner-face corners — uniform soften (Modern rect size/placement;
+ * not Modern’s 175px PT bottoms, which scoop black into the side-column seats).
  */
 export const BATTLE_ART_CORNER_RADIUS_PX = 30
-/** TL, TR, BR, BL — near-full art under chrome. */
 export const BATTLE_ART_CORNER_RADII = [
   BATTLE_ART_CORNER_RADIUS_PX,
   BATTLE_ART_CORNER_RADIUS_PX,
   BATTLE_ART_CORNER_RADIUS_PX,
   BATTLE_ART_CORNER_RADIUS_PX,
 ] as const
+
+/**
+ * Studio preview only — rotate portrait side-column +90° (CW) so the left name
+ * column reads as a top bar (MotM-like landscape presentation). Export/print stay
+ * native portrait; see `battleStudioPresentationActive`.
+ */
+export const BATTLE_STUDIO_PRESENTATION_ROTATION_DEG = 90
 
 export type BattleStageRect = { x: number; y: number; width: number; height: number }
 
@@ -121,27 +133,32 @@ export function getBattleStageSize(): { width: number; height: number } {
 }
 
 /**
- * Art aperture — Modern inner-border rect (same seat/size as Standard Modern).
+ * Art aperture — EXACT Standard Modern inner-border rect (seat + size + corners).
  * ArtLayer cover-fills + clips this; chrome evenodd hole matches; plates overlay.
+ * No taller inset that leaves a grey mat inside the Modern frame line.
  */
 export function getBattleArtRect(): BattleStageRect {
   return getBattleInnerBorderRect()
 }
 
 /**
- * Art / chrome-hole aperture (stage px).
- * Same X/W/Y as Modern inner-border; height extends to Battle column bottoms
- * so art continues under name/type/rules/transform (not cut short above collector).
+ * Art / chrome-hole aperture (stage px) — identical to Modern inner-border.
  */
 export function getBattleInnerBorderRect(): BattleStageRect {
   const g = getStandardLayoutGeometry()
-  const colBottom = n(FACE.name).y + n(FACE.name).height
   return {
     x: g.innerX,
     y: g.innerY,
     width: g.innerW,
-    height: Math.max(g.innerH, colBottom - g.innerY),
+    height: g.innerH,
   }
+}
+
+/** True when Studio should present Battle rotated for readability (not export). */
+export function battleStudioPresentationActive(
+  layout: Partial<LayoutId> | null | undefined,
+): boolean {
+  return isBattleLayout(layout)
 }
 
 export function getBattleNameRect(): BattleStageRect {
@@ -199,12 +216,12 @@ export function getBattleTrimCornerRadii(): readonly [number, number, number, nu
   return BATTLE_TRIM_CORNER_RADII
 }
 
-/** Art / inner-face corner radii — uniform (Modern rect size, Battle corner language). */
+/** Art / inner-face corner radii — Standard Modern inner-border radii. */
 export function getBattleInnerBorderCornerRadii(): readonly [number, number, number, number] {
   return BATTLE_ART_CORNER_RADII
 }
 
-/** @deprecated No left-tangent extra on portrait; equals art corner radius. */
+/** @deprecated No left-tangent extra on portrait; equals top art corner radius. */
 export function getBattleLeftCornerHorizontalRadius(): number {
   return BATTLE_ART_CORNER_RADIUS_PX
 }
