@@ -47,7 +47,7 @@ import {
   type CardFieldTypography,
 } from '../../../authority/typographyAuthority'
 import { useEffectiveTypographyFontKey } from '../../../hooks/useEffectiveTypographyFontKey'
-import { resolveProceduralIdentity, useCardStore } from '../../../store/useCardStore'
+import { useCardStore } from '../../../store/useCardStore'
 import { normalizeMana } from '../../../utils/manaNormalization'
 import {
   layoutRichTextItems,
@@ -61,36 +61,13 @@ import {
 const BATTLE_NAME_PT_REF_PX = 44
 const BATTLE_TYPE_PT_REF_PX = 32
 const BATTLE_RULES_PT_REF_PX = 34
-/** Auto ink on plates / parchment when typography color is not manual. */
-const BATTLE_PLATE_AUTO_INK = '#f7f2e8'
+/** Auto ink on solid white plates when typography color is not manual. */
+const BATTLE_PLATE_AUTO_INK = '#1c1612'
 const BATTLE_RULES_AUTO_INK = '#1c1612'
-
-function darkenHex(hex: string, amount: number): string {
-  const n = hex.replace(/^#/, '')
-  if (n.length !== 6) return hex
-  const r = Math.max(0, Math.min(255, Math.round(parseInt(n.slice(0, 2), 16) * (1 - amount))))
-  const g = Math.max(0, Math.min(255, Math.round(parseInt(n.slice(2, 4), 16) * (1 - amount))))
-  const b = Math.max(0, Math.min(255, Math.round(parseInt(n.slice(4, 6), 16) * (1 - amount))))
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
-}
-
-function lightenHex(hex: string, amount: number): string {
-  const n = hex.replace(/^#/, '')
-  if (n.length !== 6) return hex
-  const r = Math.max(0, Math.min(255, Math.round(parseInt(n.slice(0, 2), 16) + (255 - parseInt(n.slice(0, 2), 16)) * amount)))
-  const g = Math.max(0, Math.min(255, Math.round(parseInt(n.slice(2, 4), 16) + (255 - parseInt(n.slice(2, 4), 16)) * amount)))
-  const b = Math.max(0, Math.min(255, Math.round(parseInt(n.slice(4, 6), 16) + (255 - parseInt(n.slice(4, 6), 16)) * amount)))
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
-}
-
-function hexToRgba(hex: string, alpha: number): string {
-  const n = hex.replace(/^#/, '')
-  if (n.length !== 6) return `rgba(0,0,0,${alpha})`
-  const r = parseInt(n.slice(0, 2), 16)
-  const g = parseInt(n.slice(2, 4), 16)
-  const b = parseInt(n.slice(4, 6), 16)
-  return `rgba(${r},${g},${b},${Math.max(0, Math.min(1, alpha))})`
-}
+/** Default plate fill / stroke — solid white, black line only (no identity tint). */
+const BATTLE_PLATE_FILL = '#ffffff'
+const BATTLE_PLATE_STROKE = '#111111'
+const BATTLE_PLATE_STROKE_WIDTH = 2.5
 
 /**
  * Default cream hex → outline plate.
@@ -154,15 +131,6 @@ function BattleChromeLayer() {
     rarity,
     artist,
     copyright,
-    colorIdentity,
-    autoColorEnabled,
-    manualColorKey,
-    manualColorHex1,
-    manualColorHex2,
-    manualColorHex3,
-    manualColorHex4,
-    manualColorHex5,
-    manualColorCount,
     showHologram,
     nameBoxColor,
     typeLineBoxColor,
@@ -190,15 +158,6 @@ function BattleChromeLayer() {
       rarity: s.cardData.rarity,
       artist: s.cardData.artist,
       copyright: s.cardData.copyright,
-      colorIdentity: s.cardData.colorIdentity,
-      autoColorEnabled: s.autoColorEnabled,
-      manualColorKey: s.manualColorKey,
-      manualColorHex1: s.manualColorHex1,
-      manualColorHex2: s.manualColorHex2,
-      manualColorHex3: s.manualColorHex3,
-      manualColorHex4: s.manualColorHex4,
-      manualColorHex5: s.manualColorHex5,
-      manualColorCount: s.manualColorCount,
       showHologram: s.showHologram,
       nameBoxColor: s.cardData.nameBoxColor,
       typeLineBoxColor: s.cardData.typeLineBoxColor,
@@ -291,40 +250,6 @@ function BattleChromeLayer() {
     [],
   )
 
-  const identity = useMemo(
-    () =>
-      resolveProceduralIdentity(
-        typeLine,
-        colorIdentity,
-        name,
-        manaCost ?? '',
-        autoColorEnabled,
-        manualColorKey,
-        manualColorHex1,
-        manualColorHex2,
-        manualColorHex3,
-        manualColorHex4,
-        manualColorHex5,
-        manualColorCount,
-      ),
-    [
-      typeLine,
-      colorIdentity,
-      name,
-      manaCost,
-      autoColorEnabled,
-      manualColorKey,
-      manualColorHex1,
-      manualColorHex2,
-      manualColorHex3,
-      manualColorHex4,
-      manualColorHex5,
-      manualColorCount,
-    ],
-  )
-
-  const fill = identity.stroke
-  const plateBorder = useMemo(() => lightenHex(fill, 0.55), [fill])
   const effectiveNameBox = effectivePanelBackground('nameBoxColor', nameBoxColor, panelBackgroundPreview)
   const effectiveTypeBox = effectivePanelBackground(
     'typeLineBoxColor',
@@ -460,11 +385,11 @@ function BattleChromeLayer() {
     c.beginPath()
     addPlatePath(c, w, h)
     if (outline) {
-      // Keep plates translucent so near-full art reads behind name/type chrome.
-      c.fillStyle = hexToRgba(fill, 0.28)
+      // Default: solid white + black line (no translucent identity green).
+      c.fillStyle = BATTLE_PLATE_FILL
       c.fill()
-      c.strokeStyle = plateBorder
-      c.lineWidth = 2.5
+      c.strokeStyle = BATTLE_PLATE_STROKE
+      c.lineWidth = BATTLE_PLATE_STROKE_WIDTH
       c.stroke()
     } else if (bgImage && isPanelTextureBackground(boxKey)) {
       c.fillStyle = createBoxPanelInnerFillStyle(
@@ -481,10 +406,11 @@ function BattleChromeLayer() {
         panelFrostOpacity,
       )
       c.fill()
-      c.strokeStyle = darkenHex(fillHex, 0.35)
-      c.lineWidth = 2
+      c.strokeStyle = BATTLE_PLATE_STROKE
+      c.lineWidth = BATTLE_PLATE_STROKE_WIDTH
       c.stroke()
     } else {
+      // Opt-in solid panel color — still black stroke only (no identity border).
       const frosted = createBoxPanelInnerFillStyle(
         c,
         w,
@@ -501,15 +427,11 @@ function BattleChromeLayer() {
       if (typeof frosted === 'string' && panelFrostEnabled && panelFrostOpacity > 0) {
         c.fillStyle = frosted
       } else {
-        const g = c.createLinearGradient(0, 0, w, 0)
-        g.addColorStop(0, lightenHex(fillHex, 0.22))
-        g.addColorStop(0.45, fillHex)
-        g.addColorStop(1, darkenHex(fillHex, 0.28))
-        c.fillStyle = g
+        c.fillStyle = fillHex || BATTLE_PLATE_FILL
       }
       c.fill()
-      c.strokeStyle = darkenHex(fillHex, 0.35)
-      c.lineWidth = 2
+      c.strokeStyle = BATTLE_PLATE_STROKE
+      c.lineWidth = BATTLE_PLATE_STROKE_WIDTH
       c.stroke()
     }
   }
@@ -517,8 +439,8 @@ function BattleChromeLayer() {
   return (
     <Layer listening={false}>
       {/*
-        Bleed + outer border. Art fills Modern inner face; black mat is only outside
-        that aperture (frame ring + collector). Translucent plates overlay art.
+        Bleed + outer border. Art fills exact Modern inner face; black mat is only
+        outside that aperture (frame ring + collector). Solid white plates overlay.
       */}
       <Shape
         listening={false}
@@ -530,6 +452,8 @@ function BattleChromeLayer() {
           c.fillStyle = '#0a0a0a'
           c.fill('evenodd')
           // Trim minus Modern inner-face → black mat (collector + outer frame ring).
+          // Art cover-fills exactly to this hole edge (no inset stroke — a centered
+          // stroke would read as a grey mat inside the frame line).
           c.beginPath()
           addBattleRoundRectPath(c, trim.x, trim.y, trim.width, trim.height, trimRadii, 0)
           addBattleArtInnerClipPathForRect(c, artR.x, artR.y, artR.width, artR.height)
@@ -733,11 +657,10 @@ function BattleChromeLayer() {
           c.beginPath()
           addBattleRoundRectPath(c, rulesR.x, rulesR.y, rulesR.width, rulesR.height, artRadii, 0)
           if (rulesOutline) {
-            // Translucent parchment so art fills behind the rules column (official Battle).
-            c.fillStyle = 'rgba(244, 235, 224, 0.38)'
+            c.fillStyle = BATTLE_PLATE_FILL
             c.fill()
-            c.strokeStyle = plateBorder
-            c.lineWidth = 2.5
+            c.strokeStyle = BATTLE_PLATE_STROKE
+            c.lineWidth = BATTLE_PLATE_STROKE_WIDTH
             c.stroke()
           } else {
             const fillStyle = createBoxPanelInnerFillStyle(
@@ -767,8 +690,8 @@ function BattleChromeLayer() {
             }
             c.fillStyle = fillStyle
             c.fill()
-            c.strokeStyle = darkenHex(rulesFillHex, 0.35)
-            c.lineWidth = 2
+            c.strokeStyle = BATTLE_PLATE_STROKE
+            c.lineWidth = BATTLE_PLATE_STROKE_WIDTH
             c.stroke()
           }
         }}
