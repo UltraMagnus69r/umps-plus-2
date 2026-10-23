@@ -165,13 +165,13 @@ function StudioInspector({
     [onSegmentChange],
   )
 
-  // PKMN has no Colors pill — leave the Colors step if the family switched under us.
+  // PKMN / Space Gothic have no Colors pill — leave Colors if the family switched under us.
   useEffect(() => {
-    if (!isPkmn) return
+    if (!hideColorsStep) return
     if (preferredStepId !== 'colors' && currentStep.id !== 'colors') return
     const frameStep = STUDIO_FLOW_STEPS.find((s) => s.id === 'frame')
     if (frameStep) goStep(frameStep)
-  }, [isPkmn, preferredStepId, currentStep.id, goStep])
+  }, [hideColorsStep, preferredStepId, currentStep.id, goStep])
 
   const detailsShowLeft = FLOW_STEP_LEFT_SECTIONS[currentStep.id]?.length > 0
   const detailsShowRight = FLOW_STEP_RIGHT_SECTIONS[currentStep.id]?.length > 0
