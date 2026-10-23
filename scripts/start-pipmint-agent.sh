@@ -368,7 +368,7 @@ safe_git_update() {
   fi
 
   cd "$UMPS_DIR"
-  local branch before after upstream pull_ok
+  local branch before after upstream pull_ok=0
   branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)"
   before="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
 
@@ -378,7 +378,6 @@ safe_git_update() {
   fi
 
   # Prefer configured upstream; else origin/<branch> when that remote ref exists.
-  local pull_ok=0
   if upstream="$(git rev-parse --abbrev-ref '@{u}' 2>/dev/null)"; then
     echo "git pull --ff-only (upstream $upstream)"
     if git pull --ff-only 2>&1; then
