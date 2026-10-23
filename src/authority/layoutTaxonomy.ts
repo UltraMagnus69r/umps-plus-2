@@ -6,7 +6,15 @@ import {
   SPELL_PRE_MODERN_INNER_BORDER_CORNER_RADIUS_PX,
 } from './geometryAuthority'
 
-export type LayoutFamily = 'standard' | 'land' | 'spell' | 'battle' | 'prepared' | 'planeswalker' | 'pkmn'
+export type LayoutFamily =
+  | 'standard'
+  | 'land'
+  | 'spell'
+  | 'battle'
+  | 'prepared'
+  | 'planeswalker'
+  | 'pkmn'
+  | 'space-gothic'
 
 export type LayoutVariant =
   | 'modern'
@@ -33,6 +41,11 @@ export type LayoutVariant =
   | 'mountain'
   | 'plains'
   | 'swamp'
+  /** Space Gothic chrome builds. */
+  | 'with-pt'
+  | 'with-sides'
+  | 'nameplate-footer'
+  | 'name-type-rules'
 
 export type LayoutId = {
   family: LayoutFamily
@@ -66,6 +79,8 @@ export const layoutCompatibility: Record<LayoutFamily, readonly LayoutVariant[]>
     'plains',
     'swamp',
   ],
+  /** Space Gothic: ornate gold/cyan PNG chrome; variant = completeness build. */
+  'space-gothic': ['with-pt', 'with-sides', 'name-type-rules', 'nameplate-footer'],
 }
 
 export const LAYOUT_FAMILY_LABELS: Record<LayoutFamily, string> = {
@@ -76,6 +91,7 @@ export const LAYOUT_FAMILY_LABELS: Record<LayoutFamily, string> = {
   prepared: 'Prepared',
   planeswalker: 'Planeswalker',
   pkmn: 'PKMN',
+  'space-gothic': 'Space Gothic',
 }
 
 export const LAYOUT_VARIANT_LABELS: Record<LayoutVariant, string> = {
@@ -101,6 +117,10 @@ export const LAYOUT_VARIANT_LABELS: Record<LayoutVariant, string> = {
   mountain: 'Mountain',
   plains: 'Plains',
   swamp: 'Swamp',
+  'with-pt': 'With P/T',
+  'with-sides': 'With Sides',
+  'nameplate-footer': 'Nameplate + Footer',
+  'name-type-rules': 'Name / Type / Rules',
 }
 
 export function getLayoutFamilyLabel(family: LayoutFamily): string {
@@ -132,7 +152,8 @@ function normalizeFamily(value: unknown): LayoutFamily {
     value === 'battle' ||
     value === 'prepared' ||
     value === 'planeswalker' ||
-    value === 'pkmn'
+    value === 'pkmn' ||
+    value === 'space-gothic'
   )
     return value
   return DEFAULT_LAYOUT_ID.family
@@ -166,7 +187,11 @@ function normalizeVariant(value: unknown): LayoutVariant {
     value === 'island' ||
     value === 'mountain' ||
     value === 'plains' ||
-    value === 'swamp'
+    value === 'swamp' ||
+    value === 'with-pt' ||
+    value === 'with-sides' ||
+    value === 'nameplate-footer' ||
+    value === 'name-type-rules'
   )
     return value
   return DEFAULT_LAYOUT_ID.variant
@@ -370,6 +395,16 @@ export function isPkmnLayout(layout: Partial<LayoutId> | null | undefined): bool
   return normalizeLayout(layout).family === 'pkmn'
 }
 
+/** Space Gothic — ornate static PNG chrome; variant is completeness build. */
+export function isSpaceGothicLayout(layout: Partial<LayoutId> | null | undefined): boolean {
+  return normalizeLayout(layout).family === 'space-gothic'
+}
+
+/** Full-card static PNG frame families (PKMN + Space Gothic) — no identity recolor / procedural plates. */
+export function isStaticPngFrameLayout(layout: Partial<LayoutId> | null | undefined): boolean {
+  return isPkmnLayout(layout) || isSpaceGothicLayout(layout)
+}
+
 const PKMN_BASIC_LAND_VARIANTS = new Set<LayoutVariant>([
   'forest',
   'island',
@@ -475,5 +510,6 @@ export function layoutToLegacyMode(layout: LayoutId): Exclude<CardLayoutMode, 'H
   if (normalized.family === 'land' && normalized.variant === 'borderless') return 'Borderless'
   if (normalized.family === 'land') return 'Land'
   if (normalized.family === 'pkmn') return 'Standard'
+  if (normalized.family === 'space-gothic') return 'Standard'
   return 'Standard'
 }

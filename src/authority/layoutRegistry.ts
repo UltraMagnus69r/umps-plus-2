@@ -10,6 +10,11 @@ import { buildModernDummyStageRects } from './modernDummyLayoutAuthority'
 import { buildPlaneswalkerModernV2StageRects } from './planeswalkerModernV2LayoutAuthority'
 import { buildPkmnBasicLandStageRects, buildPkmnStageRects } from './pkmnLayoutAuthority'
 import { isPkmnBasicLandFrameVariantId } from '../data/pkmnFrameOptions'
+import {
+  buildSpaceGothicStageRects,
+  spaceGothicVariantHasPtPocket,
+} from './spaceGothicLayoutAuthority'
+import { SPACE_GOTHIC_FRAME_OPTIONS } from '../data/spaceGothicFrameOptions'
 import { getPreModernTextBoxInnerRect } from './preModernTextBoxAuthority'
 import {
   BATTLE_STAGE_HEIGHT,
@@ -1126,6 +1131,61 @@ function buildPkmnContract(variant: LayoutVariant): LayoutContract {
   })
 }
 
+/** Space Gothic — ornate static PNG chrome; seats map to cream plate holes. */
+function buildSpaceGothicContract(variant: LayoutVariant): LayoutContract {
+  const hasPt = spaceGothicVariantHasPtPocket(variant)
+  const rects = buildSpaceGothicStageRects(variant)
+  return normalizeLayoutContract({
+    id: { family: 'space-gothic', variant },
+    regions: {
+      art: pxRectToNormalizedRect(rects.art),
+      nameBar: pxRectToNormalizedRect(rects.nameBar),
+      typeLine: pxRectToNormalizedRect(rects.typeLine),
+      rulesText: pxRectToNormalizedRect(rects.rulesText),
+      metadataStrip: pxRectToNormalizedRect(rects.metadataStrip),
+      lowerRight: {
+        kind: hasPt ? 'powerToughness' : 'functionalZone',
+        rect: pxRectToNormalizedRect(rects.lowerRight),
+      },
+    },
+    capabilities: {
+      supportsFlavorText: true,
+      supportsPowerToughnessBox: hasPt,
+      supportsMetadataStrip: false,
+      supportsEdgeToBleedArt: false,
+      supportsFloatingTextTreatment: false,
+      supportsSecondaryStructuralRegions: false,
+      supportsLandSecondaryArtInRulesRegion: false,
+      supportsRulesTextBoxTexture: false,
+      suppressNameBarManaCostRendering: false,
+      suppressNameBarTextRendering: false,
+      suppressTypeLineTextRendering: false,
+      useLandFullArtManaCircle: false,
+      suppressRulesTextRendering: false,
+      /** Chrome + cream plates live in the PNG — no procedural raised boxes. */
+      supportsNamePlateBox: false,
+      supportsTypeLineBox: false,
+      supportsHologramSeal: false,
+      supportsPreModernFooterLayout: false,
+      supportsRulesTextBoxFrame: false,
+      supportsSpellTextBoxPanel: false,
+      supportsPreModernFaceLayout: false,
+      supportsPreModernTextBoxFrame: false,
+      supportsPreModernInlinePowerToughness: false,
+      supportsModernDummyLayout: false,
+      supportsStartingLoyaltyBox: false,
+      supportsPlaneswalkerAbilities: false,
+      supportsPlaneswalkerModernV2Layout: false,
+      printOnlyStaticFrame: false,
+    },
+    bleedBehavior: 'trim-contained',
+    compliance: {
+      requiresTrimCompliance: true,
+      requiresSafeZoneCompliance: true,
+    },
+  })
+}
+
 const rawContracts: readonly LayoutContract[] = [
   buildStandardModernContract(),
   buildStandardStationArtifactContract(),
@@ -1150,6 +1210,7 @@ const rawContracts: readonly LayoutContract[] = [
   buildBattleModernContract(),
   buildPreparedModernContract(),
   ...PKMN_FRAME_OPTIONS.map((o) => buildPkmnContract(o.id)),
+  ...SPACE_GOTHIC_FRAME_OPTIONS.map((o) => buildSpaceGothicContract(o.id)),
 ]
 
 const registry = new Map<string, LayoutContract>()

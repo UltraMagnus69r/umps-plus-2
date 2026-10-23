@@ -25,7 +25,7 @@ import {
   typographyPtToStagePx,
   TYPO_PT_BOX_REF_PX,
 } from '../../../authority/typographyAuthority'
-import { isPkmnLayout, type LayoutId } from '../../../authority/layoutTaxonomy'
+import { isPkmnLayout, isSpaceGothicLayout, type LayoutId } from '../../../authority/layoutTaxonomy'
 import { landFullArtManaCircleKeyToBracketToken } from '../../../authority/landFullArtManaCircle'
 import { resolveProceduralIdentity, useCardStore } from '../../../store/useCardStore'
 import { createBoxPanelInnerFillStyle, resolveReadableInkOnBoxPanel } from '../../../authority/boxPanelFillAuthority'
@@ -188,6 +188,8 @@ function PowerToughnessOverlayLayer() {
   const identityAutoColorEnabled = useLandFullArtManaCircle ? true : autoColorEnabled
   const showPowerToughnessEffective = showPowerToughness && supportsPowerToughnessBox
   const pkmnPtSplit = isPkmnLayout(activeLayout)
+  /** Space Gothic P/T pocket is cream chrome already — ink only (slash-centered), no raised plate. */
+  const spaceGothicPtInk = isSpaceGothicLayout(activeLayout)
 
   const activeRegions = getActiveLayoutRegionsFromState({
     currentLayout,
@@ -401,7 +403,7 @@ function PowerToughnessOverlayLayer() {
   )
 
   const boxedPtLayout = useMemo(() => {
-    if (pkmnPtSplit || supportsFloatingTextTreatment) return null
+    if (pkmnPtSplit || spaceGothicPtInk || supportsFloatingTextTreatment) return null
     return layoutPtSlashCenteredText({
       power: String(cardPower ?? ''),
       toughness: String(cardToughness ?? ''),
@@ -419,6 +421,7 @@ function PowerToughnessOverlayLayer() {
     })
   }, [
     pkmnPtSplit,
+    spaceGothicPtInk,
     supportsFloatingTextTreatment,
     cardPower,
     cardToughness,
@@ -435,7 +438,7 @@ function PowerToughnessOverlayLayer() {
   ])
 
   const floatingPtLayout = useMemo(() => {
-    if (!supportsFloatingTextTreatment || pkmnPtSplit) return null
+    if ((!supportsFloatingTextTreatment && !spaceGothicPtInk) || pkmnPtSplit) return null
     const fontStyle = standardFullArt ? 'bold' : ptFontStyleKonva
     return layoutPtSlashCenteredText({
       power: String(cardPower ?? ''),
@@ -454,6 +457,7 @@ function PowerToughnessOverlayLayer() {
     })
   }, [
     supportsFloatingTextTreatment,
+    spaceGothicPtInk,
     pkmnPtSplit,
     standardFullArt,
     ptFontStyleKonva,
@@ -511,7 +515,11 @@ function PowerToughnessOverlayLayer() {
           />
         </Group>
       )}
-      {showPowerToughnessEffective && !supportsFloatingTextTreatment && !pkmnPtSplit && boxedPtLayout && (
+      {showPowerToughnessEffective &&
+        !supportsFloatingTextTreatment &&
+        !pkmnPtSplit &&
+        !spaceGothicPtInk &&
+        boxedPtLayout && (
         <Group
           x={applyProxyPtScale ? proxyPtScale.centerX : 0}
           y={applyProxyPtScale ? proxyPtScale.centerY : 0}
@@ -563,7 +571,10 @@ function PowerToughnessOverlayLayer() {
           />
         </Group>
       )}
-      {showPowerToughnessEffective && supportsFloatingTextTreatment && !pkmnPtSplit && floatingPtLayout && (
+      {showPowerToughnessEffective &&
+        (supportsFloatingTextTreatment || spaceGothicPtInk) &&
+        !pkmnPtSplit &&
+        floatingPtLayout && (
         <Group listening={false}>
           {([floatingPtLayout.power, floatingPtLayout.slash, floatingPtLayout.toughness] as const).map(
             (part, i) => (

@@ -22,6 +22,7 @@ import { useCardStore } from '../../store/useCardStore'
 import ArtLayer from './layers/ArtLayer'
 import TextureBorderLayer from './layers/TextureBorderLayer'
 import PkmnFrameLayer from './layers/PkmnFrameLayer'
+import SpaceGothicFrameLayer from './layers/SpaceGothicFrameLayer'
 import FrameLayer from './layers/FrameLayer'
 import CrownLayer from './layers/CrownLayer'
 import NamePlateLayer from './layers/NamePlateLayer'
@@ -315,6 +316,7 @@ function KonvaStage({
                 <TextureBorderLayer />
                 <ArtLayer />
                 <PkmnFrameLayer />
+                <SpaceGothicFrameLayer />
                 <FrameLayer />
                 {/* Over art (and empty art fill), under nameplate — all families including PKMN. */}
                 <SecondaryNameLayer />

@@ -14,7 +14,7 @@ import {
 import {
   isCardEffectivelyEmptyForGuidance,
 } from '../../authority/guidanceAuthority'
-import { isPkmnLayout } from '../../authority/layoutTaxonomy'
+import { isPkmnLayout, isSpaceGothicLayout } from '../../authority/layoutTaxonomy'
 import { useCardStore } from '../../store/useCardStore'
 import SidebarLeft from './SidebarLeft'
 import SidebarRight from './SidebarRight'
@@ -47,8 +47,10 @@ function StudioInspector({
   onOpenPrint,
   onSegmentChange,
 }: Props) {
-  const isPkmn = useCardStore((s) => isPkmnLayout(s.cardData.layout))
-  const visibleFlowSteps = isPkmn
+  const hideColorsStep = useCardStore(
+    (s) => isPkmnLayout(s.cardData.layout) || isSpaceGothicLayout(s.cardData.layout),
+  )
+  const visibleFlowSteps = hideColorsStep
     ? STUDIO_FLOW_STEPS.filter((s) => s.id !== 'colors')
     : STUDIO_FLOW_STEPS
   const cardEmpty = useCardStore((s) => {
@@ -163,13 +165,13 @@ function StudioInspector({
     [onSegmentChange],
   )
 
-  // PKMN has no Colors pill — leave the Colors step if the family switched under us.
+  // PKMN / Space Gothic have no Colors pill — leave Colors if the family switched under us.
   useEffect(() => {
-    if (!isPkmn) return
+    if (!hideColorsStep) return
     if (preferredStepId !== 'colors' && currentStep.id !== 'colors') return
     const frameStep = STUDIO_FLOW_STEPS.find((s) => s.id === 'frame')
     if (frameStep) goStep(frameStep)
-  }, [isPkmn, preferredStepId, currentStep.id, goStep])
+  }, [hideColorsStep, preferredStepId, currentStep.id, goStep])
 
   const detailsShowLeft = FLOW_STEP_LEFT_SECTIONS[currentStep.id]?.length > 0
   const detailsShowRight = FLOW_STEP_RIGHT_SECTIONS[currentStep.id]?.length > 0

@@ -489,7 +489,9 @@ const activeLayoutCapabilities = useMemo(
   </CollapsibleSection>
   ) : null}
 
-  {showSection('identity') && activeLayout.family !== 'pkmn' ? (
+  {showSection('identity') &&
+  activeLayout.family !== 'pkmn' &&
+  activeLayout.family !== 'space-gothic' ? (
   <CollapsibleSection
     title="Colors"
     icon={<Wand2 className="h-4 w-4" />}

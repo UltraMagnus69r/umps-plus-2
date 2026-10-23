@@ -98,7 +98,8 @@ export function shouldShowPowerToughnessCoreBlock(input: ProgressiveDisclosureSi
   return (
     (input.layoutFamily === 'standard' ||
       input.layoutFamily === 'prepared' ||
-      input.layoutFamily === 'pkmn') &&
+      input.layoutFamily === 'pkmn' ||
+      input.layoutFamily === 'space-gothic') &&
     shouldShowExpandedCoreCardInputs(input.capabilities)
   )
 }
