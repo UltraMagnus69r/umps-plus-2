@@ -678,13 +678,20 @@ function buildScryfallImportMappedUpdate(
 ): SystemCardDataUpdate {
   const out = { ...mapped }
   const pwExtras = buildScryfallPlaneswalkerExtras(data)
+  const isBattle = normalizeLayout(data.inferred_layout).family === 'battle'
+  const hasBackFacePT =
+    String(out.power ?? mapped.power ?? '').trim() !== '' &&
+    String(out.toughness ?? mapped.toughness ?? '').trim() !== ''
   if (pwExtras) {
     out.power = ''
     out.toughness = ''
     out.showPowerToughness = false
   } else if (!scryfallTypeLineSupportsPT(data.type_line)) {
-    out.power = ''
-    out.toughness = ''
+    // Battle keeps transformed-face P/T for the MotM back-face cue; no P/T box.
+    if (!(isBattle && hasBackFacePT)) {
+      out.power = ''
+      out.toughness = ''
+    }
     out.showPowerToughness = false
   } else {
     out.showPowerToughness = true
@@ -2190,16 +2197,11 @@ colorBlendDirection: 'vertical',
           const png = String(data.png_uri ?? '').trim()
           if (!png) throw new Error('Selected print has no cloneable PNG image')
 
-          const mapped: SystemCardDataUpdate = { ...scryfallFieldsToSystemUpdate(data) }
+          const mapped: SystemCardDataUpdate = {
+            ...buildScryfallImportMappedUpdate(data, scryfallFieldsToSystemUpdate(data)),
+          }
           // Full-card PNG is the clone overlay; do not replace editor art with art crop (import path does).
           delete mapped.artImage
-          if (!scryfallTypeLineSupportsPT(data.type_line)) {
-            mapped.power = ''
-            mapped.toughness = ''
-            mapped.showPowerToughness = false
-          } else {
-            mapped.showPowerToughness = true
-          }
           if (!isLatestScryfallContentAction(actionToken)) return
           get().setLayout(data.inferred_layout)
           set((state) => ({

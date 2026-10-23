@@ -1,10 +1,10 @@
 /**
- * Battle / Siege — landscape stack face (wider than tall).
- * Ground truth: MotM Invasion of Ikoria (Scryfall MOM/190) left-edge crops —
- * fidelity-battle/ikoria-official-left.png (+ -2).
- * Art cover-fills top/right/bottom to the black outer edge (no dark-grey mats),
- * but insets from the left so a black outer-border strip remains for vertical
- * collector text (no identity-green mat); hologram straddles that strip / art edge.
+ * Battle / Siege — landscape MotM stack face (wider than tall).
+ * Ground truth: Invasion of Zendikar (MOM #194) measured landscape play —
+ * Project face-spec + media/battle-zendikar-compare/zendikar-measurements.json.
+ * Same MotM stack family as Ikoria; seats are Zendikar-measured (not a
+ * left-name / right-column FACE). Art left-insets for the collector strip;
+ * hologram / MotM left-seam stamp is optional chrome (absent on Uncommon Zendikar).
  */
 import { BLEED_PX, INNER_BORDER_CORNER_RADIUS_MODERN } from './geometryAuthority'
 import type { LayoutId } from './layoutTaxonomy'
@@ -33,109 +33,43 @@ function n(rect: { x: number; y: number; w: number; h: number }): BattleStageRec
   }
 }
 
-/** Slight right widen so plates reach the right content edge. */
-const WIDEN_RIGHT = 24 / BATTLE_TRIM_WIDTH
-
 /**
- * Plate/rules seating (overlays on art). Art left edge aligns with CONTENT_X
- * so the MotM black collector strip shows; top/right/bottom stay flush
- * to the black outer edge (no dark-grey / identity-green mats on those sides).
- * Art/collector/holo stay at CONTENT_X (83 after #50). Plates inset from art
- * left (−50) so chrome boxes sit clear of the black strip; rules also −15
- * from the right. Name top / rules bottom flush with art box.
- */
-const CONTENT_X = 83 / 2100
-/** Full content span used for art-aligned right edge before plate insets. */
-const CONTENT_W = 1955 / 2100 + WIDEN_RIGHT
-/** Name / type shortened 50 trim-px from the left (left edges move right). */
-const PLATE_INSET_LEFT = 50 / 2100
-const PLATE_X = CONTENT_X + PLATE_INSET_LEFT
-const PLATE_W = CONTENT_W - PLATE_INSET_LEFT
-/**
- * Rules: −50 with plates, then −20 more from left and −15−5 from right
- * (total −70 left / −20 right vs art-aligned content span).
- */
-const RULES_INSET_LEFT = PLATE_INSET_LEFT + 20 / 2100
-const RULES_INSET_RIGHT = 20 / 2100
-const RULES_X = CONTENT_X + RULES_INSET_LEFT
-const RULES_W = CONTENT_W - RULES_INSET_LEFT - RULES_INSET_RIGHT
-const PLATE_H = 92 / 1500
-/** Prior rules height before extending flush to art bottom. */
-const RULES_H_PRIOR = 528 / 1500
-const BOTTOM_PRIOR = 40 / 1500
-/** Nameplate top flush with art top (art y = 0). */
-const NAME_Y = 0
-/** Keep type/rules top seating; extend rules bottom flush with art bottom. */
-const RULES_Y = 1 - BOTTOM_PRIOR - RULES_H_PRIOR
-const RULES_BOTTOM = 1
-const RULES_H = RULES_BOTTOM - RULES_Y
-const TYPE_Y = RULES_Y - PLATE_H
-const RULES_RIGHT = RULES_X + RULES_W
-const DEFENSE_W = 138 / 2100
-const DEFENSE_H = 158 / 1500
-/** Transform mark — covers left end of name plate. */
-const TRANSFORM_SIZE = 108 / 2100
-const TRANSFORM_SIZE_Y = 108 / 1500
-/** MotM security stamp — straddles left frame strip / art edge. */
-const HOLO_W = 68 / 2100
-const HOLO_H = 110 / 1500
-
-/**
- * Landscape stack seating (trim-norm of 2100×1500).
- * Content reads upright; collector strip along the left edge is drawn rotated.
+ * Zendikar-measured MotM stack (trim px → norm of 2100×1500).
+ * Stage = trim + BLEED 75. See battle-zendikar-face-spec.md.
  */
 const FACE = {
-  /** Vertical collector / credit strip on the left black outer-border band. */
-  collector: { x: -3 / 2100, y: 56 / 1500, w: 72 / 2100, h: 1390 / 1500 },
-  /** Horizontal nameplate — drawn over art; left inset from art edge. */
-  name: { x: PLATE_X, y: NAME_Y, w: PLATE_W, h: PLATE_H },
-  /** DFC / transform mark covering the left end of the nameplate. */
-  transform: {
-    x: PLATE_X - 6 / 2100,
-    y: NAME_Y + PLATE_H / 2 - TRANSFORM_SIZE_Y / 2,
-    w: TRANSFORM_SIZE,
-    h: TRANSFORM_SIZE_Y,
-  },
-  /** Mana chips along the right of the nameplate. */
-  mana: {
-    x: PLATE_X + PLATE_W - 460 / 2100,
-    y: NAME_Y + (PLATE_H - 72 / 1500) / 2,
-    w: 440 / 2100,
-    h: 72 / 1500,
-  },
+  /** Left vertical collector / legal strip in the black outer border. */
+  collector: { x: 8 / 2100, y: 91 / 1500, w: 202 / 2100, h: 1319 / 1500 },
+  /** Horizontal nameplate — green chrome + fill. */
+  name: { x: 218 / 2100, y: 58 / 1500, w: 1823 / 2100, h: 141 / 1500 },
+  /** DFC / transform mark — circle + △ at left of name. */
+  transform: { x: 218 / 2100, y: 58 / 1500, w: 141 / 2100, h: 141 / 1500 },
+  /** Mana cluster at right of name. */
+  mana: { x: 1793 / 2100, y: 77 / 1500, w: 222 / 2100, h: 105 / 1500 },
   /**
-   * Left-only inset (MotM black collector strip). Top / right / bottom meet the
-   * black outer edge so no identity-green / dark-grey mat returns there.
+   * Art full cover under chrome (left inset clears collector; top/right/bottom
+   * match inner face). Visible hole between name bottom & type top is chrome.
    */
-  art: {
-    x: CONTENT_X,
-    y: 0,
-    w: 1 - CONTENT_X,
-    h: 1,
-  },
-  /** Type line — drawn over art; left inset matches nameplate. */
-  type: { x: PLATE_X, y: TYPE_Y, w: PLATE_W, h: PLATE_H },
-  setSymbol: {
-    x: PLATE_X + PLATE_W - 120 / 2100,
-    y: TYPE_Y + (PLATE_H - 68 / 1500) / 2,
-    w: 96 / 2100,
-    h: 68 / 1500,
-  },
-  /** Tan parchment rules — left −70 / right −20 vs prior content span. */
-  rules: { x: RULES_X, y: RULES_Y, w: RULES_W, h: RULES_H },
-  /** Defense shield centered on lower-right corner of rules (half in / half out). */
-  defense: {
-    x: RULES_RIGHT - DEFENSE_W / 2,
-    y: RULES_BOTTOM - DEFENSE_H / 2,
-    w: DEFENSE_W,
-    h: DEFENSE_H,
-  },
-  /** Security / hologram stamp — centered on art left edge (overlaps frame + art). */
+  art: { x: 218 / 2100, y: 58 / 1500, w: 1823 / 2100, h: 1383 / 1500 },
+  /** Type line — full-width plate over rules. */
+  type: { x: 218 / 2100, y: 866 / 1500, w: 1823 / 2100, h: 135 / 1500 },
+  /** Set symbol — right end of type. */
+  setSymbol: { x: 1934 / 2100, y: 882 / 1500, w: 91 / 2100, h: 101 / 1500 },
+  /** Rules outer box — tall translucent panel. */
+  rules: { x: 218 / 2100, y: 1001 / 1500, w: 1823 / 2100, h: 441 / 1500 },
+  /** Defense shield — spiked badge, bottom-right of rules / inner face. */
+  defense: { x: 1894 / 2100, y: 1319 / 1500, w: 133 / 2100, h: 133 / 1500 },
+  /** Back-face P/T cue (e.g. 4/4) — left of defense in rules. */
+  backFacePT: { x: 1787 / 2100, y: 1313 / 1500, w: 105 / 2100, h: 48 / 1500 },
+  /**
+   * Optional MotM security stamp — straddles art left seam.
+   * Not present on Uncommon Zendikar; keep for rare/mythic / toggle.
+   */
   hologram: {
-    x: CONTENT_X - HOLO_W / 2,
-    y: (NAME_Y + RULES_BOTTOM) / 2 - HOLO_H / 2,
-    w: HOLO_W,
-    h: HOLO_H,
+    x: 218 / 2100 - 68 / 2100 / 2,
+    y: 58 / 1500 + 1383 / 1500 / 2 - 110 / 1500 / 2,
+    w: 68 / 2100,
+    h: 110 / 1500,
   },
 } as const
 
@@ -154,10 +88,9 @@ export function getBattleStageSize(): { width: number; height: number } {
 }
 
 /**
- * Art aperture — left-inset MotM face (under name/type/rules/defense).
+ * Art aperture — Zendikar art_full under name/type/rules/defense.
  * Identical to {@link getBattleInnerBorderRect}. ArtLayer cover-fills + clips this;
- * chrome evenodd hole matches so the left strip stays black for collector
- * while top/right/bottom stay flush to the black outer edge.
+ * chrome evenodd hole matches so the left strip stays black for collector.
  */
 export function getBattleArtRect(): BattleStageRect {
   return getBattleInnerBorderRect()
@@ -166,7 +99,6 @@ export function getBattleArtRect(): BattleStageRect {
 /**
  * Art / chrome-hole aperture (stage px) — ArtLayer clip and chrome frame-ring hole
  * share this rect and the Battle corner radii (including left tangent extra).
- * Left edge = CONTENT_X; top/right/bottom = trim.
  */
 export function getBattleInnerBorderRect(): BattleStageRect {
   return n(FACE.art)
@@ -198,6 +130,11 @@ export function getBattleRulesRect(): BattleStageRect {
 
 export function getBattleDefenseRect(): BattleStageRect {
   return n(FACE.defense)
+}
+
+/** Back-face power/toughness cue seat (left of defense). */
+export function getBattleBackFacePTRect(): BattleStageRect {
+  return n(FACE.backFacePT)
 }
 
 export function getBattleCollectorRect(): BattleStageRect {
@@ -240,4 +177,12 @@ export const BATTLE_SIEGE_DEFAULT_REMINDER =
 
 export function normalizeBattleDefense(value: unknown): string {
   return String(value ?? '').trim()
+}
+
+/** Format back-face P/T cue when both sides are present (e.g. "4/4"). */
+export function formatBattleBackFacePT(power: unknown, toughness: unknown): string {
+  const p = String(power ?? '').trim()
+  const t = String(toughness ?? '').trim()
+  if (!p || !t) return ''
+  return `${p}/${t}`
 }

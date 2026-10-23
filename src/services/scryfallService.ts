@@ -87,6 +87,25 @@ function faceTypeLine(face: ScryfallCardFace | null | undefined): string {
 }
 
 /**
+ * Battle front has defense; transformed face often has P/T (e.g. Awakened Skyclave 4/4).
+ * Prefer a non-Battle sibling face with both power and toughness.
+ */
+function readBattleBackFacePT(
+  card: ScryfallRawCard,
+  importFace: ScryfallCardFace | null,
+): { power: string; toughness: string } | null {
+  const faces = Array.isArray(card.card_faces) ? card.card_faces : []
+  for (const face of faces) {
+    if (face === importFace) continue
+    if (/\bBattle\b/i.test(faceTypeLine(face))) continue
+    const power = face.power != null ? String(toStr(face.power) ?? '').trim() : ''
+    const toughness = face.toughness != null ? String(toStr(face.toughness) ?? '').trim() : ''
+    if (power && toughness) return { power, toughness }
+  }
+  return null
+}
+
+/**
  * Prefer the face that matches the inferred PipMint layout (Saga Creature back,
  * Saga/Class face, etc.). Falls back to the first face with oracle text.
  */
@@ -254,6 +273,16 @@ function mapRawCardToFields(card: ScryfallRawCard): ScryfallCardFields {
   })
   const faceInferred = inferScryfallLayoutId(faceHints)
   const imageUris = readPrimaryImageUris(card, face)
+  const facePower =
+    (face?.power != null ? toStr(face.power) : null) ??
+    (card.power != null ? toStr(card.power) : null)
+  const faceToughness =
+    (face?.toughness != null ? toStr(face.toughness) : null) ??
+    (card.toughness != null ? toStr(card.toughness) : null)
+  const battleBackPT =
+    faceInferred.family === 'battle' && (!facePower || !faceToughness)
+      ? readBattleBackFacePT(card, face)
+      : null
   return {
     id: card.id != null ? toStr(card.id) : null,
     name: faceName ?? toStr(card.name),
@@ -270,12 +299,8 @@ function mapRawCardToFields(card: ScryfallRawCard): ScryfallCardFields {
     loyalty:
       (face?.loyalty != null ? toStr(face.loyalty) : null) ??
       (card.loyalty != null ? toStr(card.loyalty) : null),
-    power:
-      (face?.power != null ? toStr(face.power) : null) ??
-      (card.power != null ? toStr(card.power) : null),
-    toughness:
-      (face?.toughness != null ? toStr(face.toughness) : null) ??
-      (card.toughness != null ? toStr(card.toughness) : null),
+    power: facePower ?? battleBackPT?.power ?? null,
+    toughness: faceToughness ?? battleBackPT?.toughness ?? null,
     defense:
       (face?.defense != null ? toStr(face.defense) : null) ??
       (card.defense != null ? toStr(card.defense) : null),
