@@ -63,19 +63,34 @@ function n(rect: { x: number; y: number; w: number; h: number }): BattleStageRec
  * Side-column FACE — native user-ref seats mapped to 1500×2100 (anisotropy ≈ 0.995).
  * Stage = trim + BLEED 75. Art = Modern inner-border + BATTLE_ART_BOTTOM_EXTEND_PX
  * toward portrait bottom (Studio +90° CW → presentation left).
- * Plates (name / type / rules) nudged +20px toward that same edge.
- * See battle-zendikar-remeasure-next-edits.md.
+ * Plates: prior +20px toward that edge, then shortened 20px from the same edge
+ * (presentation-left moves right; portrait bottom edge moves up).
+ * Art bottom aligned to user red-line target (annotation → stage Y ≈ 2068).
  */
 /** Nudge plates toward portrait bottom (= presentation left under +90° CW). */
 const PLATE_TOWARD_BOTTOM_PX = 20
-/** Grow art aperture toward portrait bottom (additive on that edge only). */
-export const BATTLE_ART_BOTTOM_EXTEND_PX = 100
+/**
+ * Shorten name / type / rules from portrait bottom (= presentation left):
+ * height −20 with top y unchanged — left edges of the landscape bars move right 20px.
+ */
+const PLATE_SHORTEN_FROM_BOTTOM_PX = 20
+const PLATE_HEIGHT_PX = 1873 - PLATE_SHORTEN_FROM_BOTTOM_PX
+/**
+ * Grow art aperture toward portrait bottom (additive on that edge only).
+ * 106 = red-line X in user-red-line-art-target.png → stage Y 2068 (inner 1840 + 106).
+ */
+export const BATTLE_ART_BOTTOM_EXTEND_PX = 106
 
 const FACE = {
   /** Bottom horizontal collector / legal band. */
   collector: { x: 58 / 1500, y: 1932 / 2100, w: 1384 / 1500, h: 166 / 2100 },
   /** Tall left name plate. */
-  name: { x: 58 / 1500, y: (58 + PLATE_TOWARD_BOTTOM_PX) / 2100, w: 141 / 1500, h: 1873 / 2100 },
+  name: {
+    x: 58 / 1500,
+    y: (58 + PLATE_TOWARD_BOTTOM_PX) / 2100,
+    w: 141 / 1500,
+    h: PLATE_HEIGHT_PX / 2100,
+  },
   /**
    * Mana cluster — top of name strip.
    * Pips rotate −90° with name (cost order reads bottom→top toward the crown).
@@ -87,7 +102,7 @@ const FACE = {
    */
   transform: {
     x: 80 / 1500,
-    y: (1835 + PLATE_TOWARD_BOTTOM_PX) / 2100,
+    y: (1835 + PLATE_TOWARD_BOTTOM_PX - PLATE_SHORTEN_FROM_BOTTOM_PX) / 2100,
     w: 96 / 1500,
     h: 96 / 2100,
   },
@@ -97,7 +112,12 @@ const FACE = {
    */
   artColumn: { x: 201 / 1500, y: 58 / 2100, w: 656 / 1500, h: 1873 / 2100 },
   /** Narrow type column left of rules. */
-  type: { x: 857 / 1500, y: (58 + PLATE_TOWARD_BOTTOM_PX) / 2100, w: 145 / 1500, h: 1873 / 2100 },
+  type: {
+    x: 857 / 1500,
+    y: (58 + PLATE_TOWARD_BOTTOM_PX) / 2100,
+    w: 145 / 1500,
+    h: PLATE_HEIGHT_PX / 2100,
+  },
   /** Set symbol — near top of type column. */
   setSymbol: {
     x: 893 / 1500,
@@ -106,7 +126,12 @@ const FACE = {
     h: 94 / 2100,
   },
   /** Far-right rules column. */
-  rules: { x: 1002 / 1500, y: (58 + PLATE_TOWARD_BOTTOM_PX) / 2100, w: 442 / 1500, h: 1873 / 2100 },
+  rules: {
+    x: 1002 / 1500,
+    y: (58 + PLATE_TOWARD_BOTTOM_PX) / 2100,
+    w: 442 / 1500,
+    h: PLATE_HEIGHT_PX / 2100,
+  },
   /** Defense shield — top-right of rules (−90° with side-column text). */
   defense: {
     x: 1320 / 1500,
