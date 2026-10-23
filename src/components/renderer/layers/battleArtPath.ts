@@ -3,8 +3,8 @@
  * BattleChromeLayer punch so art fills the Modern inner-face rect under chrome.
  */
 import {
+  getBattleArtRect,
   getBattleInnerBorderCornerRadii,
-  getBattleInnerBorderRect,
   getBattleTrimCornerRadii,
 } from '../../../authority/battleLayoutAuthority'
 
@@ -52,10 +52,10 @@ export function addBattleTrimPath(
   addBattleRoundRectPath(ctx, x, y, w, h, getBattleTrimCornerRadii(), 0)
 }
 
-/** Inner-border / art aperture path in stage px (Modern inner face). */
+/** Art aperture path in stage px (Modern inner + portrait-bottom extend). */
 export function addBattleArtInnerClipPath(ctx: CanvasRenderingContext2D): void {
-  const border = getBattleInnerBorderRect()
-  addBattleArtInnerClipPathForRect(ctx, border.x, border.y, border.width, border.height)
+  const art = getBattleArtRect()
+  addBattleArtInnerClipPathForRect(ctx, art.x, art.y, art.width, art.height)
 }
 
 /** Same path with explicit bounds (chrome punch / tests). */

@@ -1,7 +1,7 @@
 /**
  * Battle / Siege — portrait side-column face (Standard 1500×2100 trim).
  * Studio GT: Invasion of Zendikar as the user-attached portrait reference —
- * name left vertical, art = exact Modern inner-border, type mid-right, rules far-right,
+ * name left vertical, art = Modern inner-border + bottom extend, type mid-right, rules far-right,
  * collector bottom. Plates overlay (solid white / black stroke by default).
  * Studio preview rotates +90° (CW) for landscape readability; export stays portrait.
  * MotM landscape stack is legacy / play-rotated cousin only (not the data model).
@@ -61,39 +61,66 @@ function n(rect: { x: number; y: number; w: number; h: number }): BattleStageRec
 
 /**
  * Side-column FACE — native user-ref seats mapped to 1500×2100 (anisotropy ≈ 0.995).
- * Stage = trim + BLEED 75. Art aperture is Modern inner-border (not FACE.art column).
+ * Stage = trim + BLEED 75. Art = Modern inner-border + BATTLE_ART_BOTTOM_EXTEND_PX
+ * toward portrait bottom (Studio +90° CW → presentation left).
+ * Plates (name / type / rules) nudged +20px toward that same edge.
  * See battle-zendikar-remeasure-next-edits.md.
  */
+/** Nudge plates toward portrait bottom (= presentation left under +90° CW). */
+const PLATE_TOWARD_BOTTOM_PX = 20
+/** Grow art aperture toward portrait bottom (additive on that edge only). */
+export const BATTLE_ART_BOTTOM_EXTEND_PX = 100
+
 const FACE = {
   /** Bottom horizontal collector / legal band. */
   collector: { x: 58 / 1500, y: 1932 / 2100, w: 1384 / 1500, h: 166 / 2100 },
   /** Tall left name plate. */
-  name: { x: 58 / 1500, y: 58 / 2100, w: 141 / 1500, h: 1873 / 2100 },
+  name: { x: 58 / 1500, y: (58 + PLATE_TOWARD_BOTTOM_PX) / 2100, w: 141 / 1500, h: 1873 / 2100 },
   /**
    * Mana cluster — top of name strip.
    * Pips rotate −90° with name (cost order reads bottom→top toward the crown).
    */
-  mana: { x: 71 / 1500, y: 80 / 2100, w: 116 / 1500, h: 160 / 2100 },
+  mana: { x: 71 / 1500, y: (80 + PLATE_TOWARD_BOTTOM_PX) / 2100, w: 116 / 1500, h: 160 / 2100 },
   /**
    * DFC / transform — bottom of name strip, clear of title glyphs.
    * Seat sits in the plate footer so name run ends above this badge.
    */
-  transform: { x: 80 / 1500, y: 1835 / 2100, w: 96 / 1500, h: 96 / 2100 },
+  transform: {
+    x: 80 / 1500,
+    y: (1835 + PLATE_TOWARD_BOTTOM_PX) / 2100,
+    w: 96 / 1500,
+    h: 96 / 2100,
+  },
   /**
    * Legacy center-column measure (chrome gap only) — art no longer clips to this.
-   * Kept for MotM cross-check / docs; getBattleArtRect uses Modern inner face.
+   * Kept for MotM cross-check / docs; getBattleArtRect uses Modern inner + bottom extend.
    */
   artColumn: { x: 201 / 1500, y: 58 / 2100, w: 656 / 1500, h: 1873 / 2100 },
   /** Narrow type column left of rules. */
-  type: { x: 857 / 1500, y: 58 / 2100, w: 145 / 1500, h: 1873 / 2100 },
+  type: { x: 857 / 1500, y: (58 + PLATE_TOWARD_BOTTOM_PX) / 2100, w: 145 / 1500, h: 1873 / 2100 },
   /** Set symbol — near top of type column. */
-  setSymbol: { x: 893 / 1500, y: 76 / 2100, w: 94 / 1500, h: 94 / 2100 },
+  setSymbol: {
+    x: 893 / 1500,
+    y: (76 + PLATE_TOWARD_BOTTOM_PX) / 2100,
+    w: 94 / 1500,
+    h: 94 / 2100,
+  },
   /** Far-right rules column. */
-  rules: { x: 1002 / 1500, y: 58 / 2100, w: 442 / 1500, h: 1873 / 2100 },
+  rules: { x: 1002 / 1500, y: (58 + PLATE_TOWARD_BOTTOM_PX) / 2100, w: 442 / 1500, h: 1873 / 2100 },
   /** Defense shield — top-right of rules (−90° with side-column text). */
-  defense: { x: 1320 / 1500, y: 70 / 2100, w: 120 / 1500, h: 120 / 2100 },
+  defense: {
+    x: 1320 / 1500,
+    y: (70 + PLATE_TOWARD_BOTTOM_PX) / 2100,
+    w: 120 / 1500,
+    h: 120 / 2100,
+  },
   /** Back-face P/T cue — beside defense inside rules (−90°). */
-  backFacePT: { x: 1220 / 1500, y: 78 / 2100, w: 90 / 1500, h: 110 / 2100 },
+  backFacePT: {
+    x: 1220 / 1500,
+    y: (78 + PLATE_TOWARD_BOTTOM_PX) / 2100,
+    w: 90 / 1500,
+    h: 110 / 2100,
+  },
   /**
    * Optional MotM security stamp — mid-height on art under type seam.
    * Not present on Uncommon Zendikar; keep for rare/mythic / toggle.
@@ -133,18 +160,9 @@ export function getBattleStageSize(): { width: number; height: number } {
 }
 
 /**
- * Art aperture — EXACT Standard Modern inner-border rect (seat + size + corners).
- * ArtLayer cover-fills + clips this; chrome evenodd hole matches; plates overlay.
- * No taller inset that leaves a grey mat inside the Modern frame line.
+ * Exact Standard Modern inner-border (seat + size) before Battle bottom extend.
  */
-export function getBattleArtRect(): BattleStageRect {
-  return getBattleInnerBorderRect()
-}
-
-/**
- * Art / chrome-hole aperture (stage px) — identical to Modern inner-border.
- */
-export function getBattleInnerBorderRect(): BattleStageRect {
+export function getBattleModernInnerBorderRect(): BattleStageRect {
   const g = getStandardLayoutGeometry()
   return {
     x: g.innerX,
@@ -152,6 +170,28 @@ export function getBattleInnerBorderRect(): BattleStageRect {
     width: g.innerW,
     height: g.innerH,
   }
+}
+
+/**
+ * Art aperture — Modern inner-border + BATTLE_ART_BOTTOM_EXTEND_PX toward portrait
+ * bottom (presentation left under Studio +90° CW). Top/left/right unchanged.
+ * ArtLayer cover-fills + clips this; chrome evenodd hole matches; plates overlay.
+ */
+export function getBattleArtRect(): BattleStageRect {
+  const r = getBattleModernInnerBorderRect()
+  return {
+    x: r.x,
+    y: r.y,
+    width: r.width,
+    height: r.height + BATTLE_ART_BOTTOM_EXTEND_PX,
+  }
+}
+
+/**
+ * Art / chrome-hole aperture (stage px) — same as getBattleArtRect.
+ */
+export function getBattleInnerBorderRect(): BattleStageRect {
+  return getBattleArtRect()
 }
 
 /** True when Studio should present Battle rotated for readability (not export). */
