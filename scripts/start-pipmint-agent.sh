@@ -1,8 +1,16 @@
 #!/usr/bin/env bash
-# PipMint / UMPS+2 ONLY — update repo, start agent worker + Vite, open Cursor + Edge.
+# PipMint / UMPS+2 ONLY — start agent worker, update repo, Vite, open Cursor + default browser.
 #
 # Does NOT touch FilmCraft, speededitor-filmcraft, or any other directory.
 # Does NOT open a sticky terminal window (Terminal=false from the .desktop).
+#
+# Double-click order:
+#   1. Start UMPS Cursor agent worker (background; AlreadyRunning = OK)
+#   2. git pull --ff-only (safe; never hard-reset a dirty tree)
+#   3. npm install if needed, then Vite on 127.0.0.1:5173
+#   4. Verify HTTP 200 on Vite
+#   5. Open http://localhost:5173/ in the default browser (xdg-open)
+#   6. Open Cursor into the UMPS checkout
 #
 # Override with env:
 #   UMPS_DIR=/path/to/UMPS
@@ -58,6 +66,7 @@ AGENT_BIN_DEFAULT="${HOME}/.local/bin/agent"
 VITE_HOST="127.0.0.1"
 VITE_PORT="5173"
 VITE_URL="http://${VITE_HOST}:${VITE_PORT}/"
+BROWSER_URL="http://localhost:${VITE_PORT}/"
 
 # Worker display name: Bazzite checkout → bazzite; else hostname (laptop-safe).
 resolve_worker_name() {
@@ -151,21 +160,30 @@ find_edge() {
   return 1
 }
 
-open_edge() {
+# Prefer the session default browser (xdg-open). Edge only if xdg-open is missing.
+open_default_browser() {
   local url="$1"
-  local edge
-  if ! edge="$(find_edge)"; then
-    echo "Edge not found; opening URL with xdg-open: $url"
+  if command -v xdg-open >/dev/null 2>&1; then
+    echo "Opening default browser via xdg-open: $url"
     nohup xdg-open "$url" >/dev/null 2>&1 &
     disown || true
     return 0
   fi
-  if [[ "$edge" == flatpak:com.microsoft.Edge ]]; then
-    nohup flatpak run --branch=stable --arch=x86_64 --command=/app/bin/edge com.microsoft.Edge --new-window "$url" >/dev/null 2>&1 &
-  else
-    nohup "$edge" --new-window "$url" >/dev/null 2>&1 &
+
+  local edge
+  if edge="$(find_edge)"; then
+    echo "xdg-open missing; falling back to Edge: $url"
+    if [[ "$edge" == flatpak:com.microsoft.Edge ]]; then
+      nohup flatpak run --branch=stable --arch=x86_64 --command=/app/bin/edge com.microsoft.Edge --new-window "$url" >/dev/null 2>&1 &
+    else
+      nohup "$edge" --new-window "$url" >/dev/null 2>&1 &
+    fi
+    disown || true
+    return 0
   fi
-  disown || true
+
+  error_message "No browser opener found (xdg-open / Edge) for $url"
+  return 1
 }
 
 worker_pid_alive() {
@@ -286,8 +304,11 @@ start_worker_background() {
   return 1
 }
 
-vite_is_up() {
-  curl -sf -o /dev/null --connect-timeout 1 --max-time 2 "$VITE_URL" 2>/dev/null
+# True when Vite answers HTTP 200 (required before opening the browser).
+vite_http_200() {
+  local code
+  code="$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 1 --max-time 2 "$VITE_URL" 2>/dev/null || echo 000)"
+  [[ "$code" == "200" ]]
 }
 
 port_in_use() {
@@ -300,38 +321,39 @@ port_in_use() {
 }
 
 start_vite_background() {
-  if vite_is_up || port_in_use "$VITE_PORT"; then
-    echo "Vite already serving on ${VITE_HOST}:${VITE_PORT}; reusing."
+  if vite_http_200; then
+    echo "Vite already serving HTTP 200 on ${VITE_HOST}:${VITE_PORT}; reusing."
     return 0
   fi
 
-  echo "===== $(date -Iseconds) starting Vite ${VITE_HOST}:${VITE_PORT} =====" >>"$VITE_LOG"
-  (
-    cd "$UMPS_DIR" || exit 1
-    # Ensure Homebrew npm/node (PATH already set above).
-    exec setsid -f npm run dev -- --host "$VITE_HOST" --port "$VITE_PORT" >>"$VITE_LOG" 2>&1
-  ) &
-  echo $! >"$VITE_PID_FILE" || true
+  if port_in_use "$VITE_PORT" && ! vite_http_200; then
+    echo "Port $VITE_PORT is in use but not yet returning 200; waiting…"
+  else
+    echo "===== $(date -Iseconds) starting Vite ${VITE_HOST}:${VITE_PORT} =====" >>"$VITE_LOG"
+    (
+      cd "$UMPS_DIR" || exit 1
+      # Ensure Homebrew npm/node (PATH already set above).
+      exec setsid -f npm run dev -- --host "$VITE_HOST" --port "$VITE_PORT" >>"$VITE_LOG" 2>&1
+    ) &
+    echo $! >"$VITE_PID_FILE" || true
+  fi
 
   local i
   for ((i = 0; i < 60; i++)); do
-    if vite_is_up; then
-      echo "Vite is up at $VITE_URL"
+    if vite_http_200; then
+      echo "Vite is up with HTTP 200 at $VITE_URL"
       return 0
     fi
     sleep 0.5
   done
 
-  if port_in_use "$VITE_PORT"; then
-    echo "Port $VITE_PORT is listening (Vite may still be warming)."
-    return 0
-  fi
-
-  error_message "Vite did not become ready on $VITE_URL — see $VITE_LOG"
+  error_message "Vite did not return HTTP 200 on $VITE_URL — see $VITE_LOG"
   return 1
 }
 
+# Sets GIT_PULL_TOUCHED_DEPS=1 when package.json / package-lock.json moved forward.
 safe_git_update() {
+  GIT_PULL_TOUCHED_DEPS=0
   if [[ "${PIPMINT_SKIP_GIT:-}" == "1" ]]; then
     echo "Skipping git update (PIPMINT_SKIP_GIT=1)."
     return 0
@@ -346,17 +368,40 @@ safe_git_update() {
   fi
 
   cd "$UMPS_DIR"
-  local branch
+  local branch before after upstream pull_ok=0
   branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)"
-  echo "git fetch + pull --ff-only origin $branch"
+  before="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
 
   if ! git fetch origin 2>&1; then
     echo "WARN: git fetch failed; continuing with existing tree."
     return 0
   fi
 
-  if git pull --ff-only "origin" "$branch" 2>&1; then
-    echo "git pull --ff-only succeeded."
+  # Prefer configured upstream; else origin/<branch> when that remote ref exists.
+  if upstream="$(git rev-parse --abbrev-ref '@{u}' 2>/dev/null)"; then
+    echo "git pull --ff-only (upstream $upstream)"
+    if git pull --ff-only 2>&1; then
+      pull_ok=1
+    fi
+  elif git rev-parse --verify "origin/$branch" >/dev/null 2>&1; then
+    echo "git pull --ff-only origin $branch"
+    if git pull --ff-only origin "$branch" 2>&1; then
+      pull_ok=1
+    fi
+  else
+    echo "WARN: no remote tracking ref for branch '$branch'; skipping pull (no reset)."
+    return 0
+  fi
+
+  if [[ "$pull_ok" == "1" ]]; then
+    after="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
+    echo "git pull --ff-only succeeded ($before → $after)."
+    if [[ "$before" != "$after" ]]; then
+      if git diff --name-only "$before" "$after" 2>/dev/null | grep -qE '^(package\.json|package-lock\.json)$'; then
+        GIT_PULL_TOUCHED_DEPS=1
+        echo "Dependency manifests changed after pull; npm install will run."
+      fi
+    fi
     return 0
   fi
 
@@ -367,11 +412,26 @@ safe_git_update() {
   return 0
 }
 
-run_npm_install() {
+need_npm_install() {
   if [[ "${PIPMINT_SKIP_NPM:-}" == "1" ]]; then
-    echo "Skipping npm install (PIPMINT_SKIP_NPM=1)."
+    return 1
+  fi
+  if [[ ! -d "$UMPS_DIR/node_modules" ]]; then
+    echo "node_modules missing — npm install needed."
     return 0
   fi
+  if [[ "${GIT_PULL_TOUCHED_DEPS:-0}" == "1" ]]; then
+    return 0
+  fi
+  # npm writes this after a successful install; missing = incomplete tree.
+  if [[ ! -f "$UMPS_DIR/node_modules/.package-lock.json" && -f "$UMPS_DIR/package-lock.json" ]]; then
+    echo "node_modules/.package-lock.json missing — npm install needed."
+    return 0
+  fi
+  return 1
+}
+
+run_npm_install() {
   if ! command -v npm >/dev/null 2>&1; then
     error_message "npm not found (expected Homebrew at /home/linuxbrew/.linuxbrew/bin)."
     return 1
@@ -391,9 +451,6 @@ if [[ ! -f "$UMPS_DIR/package.json" ]]; then
   exit 1
 fi
 
-safe_git_update
-run_npm_install || exit 1
-
 AGENT_BIN=""
 if ! AGENT_BIN="$(find_agent)"; then
   error_message "Cursor agent CLI not found. Install it, or ensure ~/.local/bin/agent is on PATH."
@@ -406,6 +463,7 @@ if ! CURSOR_BIN="$(find_cursor)"; then
   exit 1
 fi
 
+# 1) Agent worker first (AlreadyRunning = OK)
 EXISTING_PID=""
 if EXISTING_PID="$(find_existing_worker_pid)"; then
   info_message "UMPS agent worker already running (pid $EXISTING_PID)."
@@ -414,27 +472,47 @@ else
   start_worker_background "$AGENT_BIN" || exit 1
 fi
 
+# 2) Safe git pull
+safe_git_update
+
+# 3) npm install only when needed, then Vite
+if need_npm_install; then
+  run_npm_install || exit 1
+else
+  echo "Skipping npm install (deps already present / unchanged)."
+fi
+
 if [[ "${PIPMINT_SKIP_VITE:-}" != "1" ]]; then
-  start_vite_background || true
+  start_vite_background || exit 1
 else
   echo "Skipping Vite (PIPMINT_SKIP_VITE=1)."
 fi
 
-if [[ "${PIPMINT_SKIP_CURSOR:-}" != "1" ]]; then
-  nohup "$CURSOR_BIN" "$UMPS_DIR" >/dev/null 2>&1 &
-  disown || true
-fi
-
-if [[ "${PIPMINT_SKIP_BROWSER:-}" != "1" ]]; then
-  # Wait briefly if Vite is still coming up.
-  if ! vite_is_up; then
+# 4) Require HTTP 200 before browser / Cursor convenience opens
+if [[ "${PIPMINT_SKIP_VITE:-}" != "1" ]]; then
+  if ! vite_http_200; then
     local_i=0
     for ((local_i = 0; local_i < 20; local_i++)); do
-      vite_is_up && break
+      vite_http_200 && break
       sleep 0.25
     done
   fi
-  open_edge "$VITE_URL"
+  if ! vite_http_200; then
+    error_message "Vite is not returning HTTP 200 at $VITE_URL — not opening browser."
+    exit 1
+  fi
+  echo "Verified HTTP 200 at $VITE_URL"
+fi
+
+# 5) Default browser → localhost:5173
+if [[ "${PIPMINT_SKIP_BROWSER:-}" != "1" ]]; then
+  open_default_browser "$BROWSER_URL" || true
+fi
+
+# 6) Cursor into this checkout
+if [[ "${PIPMINT_SKIP_CURSOR:-}" != "1" ]]; then
+  nohup "$CURSOR_BIN" "$UMPS_DIR" >/dev/null 2>&1 &
+  disown || true
 fi
 
 echo "===== $(date -Iseconds) PipMint launcher done ====="

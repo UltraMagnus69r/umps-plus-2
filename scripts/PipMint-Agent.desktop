@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=PipMint Agent
+Comment=Start UMPS agent worker, git pull, Vite, then open Cursor + http://localhost:5173/ in the default browser
+Exec=/home/g/Desktop/UMPS/scripts/start-pipmint-agent.sh
+Icon=/home/g/.local/share/icons/pipmint-agent.png
+Path=/home/g/Desktop/UMPS
+Terminal=false
+Categories=Development;IDE;
+StartupNotify=true
+Keywords=UMPS;PipMint;Vite;Cursor;
