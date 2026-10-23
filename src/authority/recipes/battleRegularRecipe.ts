@@ -1,78 +1,28 @@
 /**
- * Battle / Siege — landscape stack face (name → art → type → upright rules).
- * Regions are trim-norm of 2100×1500; BattleChromeLayer + battleLayoutAuthority own seating.
+ * Battle / Siege — landscape MotM stack (name → art → type → upright rules).
+ * Regions mirror battleLayoutAuthority FACE (Invasion of Zendikar MOM #194 measure).
  */
 import type { LayoutRecipe } from './layoutRecipeTypes'
 import { M15_REGULAR_MANA_PIP_SIZE_PX } from './m15RegularCreatureRecipe'
 
 const CC_PIP_SIZE_FRAC = 71 / 1638
 
-const WIDEN_RIGHT = 24 / 2100
-const CONTENT_X = 83 / 2100
-const CONTENT_W = 1955 / 2100 + WIDEN_RIGHT
-const PLATE_INSET_LEFT = 50 / 2100
-const PLATE_X = CONTENT_X + PLATE_INSET_LEFT
-const PLATE_W = CONTENT_W - PLATE_INSET_LEFT
-const RULES_INSET_LEFT = PLATE_INSET_LEFT + 20 / 2100
-const RULES_INSET_RIGHT = 20 / 2100
-const RULES_X = CONTENT_X + RULES_INSET_LEFT
-const RULES_W = CONTENT_W - RULES_INSET_LEFT - RULES_INSET_RIGHT
-const PLATE_H = 92 / 1500
-const RULES_H_PRIOR = 528 / 1500
-const BOTTOM_PRIOR = 40 / 1500
-const NAME_Y = 0
-const RULES_Y = 1 - BOTTOM_PRIOR - RULES_H_PRIOR
-const RULES_BOTTOM = 1
-const RULES_H = RULES_BOTTOM - RULES_Y
-const TYPE_Y = RULES_Y - PLATE_H
-const RULES_RIGHT = RULES_X + RULES_W
-const DEFENSE_W = 138 / 2100
-const DEFENSE_H = 158 / 1500
-const TRANSFORM_SIZE = 108 / 2100
-const TRANSFORM_SIZE_Y = 108 / 1500
-
-const L_COLLECTOR = { x: -3 / 2100, y: 56 / 1500, w: 72 / 2100, h: 1390 / 1500 }
-const L_TITLE = { x: PLATE_X, y: NAME_Y, w: PLATE_W, h: PLATE_H }
-const L_MANA = {
-  x: PLATE_X + PLATE_W - 460 / 2100,
-  y: NAME_Y + (PLATE_H - 72 / 1500) / 2,
-  w: 440 / 2100,
-  h: 72 / 1500,
-}
-/** Match battleLayoutAuthority — left-only MotM collector inset; flush elsewhere. */
-const L_ART = {
-  x: CONTENT_X,
-  y: 0,
-  w: 1 - CONTENT_X,
-  h: 1,
-}
-const L_TYPE = { x: PLATE_X, y: TYPE_Y, w: PLATE_W, h: PLATE_H }
-const L_SET = {
-  x: PLATE_X + PLATE_W - 120 / 2100,
-  y: TYPE_Y + (PLATE_H - 68 / 1500) / 2,
-  w: 96 / 2100,
-  h: 68 / 1500,
-}
-const L_RULES = { x: RULES_X, y: RULES_Y, w: RULES_W, h: RULES_H }
-const L_DEFENSE = {
-  x: RULES_RIGHT - DEFENSE_W / 2,
-  y: RULES_BOTTOM - DEFENSE_H / 2,
-  w: DEFENSE_W,
-  h: DEFENSE_H,
-}
-const L_HOLO_W = 68 / 2100
-const L_HOLO_H = 110 / 1500
+/** Zendikar-measured MotM stack — trim-norm of 2100×1500 (face-spec). */
+const L_COLLECTOR = { x: 8 / 2100, y: 91 / 1500, w: 202 / 2100, h: 1319 / 1500 }
+const L_TITLE = { x: 218 / 2100, y: 58 / 1500, w: 1823 / 2100, h: 141 / 1500 }
+const L_MANA = { x: 1793 / 2100, y: 77 / 1500, w: 222 / 2100, h: 105 / 1500 }
+const L_ART = { x: 218 / 2100, y: 58 / 1500, w: 1823 / 2100, h: 1383 / 1500 }
+const L_TYPE = { x: 218 / 2100, y: 866 / 1500, w: 1823 / 2100, h: 135 / 1500 }
+const L_SET = { x: 1934 / 2100, y: 882 / 1500, w: 91 / 2100, h: 101 / 1500 }
+const L_RULES = { x: 218 / 2100, y: 1001 / 1500, w: 1823 / 2100, h: 441 / 1500 }
+const L_DEFENSE = { x: 1894 / 2100, y: 1319 / 1500, w: 133 / 2100, h: 133 / 1500 }
+const L_BACK_FACE_PT = { x: 1787 / 2100, y: 1313 / 1500, w: 105 / 2100, h: 48 / 1500 }
+const L_TRANSFORM = { x: 218 / 2100, y: 58 / 1500, w: 141 / 2100, h: 141 / 1500 }
 const L_HOLOGRAM = {
-  x: CONTENT_X - L_HOLO_W / 2,
-  y: (NAME_Y + RULES_BOTTOM) / 2 - L_HOLO_H / 2,
-  w: L_HOLO_W,
-  h: L_HOLO_H,
-}
-const L_TRANSFORM = {
-  x: PLATE_X - 6 / 2100,
-  y: NAME_Y + PLATE_H / 2 - TRANSFORM_SIZE_Y / 2,
-  w: TRANSFORM_SIZE,
-  h: TRANSFORM_SIZE_Y,
+  x: 218 / 2100 - 68 / 2100 / 2,
+  y: 58 / 1500 + 1383 / 1500 / 2 - 110 / 1500 / 2,
+  w: 68 / 2100,
+  h: 110 / 1500,
 }
 
 export const BATTLE_REGULAR_RECIPE: LayoutRecipe = {
@@ -111,6 +61,7 @@ export const BATTLE_REGULAR_RECIPE: LayoutRecipe = {
   },
   extensions: {
     defense: L_DEFENSE,
+    backFacePT: L_BACK_FACE_PT,
     collectorStrip: L_COLLECTOR,
     hologram: L_HOLOGRAM,
     transform: L_TRANSFORM,

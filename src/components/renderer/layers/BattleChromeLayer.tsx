@@ -11,7 +11,9 @@ import { Ellipse, Group, Image, Layer, Shape, Text } from 'react-konva'
 import { shallow } from 'zustand/shallow'
 import {
   BATTLE_SIEGE_DEFAULT_REMINDER,
+  formatBattleBackFacePT,
   getBattleArtRect,
+  getBattleBackFacePTRect,
   getBattleCollectorRect,
   getBattleDefenseRect,
   getBattleHologramRect,
@@ -146,6 +148,8 @@ function BattleChromeLayer() {
     typeTypography,
     rulesTypography,
     battleDefense,
+    power,
+    toughness,
     collectorNumber,
     setCode,
     language,
@@ -180,6 +184,8 @@ function BattleChromeLayer() {
       typeTypography: s.cardData.typeTypography as CardFieldTypography,
       rulesTypography: s.cardData.rulesTypography as CardFieldTypography,
       battleDefense: s.cardData.battleDefense,
+      power: s.cardData.power,
+      toughness: s.cardData.toughness,
       collectorNumber: s.cardData.collector_number,
       setCode: s.cardData.set,
       language: s.cardData.language,
@@ -350,6 +356,7 @@ function BattleChromeLayer() {
   const typeR = getBattleTypeRect()
   const rulesR = getBattleRulesRect()
   const defenseR = getBattleDefenseRect()
+  const backFacePTR = getBattleBackFacePTRect()
   const collectorR = getBattleCollectorRect()
   const artR = getBattleArtRect()
   const holoR = getBattleHologramRect()
@@ -358,6 +365,7 @@ function BattleChromeLayer() {
     getBattleLeftCornerHorizontalRadius() - cornerRadii[0]
 
   const defense = normalizeBattleDefense(battleDefense) || '0'
+  const backFacePT = formatBattleBackFacePT(power, toughness)
   const rulesBody = String(cardText ?? '').trim() || BATTLE_SIEGE_DEFAULT_REMINDER
   const typeLabel = String(typeLine ?? '').trim() || 'Battle — Siege'
   const nameLabel = String(name ?? '').trim() || 'Battle'
@@ -385,17 +393,20 @@ function BattleChromeLayer() {
     return { chunks, totalWidth }
   }, [manaCost, nameManaIconSize, measureTextWidth, nameFace.fontStack, nameFace.fontStyle])
 
-  const rulesPadX = 28
-  const rulesPadY = 22
-  const rulesInnerW = Math.max(8, rulesR.width - rulesPadX - 170)
-  const rulesInnerH = Math.max(8, rulesR.height - rulesPadY * 2)
+  /** Zendikar rules text insets (trim ≈ L36 R44 T30 B56); clear back-face P/T + defense. */
+  const rulesPadL = 36
+  const rulesPadT = 30
+  const rulesPadB = 56
+  const rulesPadR = Math.max(44, Math.round(rulesR.x + rulesR.width - backFacePTR.x + 8))
+  const rulesInnerW = Math.max(8, rulesR.width - rulesPadL - rulesPadR)
+  const rulesInnerH = Math.max(8, rulesR.height - rulesPadT - rulesPadB)
   const rulesLineHeight = Math.round(rulesFontSize * 1.2)
   const rulesItems = useMemo(
     () =>
       layoutRichTextItems({
         chunks: resolveChunks(rulesBody),
-        originX: rulesR.x + rulesPadX,
-        originY: rulesR.y + rulesPadY,
+        originX: rulesR.x + rulesPadL,
+        originY: rulesR.y + rulesPadT,
         maxWidth: rulesInnerW,
         maxHeight: rulesInnerH,
         fontSize: rulesFontSize,
@@ -410,6 +421,8 @@ function BattleChromeLayer() {
       rulesBody,
       rulesR.x,
       rulesR.y,
+      rulesPadL,
+      rulesPadT,
       rulesInnerW,
       rulesInnerH,
       rulesFontSize,
@@ -830,6 +843,24 @@ function BattleChromeLayer() {
             />
           ),
       )}
+
+      {/* Back-face P/T cue (e.g. 4/4) — left of defense when card has P/T */}
+      {backFacePT ? (
+        <Text
+          listening={false}
+          x={backFacePTR.x}
+          y={backFacePTR.y}
+          width={backFacePTR.width}
+          height={backFacePTR.height}
+          text={backFacePT}
+          fontFamily="Beleren, Georgia, serif"
+          fontStyle="bold"
+          fontSize={Math.max(18, Math.min(36, Math.round(backFacePTR.height * 0.85)))}
+          fill={rulesInk}
+          align="center"
+          verticalAlign="middle"
+        />
+      ) : null}
 
       {/* Spiky defense shield */}
       <Shape
