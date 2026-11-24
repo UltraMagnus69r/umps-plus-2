@@ -1,191 +1,69 @@
 /**
- * Battle / Siege — portrait side-column face (Standard 1500×2100 trim).
- * Studio GT: Invasion of Zendikar as the user-attached portrait reference —
- * name left vertical, art = Modern inner-border + bottom extend, type mid-right, rules far-right,
- * collector bottom. Plates overlay (solid white / black stroke by default).
- * Studio preview rotates +90° (CW) for landscape readability; export stays portrait.
- * MotM landscape stack is legacy / play-rotated cousin only (not the data model).
- * Seats: media/battle-zendikar-compare/remeasure-2026-10-23.json native → 1500×2100.
+ * Battle / Siege — geometry authority.
+ * Baseline = Modern Spell seating/chrome stack; art aperture = Modern inner border
+ * (same x/y/w/h + corner radii as TextureBorderLayer). No MotM / side-column.
  */
 import {
   BLEED_PX,
-  getStandardLayoutGeometry,
+  INNER_BORDER_CORNER_RADIUS_MODERN,
   TRIM_CORNER_RADIUS_PX,
+  getStandardLayoutGeometry,
 } from './geometryAuthority'
+import {
+  buildModernDummyStageRects,
+  getModernDummyManaStageRect,
+  MODERN_DUMMY_INNER_BORDER_EXTRA_HEIGHT_PX,
+} from './modernDummyLayoutAuthority'
 import type { LayoutId } from './layoutTaxonomy'
 import { isBattleLayout } from './layoutTaxonomy'
 
-/** Portrait trim — matches Standard card aspect (user ref 672×936, ~isotropic). */
+/** Portrait trim — matches Standard / Spell Modern (1500×2100). */
 export const BATTLE_TRIM_WIDTH = 1500
 export const BATTLE_TRIM_HEIGHT = 2100
 export const BATTLE_STAGE_WIDTH = BATTLE_TRIM_WIDTH + 2 * BLEED_PX // 1650
 export const BATTLE_STAGE_HEIGHT = BATTLE_TRIM_HEIGHT + 2 * BLEED_PX // 2250
 
-/** Outer trim corners — Standard card silhouette (not Modern inner radii). */
 export const BATTLE_TRIM_CORNER_RADII = [
   TRIM_CORNER_RADIUS_PX,
   TRIM_CORNER_RADIUS_PX,
   TRIM_CORNER_RADIUS_PX,
   TRIM_CORNER_RADIUS_PX,
 ] as const
-/**
- * Art / inner-face corners — uniform soften (Modern rect size/placement;
- * not Modern’s 175px PT bottoms, which scoop black into the side-column seats).
- */
-export const BATTLE_ART_CORNER_RADIUS_PX = 30
-export const BATTLE_ART_CORNER_RADII = [
-  BATTLE_ART_CORNER_RADIUS_PX,
-  BATTLE_ART_CORNER_RADIUS_PX,
-  BATTLE_ART_CORNER_RADIUS_PX,
-  BATTLE_ART_CORNER_RADIUS_PX,
-] as const
 
 /**
- * Studio preview only — rotate portrait side-column +90° (CW) so the left name
- * column reads as a top bar (MotM-like landscape presentation). Export/print stay
- * native portrait; see `battleStudioPresentationActive`.
+ * Art / inner-border corner radii — exact Modern inner-border language
+ * (TL/TR 30, BR/BL 175). Same array TextureBorderLayer uses via getInnerBorderCornerRadius.
  */
+export const BATTLE_ART_CORNER_RADII = INNER_BORDER_CORNER_RADIUS_MODERN
+export const BATTLE_ART_CORNER_RADIUS_PX = INNER_BORDER_CORNER_RADIUS_MODERN[0]
+
+/** @deprecated Presentation rotate retired with side-column chrome. */
 export const BATTLE_STUDIO_PRESENTATION_ROTATION_DEG = 90
+
+/** @deprecated MotM left-tangent hack — unused. */
+export const BATTLE_LEFT_CORNER_TANGENT_EXTRA_PX = 0
 
 export type BattleStageRect = { x: number; y: number; width: number; height: number }
 
-/** Portrait trim-norm (0–1 of 1500×2100) → stage px. */
-function n(rect: { x: number; y: number; w: number; h: number }): BattleStageRect {
-  return {
-    x: Math.round(rect.x * BATTLE_TRIM_WIDTH + BLEED_PX),
-    y: Math.round(rect.y * BATTLE_TRIM_HEIGHT + BLEED_PX),
-    width: Math.round(rect.w * BATTLE_TRIM_WIDTH),
-    height: Math.round(rect.h * BATTLE_TRIM_HEIGHT),
-  }
-}
-
 /**
- * Side-column FACE — native user-ref seats mapped to 1500×2100 (anisotropy ≈ 0.995).
- * Stage = trim + BLEED 75. Art = Modern inner-border + BATTLE_ART_BOTTOM_EXTEND_PX
- * toward portrait bottom (Studio +90° CW → presentation left).
- * Plates: prior +20px toward that edge, then shortened 20px from the same edge
- * (presentation-left moves right; portrait bottom edge moves up).
- * Art bottom aligned to user red-line target (annotation → stage Y ≈ 2068).
+ * Battle no longer owns a separate chrome layer — Studio uses the Modern Spell
+ * (modernDummy) stack. Kept for taxonomy callers; always false.
  */
-/** Nudge plates toward portrait bottom (= presentation left under +90° CW). */
-const PLATE_TOWARD_BOTTOM_PX = 20
-/**
- * Shorten name / type / rules from portrait bottom (= presentation left):
- * height −20 with top y unchanged — left edges of the landscape bars move right 20px.
- */
-const PLATE_SHORTEN_FROM_BOTTOM_PX = 20
-const PLATE_HEIGHT_PX = 1873 - PLATE_SHORTEN_FROM_BOTTOM_PX
-/**
- * Grow art aperture toward portrait bottom (additive on that edge only).
- * 106 = red-line X in user-red-line-art-target.png → stage Y 2068 (inner 1840 + 106).
- */
-export const BATTLE_ART_BOTTOM_EXTEND_PX = 106
-
-const FACE = {
-  /** Bottom horizontal collector / legal band. */
-  collector: { x: 58 / 1500, y: 1932 / 2100, w: 1384 / 1500, h: 166 / 2100 },
-  /** Tall left name plate. */
-  name: {
-    x: 58 / 1500,
-    y: (58 + PLATE_TOWARD_BOTTOM_PX) / 2100,
-    w: 141 / 1500,
-    h: PLATE_HEIGHT_PX / 2100,
-  },
-  /**
-   * Mana cluster — top of name strip.
-   * Pips rotate −90° with name (cost order reads bottom→top toward the crown).
-   */
-  mana: { x: 71 / 1500, y: (80 + PLATE_TOWARD_BOTTOM_PX) / 2100, w: 116 / 1500, h: 160 / 2100 },
-  /**
-   * DFC / transform — bottom of name strip, clear of title glyphs.
-   * Seat sits in the plate footer so name run ends above this badge.
-   */
-  transform: {
-    x: 80 / 1500,
-    y: (1835 + PLATE_TOWARD_BOTTOM_PX - PLATE_SHORTEN_FROM_BOTTOM_PX) / 2100,
-    w: 96 / 1500,
-    h: 96 / 2100,
-  },
-  /**
-   * Legacy center-column measure (chrome gap only) — art no longer clips to this.
-   * Kept for MotM cross-check / docs; getBattleArtRect uses Modern inner + bottom extend.
-   */
-  artColumn: { x: 201 / 1500, y: 58 / 2100, w: 656 / 1500, h: 1873 / 2100 },
-  /** Narrow type column left of rules. */
-  type: {
-    x: 857 / 1500,
-    y: (58 + PLATE_TOWARD_BOTTOM_PX) / 2100,
-    w: 145 / 1500,
-    h: PLATE_HEIGHT_PX / 2100,
-  },
-  /** Set symbol — near top of type column. */
-  setSymbol: {
-    x: 893 / 1500,
-    y: (76 + PLATE_TOWARD_BOTTOM_PX) / 2100,
-    w: 94 / 1500,
-    h: 94 / 2100,
-  },
-  /** Far-right rules column. */
-  rules: {
-    x: 1002 / 1500,
-    y: (58 + PLATE_TOWARD_BOTTOM_PX) / 2100,
-    w: 442 / 1500,
-    h: PLATE_HEIGHT_PX / 2100,
-  },
-  /** Defense shield — top-right of rules (−90° with side-column text). */
-  defense: {
-    x: 1320 / 1500,
-    y: (70 + PLATE_TOWARD_BOTTOM_PX) / 2100,
-    w: 120 / 1500,
-    h: 120 / 2100,
-  },
-  /** Back-face P/T cue — beside defense inside rules (−90°). */
-  backFacePT: {
-    x: 1220 / 1500,
-    y: (78 + PLATE_TOWARD_BOTTOM_PX) / 2100,
-    w: 90 / 1500,
-    h: 110 / 2100,
-  },
-  /**
-   * Optional MotM security stamp — mid-height on art under type seam.
-   * Not present on Uncommon Zendikar; keep for rare/mythic / toggle.
-   */
-  hologram: {
-    x: 201 / 1500 - 68 / 1500 / 2,
-    y: 58 / 2100 + 1873 / 2100 / 2 - 110 / 2100 / 2,
-    w: 68 / 1500,
-    h: 110 / 2100,
-  },
-} as const
-
-/*
- * Legacy MotM landscape FACE (2100×1500 play-rotated) — kept for reference only.
- * Not used as Studio default.
- *
- * collector: { x: 8/2100, y: 91/1500, w: 202/2100, h: 1319/1500 }
- * name: { x: 218/2100, y: 58/1500, w: 1823/2100, h: 141/1500 }
- * transform: { x: 218/2100, y: 58/1500, w: 141/2100, h: 141/1500 }
- * mana: { x: 1793/2100, y: 77/1500, w: 222/2100, h: 105/1500 }
- * art: { x: 218/2100, y: 58/1500, w: 1823/2100, h: 1383/1500 }
- * type: { x: 218/2100, y: 866/1500, w: 1823/2100, h: 135/1500 }
- * rules: { x: 218/2100, y: 1001/1500, w: 1823/2100, h: 441/1500 }
- * defense: { x: 1894/2100, y: 1319/1500, w: 133/2100, h: 133/1500 }
- * backFacePT: { x: 1787/2100, y: 1313/1500, w: 105/2100, h: 48/1500 }
- */
-
-/** @deprecated MotM left-tangent hack — unused on portrait side-column. */
-export const BATTLE_LEFT_CORNER_TANGENT_EXTRA_PX = 0
-
-export function layoutUsesBattleChrome(layout: Partial<LayoutId> | null | undefined): boolean {
-  return isBattleLayout(layout)
+export function layoutUsesBattleChrome(_layout: Partial<LayoutId> | null | undefined): boolean {
+  return false
 }
 
 export function getBattleStageSize(): { width: number; height: number } {
   return { width: BATTLE_STAGE_WIDTH, height: BATTLE_STAGE_HEIGHT }
 }
 
+function modern(): ReturnType<typeof buildModernDummyStageRects> {
+  return buildModernDummyStageRects()
+}
+
 /**
- * Exact Standard Modern inner-border (seat + size) before Battle bottom extend.
+ * Exact Modern / Spell inner-border stage rect (canonical geometry + modernDummy
+ * bottom extend). Matches TextureBorderLayer for modernDummy layouts.
  */
 export function getBattleModernInnerBorderRect(): BattleStageRect {
   const g = getStandardLayoutGeometry()
@@ -193,78 +71,84 @@ export function getBattleModernInnerBorderRect(): BattleStageRect {
     x: g.innerX,
     y: g.innerY,
     width: g.innerW,
-    height: g.innerH,
+    height: g.innerH + MODERN_DUMMY_INNER_BORDER_EXTRA_HEIGHT_PX,
   }
 }
 
-/**
- * Art aperture — Modern inner-border + BATTLE_ART_BOTTOM_EXTEND_PX toward portrait
- * bottom (presentation left under Studio +90° CW). Top/left/right unchanged.
- * ArtLayer cover-fills + clips this; chrome evenodd hole matches; plates overlay.
- */
+/** Art aperture — 100% of the Modern inner border (same seat + size). */
 export function getBattleArtRect(): BattleStageRect {
-  const r = getBattleModernInnerBorderRect()
-  return {
-    x: r.x,
-    y: r.y,
-    width: r.width,
-    height: r.height + BATTLE_ART_BOTTOM_EXTEND_PX,
-  }
+  return getBattleModernInnerBorderRect()
 }
 
-/**
- * Art / chrome-hole aperture (stage px) — same as getBattleArtRect.
- */
+/** Alias — art and inner-border aperture are the same rect. */
 export function getBattleInnerBorderRect(): BattleStageRect {
-  return getBattleArtRect()
+  return getBattleModernInnerBorderRect()
 }
 
-/** True when Studio should present Battle rotated for readability (not export). */
+/** @deprecated No separate Battle art bottom extend; inner border already includes modernDummy extend. */
+export const BATTLE_ART_BOTTOM_EXTEND_PX = 0
+
+/** Studio presentation rotate — permanently off (portrait Modern Spell baseline). */
 export function battleStudioPresentationActive(
-  layout: Partial<LayoutId> | null | undefined,
+  _layout: Partial<LayoutId> | null | undefined,
 ): boolean {
-  return isBattleLayout(layout)
+  return false
 }
 
 export function getBattleNameRect(): BattleStageRect {
-  return n(FACE.name)
+  return { ...modern().nameBar }
 }
 
 export function getBattleManaRect(): BattleStageRect {
-  return n(FACE.mana)
+  return { ...getModernDummyManaStageRect() }
 }
 
+/** No transform seat on Modern Spell baseline — empty rect at mana origin. */
 export function getBattleTransformRect(): BattleStageRect {
-  return n(FACE.transform)
+  const m = getModernDummyManaStageRect()
+  return { x: m.x, y: m.y, width: 0, height: 0 }
 }
 
 export function getBattleTypeRect(): BattleStageRect {
-  return n(FACE.type)
+  return { ...modern().typeLine }
 }
 
+/** Set symbol sits on the type line (same as Modern Spell contract path). */
 export function getBattleSetSymbolRect(): BattleStageRect {
-  return n(FACE.setSymbol)
+  const t = modern().typeLine
+  const size = Math.round(Math.min(t.height * 0.85, 94))
+  return {
+    x: Math.round(t.x + t.width - size - 8),
+    y: Math.round(t.y + (t.height - size) / 2),
+    width: size,
+    height: size,
+  }
 }
 
 export function getBattleRulesRect(): BattleStageRect {
-  return n(FACE.rules)
+  return { ...modern().rulesText }
 }
 
+/** Defense maps to Modern lower-right / P-T slot (unused while no P/T chrome). */
 export function getBattleDefenseRect(): BattleStageRect {
-  return n(FACE.defense)
+  return { ...modern().lowerRight }
 }
 
-/** Back-face power/toughness cue seat (beside defense). */
 export function getBattleBackFacePTRect(): BattleStageRect {
-  return n(FACE.backFacePT)
+  return { ...modern().lowerRight }
 }
 
 export function getBattleCollectorRect(): BattleStageRect {
-  return n(FACE.collector)
+  return {
+    x: Math.round(0.06 * BATTLE_TRIM_WIDTH + BLEED_PX),
+    y: Math.round(0.94 * BATTLE_TRIM_HEIGHT + BLEED_PX),
+    width: Math.round(0.88 * BATTLE_TRIM_WIDTH),
+    height: Math.round(0.05 * BATTLE_TRIM_HEIGHT),
+  }
 }
 
 export function getBattleHologramRect(): BattleStageRect {
-  return n(FACE.hologram)
+  return { x: 0, y: 0, width: 0, height: 0 }
 }
 
 export function getBattleTrimRect(): BattleStageRect {
@@ -276,22 +160,23 @@ export function getBattleTrimRect(): BattleStageRect {
   }
 }
 
-/** Outer trim corner radii (TL, TR, BR, BL) — Standard Modern. */
 export function getBattleTrimCornerRadii(): readonly [number, number, number, number] {
   return BATTLE_TRIM_CORNER_RADII
 }
 
-/** Art / inner-face corner radii — Standard Modern inner-border radii. */
 export function getBattleInnerBorderCornerRadii(): readonly [number, number, number, number] {
   return BATTLE_ART_CORNER_RADII
 }
 
-/** @deprecated No left-tangent extra on portrait; equals top art corner radius. */
 export function getBattleLeftCornerHorizontalRadius(): number {
   return BATTLE_ART_CORNER_RADIUS_PX
 }
 
-/** Default Siege reminder (Scryfall / oracle). */
+/** True when layout is Battle family (taxonomy only; chrome flag is separate). */
+export function isBattleFamilyLayout(layout: Partial<LayoutId> | null | undefined): boolean {
+  return isBattleLayout(layout)
+}
+
 export const BATTLE_SIEGE_DEFAULT_REMINDER =
   "(As a Siege enters, choose an opponent to protect it. You and others can attack it. When it's defeated, exile it, then cast it transformed.)"
 
@@ -299,7 +184,6 @@ export function normalizeBattleDefense(value: unknown): string {
   return String(value ?? '').trim()
 }
 
-/** Format back-face P/T cue when both sides are present (e.g. "4/4"). */
 export function formatBattleBackFacePT(power: unknown, toughness: unknown): string {
   const p = String(power ?? '').trim()
   const t = String(toughness ?? '').trim()

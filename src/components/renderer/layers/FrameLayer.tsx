@@ -14,6 +14,7 @@ import {
   proxyPanelsUseM15Style,
 } from '../../../authority/m15ProxyPanelStyleAuthority'
 import {
+  isBattleLayout,
   isBorderlessArtTreatmentLayout,
   isStaticPngFrameLayout,
   isPreModernLayout,
@@ -188,6 +189,11 @@ function FrameLayer() {
   const useContractArtChrome = supportsModernDummyLayout || supportsPreModernFaceLayout || supportsSagaClassChrome
   const borderlessLike = isBorderlessArtTreatmentLayout(activeLayout)
   const staticPngFrame = isStaticPngFrameLayout(activeLayout)
+  /**
+   * Battle: art fills the Modern inner-border aperture (ArtLayer). Skip the nested
+   * M15 art-window bevel so chrome/plates sit on that full window — no MotM path.
+   */
+  const battleInnerBorderArt = isBattleLayout(activeLayout)
   const preModernShiftY = isPreModernLayout(activeLayout) ? getPreModernLayoutVerticalShiftPx() : 0
   const artYEff = artY - preModernShiftY
   const typeYEff = typeY - preModernShiftY
@@ -435,7 +441,7 @@ function FrameLayer() {
           fill="#bfbfbf"
         />
       )}
-      {!borderlessLike && !staticPngFrame && (
+      {!borderlessLike && !staticPngFrame && !battleInnerBorderArt && (
         <Shape
           x={artFrameX}
           y={artFrameY}

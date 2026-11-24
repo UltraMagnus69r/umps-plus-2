@@ -34,7 +34,6 @@ import SpellTextBoxLayer from './layers/SpellTextBoxLayer'
 import PreModernRulesTextBoxLayer from './layers/PreModernRulesTextBoxLayer'
 import SagaClassChromeLayer from './layers/SagaClassChromeLayer'
 import PreparedChromeLayer from './layers/PreparedChromeLayer'
-import BattleChromeLayer from './layers/BattleChromeLayer'
 import TextIconsLayer from './layers/TextIconsLayer'
 import PlaneswalkerAbilitiesLayer from './layers/PlaneswalkerAbilitiesLayer'
 import SetSymbolLayer from './layers/SetSymbolLayer'
@@ -301,18 +300,12 @@ function KonvaStage({
         {/* Hidden + clone: printable proxy only (Module 4.1); editor overlays remain. */}
         {!hiddenCloneChrome && (
           <>
-            {layoutCaps.supportsBattleChrome ? (
-              <>
-                {/* Center-column art; side-column chrome on top; set symbol at type head. */}
-                <ArtLayer />
-                <BattleChromeLayer />
-                <SetSymbolLayer />
-              </>
-            ) : layoutCaps.printOnlyStaticFrame ? (
+            {layoutCaps.printOnlyStaticFrame ? (
               /** PKMN basic lands — print-as-is frame PNG only (no art/text/chrome overlays). */
               <PkmnFrameLayer />
             ) : (
               <>
+                {/* Battle uses this same Modern Spell stack (supportsBattleChrome is false). */}
                 <TextureBorderLayer />
                 <ArtLayer />
                 <PkmnFrameLayer />

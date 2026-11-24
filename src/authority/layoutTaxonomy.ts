@@ -341,6 +341,7 @@ export function isModernDummyLayout(layout: Partial<LayoutId> | null | undefined
     (normalized.family === 'standard' ||
       normalized.family === 'land' ||
       normalized.family === 'spell' ||
+      normalized.family === 'battle' ||
       normalized.family === 'prepared' ||
       normalized.family === 'planeswalker') &&
     (normalized.variant === 'modern' ||
@@ -351,7 +352,7 @@ export function isModernDummyLayout(layout: Partial<LayoutId> | null | undefined
   )
 }
 
-/** Battle / Siege family (portrait side-column via battleLayoutAuthority). */
+/** Battle / Siege family (Modern Spell seating baseline via modernDummy stack). */
 export function isBattleLayout(layout: Partial<LayoutId> | null | undefined): boolean {
   return normalizeLayout(layout).family === 'battle'
 }

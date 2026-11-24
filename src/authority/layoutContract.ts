@@ -68,7 +68,10 @@ export type LayoutCapabilityFlags = {
   supportsPlaneswalkerModernV2Layout: boolean
   /** Spell Saga/Class — parchment column, vertical banner, chapter/level badges. */
   supportsSagaClassChrome: boolean
-  /** Battle / Siege — side-column chrome (name L, art, type, rules R, collector bottom). */
+  /**
+   * Battle / Siege dedicated chrome layer.
+   * Retired: Battle uses Modern Spell (modernDummy) stack; keep flag false.
+   */
   supportsBattleChrome: boolean
   /**
    * When true, Konva uses battleLayoutAuthority stage size instead of Standard

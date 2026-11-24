@@ -14,7 +14,7 @@ import {
 import { getPlaneswalkerModernV2ArtInnerRect } from '../../../authority/planeswalkerModernV2LayoutAuthority'
 import { useKonvaPublicImage } from '../../../hooks/useKonvaPublicImage'
 import { useCardStore } from '../../../store/useCardStore'
-import type { LayoutId } from '../../../authority/layoutTaxonomy'
+import { isBattleLayout, type LayoutId } from '../../../authority/layoutTaxonomy'
 import { addBattleArtInnerClipPath } from './battleArtPath'
 import { addPlaneswalkerModernV2ArtInnerClipPath } from './planeswalkerModernV2ArtPath'
 
@@ -61,8 +61,11 @@ function ArtLayer() {
     cardData: { layout: activeLayout },
   })
   const modernV2Layout = capabilities.supportsPlaneswalkerModernV2Layout
-  const battleLayout = capabilities.supportsBattleChrome === true
-  /** Battle: Modern inner-face aperture (same as chrome ring hole; plates overlay). */
+  /**
+   * Battle family: art fills the Modern inner-border aperture (exact seat + radii),
+   * under Modern Spell plates/chrome. Not gated on supportsBattleChrome (retired).
+   */
+  const battleLayout = isBattleLayout(activeLayout)
   const artR = modernV2Layout
     ? getPlaneswalkerModernV2ArtInnerRect()
     : battleLayout
@@ -292,11 +295,12 @@ function ArtLayer() {
               }
             : battleLayout
               ? {
-                  // Art aperture path (same bounds/radii as chrome frame ring hole).
-                  // Konva begins the path and calls clip() after clipFunc returns.
+                  // Same aperture as TextureBorderLayer Modern inner-border (rect + radii).
                   clipFunc: (ctx) => {
                     const c = ctx as unknown as CanvasRenderingContext2D
+                    c.beginPath()
                     addBattleArtInnerClipPath(c)
+                    c.clip()
                   },
                 }
               : {

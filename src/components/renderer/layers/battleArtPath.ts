@@ -1,6 +1,6 @@
 /**
- * Battle art / inner-border aperture path — shared by ArtLayer clip and
- * BattleChromeLayer punch so art fills the Modern inner-face rect under chrome.
+ * Battle art / inner-border aperture path — ArtLayer clip matches TextureBorderLayer
+ * Modern inner-border (same rect + INNER_BORDER_CORNER_RADIUS_MODERN).
  */
 import {
   getBattleArtRect,

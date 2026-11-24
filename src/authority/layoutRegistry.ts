@@ -16,16 +16,7 @@ import {
 } from './spaceGothicLayoutAuthority'
 import { SPACE_GOTHIC_FRAME_OPTIONS } from '../data/spaceGothicFrameOptions'
 import { getPreModernTextBoxInnerRect } from './preModernTextBoxAuthority'
-import {
-  BATTLE_STAGE_HEIGHT,
-  BATTLE_STAGE_WIDTH,
-  getBattleArtRect,
-  getBattleCollectorRect,
-  getBattleDefenseRect,
-  getBattleNameRect,
-  getBattleRulesRect,
-  getBattleTypeRect,
-} from './battleLayoutAuthority'
+import { getBattleArtRect } from './battleLayoutAuthority'
 import {
   getPreparedRulesRect,
   PREPARED_PANEL_BOTTOM_EXTEND_PX,
@@ -1023,55 +1014,28 @@ function buildPreparedModernContract(): LayoutContract {
   })
 }
 
-/** Battle / Siege — portrait side-column on Standard 1650×2250; chrome owns plates/text. */
+/**
+ * Battle / Siege — Modern Spell plates/text stack; art aperture = Modern inner border.
+ * No BattleChromeLayer / side-column / MotM path.
+ */
 function buildBattleModernContract(): LayoutContract {
-  const toNorm = (r: { x: number; y: number; width: number; height: number }) => ({
-    left: r.x / BATTLE_STAGE_WIDTH,
-    top: r.y / BATTLE_STAGE_HEIGHT,
-    width: r.width / BATTLE_STAGE_WIDTH,
-    height: r.height / BATTLE_STAGE_HEIGHT,
-  })
+  const spell = buildSpellStandardContract()
+  const art = getBattleArtRect()
   return normalizeLayoutContract({
+    ...spell,
     id: { family: 'battle', variant: 'modern' },
     regions: {
-      art: toNorm(getBattleArtRect()),
-      nameBar: toNorm(getBattleNameRect()),
-      typeLine: toNorm(getBattleTypeRect()),
-      rulesText: toNorm(getBattleRulesRect()),
-      metadataStrip: toNorm(getBattleCollectorRect()),
-      lowerRight: {
-        kind: 'functionalZone',
-        rect: toNorm(getBattleDefenseRect()),
-      },
+      ...spell.regions,
+      /** Art = exact Modern inner-border seat (plates still use spell name/type/rules). */
+      art: pxRectToNormalizedRect(art),
     },
     capabilities: {
-      supportsFlavorText: false,
-      supportsPowerToughnessBox: false,
-      supportsMetadataStrip: true,
-      supportsEdgeToBleedArt: false,
-      supportsFloatingTextTreatment: false,
-      supportsSecondaryStructuralRegions: true,
-      supportsNamePlateBox: false,
-      supportsTypeLineBox: false,
-      /** Stamp is drawn by BattleChromeLayer only. */
-      supportsHologramSeal: false,
-      supportsRulesTextBoxFrame: false,
-      supportsRulesTextBoxTexture: false,
-      supportsModernDummyLayout: false,
-      suppressRulesTextRendering: true,
-      suppressNameBarTextRendering: true,
-      suppressNameBarManaCostRendering: true,
-      suppressTypeLineTextRendering: true,
-      supportsBattleChrome: true,
-      /** Portrait 1500×2100 — same stage as Standard; MotM landscape retired. */
+      ...spell.capabilities,
+      /** Route through Modern Spell stack — do not resurrect BattleChromeLayer. */
+      supportsBattleChrome: false,
       usesLandscapeStage: false,
     },
-    bleedBehavior: 'trim-contained',
-    compliance: {
-      requiresTrimCompliance: true,
-      requiresSafeZoneCompliance: true,
-    },
-    familyExtensions: recipeExtensionsToFamilyExtensions(BATTLE_REGULAR_RECIPE),
+    familyExtensions: undefined,
   })
 }
 
@@ -1329,16 +1293,12 @@ export function getActiveLayoutArtRectFromState(input: RuntimeLayoutInput): {
   width: number
   height: number
 } {
-  const art = getActiveLayoutRegionsFromState(input).art
   const layout = normalizeLayout(input?.cardData?.layout ?? null)
+  /** Battle art = Modern inner-border aperture (not M15 art slot from contract). */
   if (isBattleLayout(layout)) {
-    return {
-      x: Math.round(art.left * BATTLE_STAGE_WIDTH),
-      y: Math.round(art.top * BATTLE_STAGE_HEIGHT),
-      width: Math.round(art.width * BATTLE_STAGE_WIDTH),
-      height: Math.round(art.height * BATTLE_STAGE_HEIGHT),
-    }
+    return getBattleArtRect()
   }
+  const art = getActiveLayoutRegionsFromState(input).art
   return normalizedToStageRect(art)
 }
 

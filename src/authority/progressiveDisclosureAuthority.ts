@@ -41,10 +41,10 @@ export function shouldShowSecondaryNameFields(input: ProgressiveDisclosureSideba
 
 export function shouldShowRulesTextAndFlavorBlock(input: ProgressiveDisclosureSidebarInput): boolean {
   /**
-   * Battle chrome owns on-canvas rules draw (`suppressRulesTextRendering`), but the
-   * oracle/reminder editor + rules typography still apply to the tan rules pill.
+   * Battle uses the Modern Spell stack (rules text on canvas). Keep the
+   * oracle/reminder editor available for Siege text.
    */
-  if (input.capabilities.supportsBattleChrome || input.layoutFamily === 'battle') {
+  if (input.layoutFamily === 'battle') {
     return true
   }
   if (input.capabilities.suppressRulesTextRendering) return false
@@ -108,9 +108,9 @@ export function shouldShowStartingLoyaltyCoreBlock(input: ProgressiveDisclosureS
   return input.capabilities.supportsStartingLoyaltyBox
 }
 
-/** Battle / Siege — defense shield value next to rules. */
+/** Battle / Siege — defense value editor (canvas defense chrome not on Modern Spell baseline). */
 export function shouldShowBattleDefenseControls(input: ProgressiveDisclosureSidebarInput): boolean {
-  return input.capabilities.supportsBattleChrome === true || input.layoutFamily === 'battle'
+  return input.layoutFamily === 'battle'
 }
 
 /** Prepared Creatures — nested mini-spell fields (name/mana/type/text). */
